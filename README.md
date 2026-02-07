@@ -1,3 +1,16 @@
+# Liankhawpui
+
+**⚠️ PROPRIETARY SOURCE CODE. DO NOT DISTRIBUTE.**
+
+Khawlian News Directory App.
+
+## License
+Proprietary. All rights reserved. See `LICENSE` for details.
+
+## Getting Started
+
+1. Clone the repository:
+   ```bash
    git clone <repository-url>
    cd liankhawpui
    ```
