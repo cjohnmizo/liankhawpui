@@ -1,0 +1,6 @@
+﻿Analyzing liankhawpui...                                        
+
+   info - Don't invoke 'print' in production code - lib\features\auth\data\auth_repository.dart:57:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\auth\data\auth_repository.dart:96:9 - avoid_print
+   info - Don't use 'BuildContext's across async gaps - lib\features\auth\presentation\registration_screen.dart:66:28 - use_build_context_synchronously
+

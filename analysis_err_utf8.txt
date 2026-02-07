@@ -1,0 +1,28 @@
+﻿Analyzing liankhawpui...                                        
+
+   info - Use 'const' with the constructor to improve performance - lib\features\auth\presentation\edit_profile_screen.dart:56:22 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\features\auth\presentation\edit_profile_screen.dart:57:25 - prefer_const_literals_to_create_immutables
+  error - The getter 'backOut' isn't defined for the type 'Curves' - lib\features\auth\presentation\profile_screen.dart:32:63 - undefined_getter
+
+flutter : 3 issues 
+found. (ran in 8.1s)
+At line:1 char:1
++ flutter analyze 
+--no-pub > 
+analysis_err.txt 
+2>&1 ; powershell 
+-Comman ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (3 is   
+ sues found. (ra    
+n in 8.1s):Stri    
+ng) [], RemoteE    
+xception
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 

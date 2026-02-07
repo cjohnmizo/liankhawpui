@@ -1,0 +1,26 @@
+﻿Analyzing liankhawpui...                                        
+
+   info - 'surfaceVariant' is deprecated and shouldn't be used. Use surfaceContainerHighest instead. This feature was deprecated after v3.18.0-0.1.pre - lib\features\auth\presentation\edit_profile_screen.dart:127:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\auth\presentation\edit_profile_screen.dart:127:52 - deprecated_member_use
+
+flutter : 2 issues 
+found. (ran in 7.6s)
+At line:1 char:1
++ flutter analyze 
+--no-pub > analysis_
+profile.txt 2>&1 ; 
+Get-Content an ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (2 is   
+ sues found. (ra    
+n in 7.6s):Stri    
+ng) [], RemoteE    
+xception
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 

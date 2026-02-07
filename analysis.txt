@@ -1,0 +1,23 @@
+Analyzing liankhawpui...                                        
+
+warning - Unused import: 'package:flutter/material.dart' - lib\core\router\app_router.dart:1:8 - unused_import
+warning - Unused import: 'package:supabase_flutter/supabase_flutter.dart' - lib\data\sync\supabase_connector.dart:2:8 - unused_import
+  error - The argument type 'Map<String, dynamic>?' can't be assigned to the parameter type 'Object'.  - lib\data\sync\supabase_connector.dart:33:32 - argument_type_not_assignable
+  error - The argument type 'Map<String, dynamic>?' can't be assigned to the parameter type 'Map<dynamic, dynamic>'.  - lib\data\sync\supabase_connector.dart:37:32 - argument_type_not_assignable
+   info - Don't invoke 'print' in production code - lib\data\sync\supabase_connector.dart:49:7 - avoid_print
+   info - Statements in an if should be enclosed in a block - lib\features\announcement\presentation\announcement_list_screen.dart:29:13 - curly_braces_in_flow_control_structures
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\announcement\presentation\widgets\announcement_card.dart:4:8 - depend_on_referenced_packages
+  error - Target of URI doesn't exist: 'package:intl/intl.dart' - lib\features\announcement\presentation\widgets\announcement_card.dart:4:8 - uri_does_not_exist
+  error - Undefined name 'DateFormat' - lib\features\announcement\presentation\widgets\announcement_card.dart:102:21 - undefined_identifier
+   info - Unnecessary use of string interpolation - lib\features\home\presentation\home_page.dart:27:23 - unnecessary_string_interpolations
+   info - The imported package 'intl' isn't a dependency of the importing package - lib\features\news\presentation\news_list_screen.dart:6:8 - depend_on_referenced_packages
+  error - Target of URI doesn't exist: 'package:intl/intl.dart' - lib\features\news\presentation\news_list_screen.dart:6:8 - uri_does_not_exist
+   info - Statements in an if should be enclosed in a block - lib\features\news\presentation\news_list_screen.dart:20:13 - curly_braces_in_flow_control_structures
+  error - Undefined name 'DateFormat' - lib\features\news\presentation\news_list_screen.dart:79:33 - undefined_identifier
+   info - Statements in an if should be enclosed in a block - lib\features\organization\presentation\organization_detail_screen.dart:26:13 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\organization\presentation\organization_detail_screen.dart:77:23 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\story\presentation\book_list_screen.dart:19:13 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\story\presentation\chapter_list_screen.dart:21:13 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\features\story\presentation\chapter_reader_screen.dart:19:13 - curly_braces_in_flow_control_structures
+
+19 issues found. (ran in 5.7s)

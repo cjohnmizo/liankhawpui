@@ -1,0 +1,25 @@
+﻿Analyzing liankhawpui...                                        
+
+   info - Unnecessary 'const' keyword - lib\features\auth\presentation\edit_profile_screen.dart:60:17 - unnecessary_const
+
+flutter : 1 issue 
+found. (ran in 5.4s)
+At line:1 char:1
++ flutter analyze 
+--no-pub > analysis_
+final_2.txt 2>&1 ; 
+Get-Content an ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (1 is   
+ sue found. (ran    
+ in 5.4s):Strin    
+g) [], RemoteEx    
+ception
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 

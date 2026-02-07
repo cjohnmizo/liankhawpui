@@ -1,0 +1,81 @@
+name: liankhawpui
+description: "Khawlian News Directory App."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.10.7
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Architecture & State Management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+  go_router: ^12.1.0
+  get_it: ^7.6.4 # Optional if using Riverpod purely, but useful for singletons
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
+  uuid: ^4.2.0
+  intl: ^0.19.0
+
+  # Backend & Sync
+  supabase_flutter: ^2.3.0
+  powersync: ^1.8.0 # Check latest compatible version
+  sqlite3: ^2.1.0 # Required for powersync
+  path_provider: ^2.1.1
+  path: ^1.8.3
+
+  # UI / UX
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  cached_network_image: ^3.3.0
+  flutter_animate: ^4.2.0 # for subtle animations
+  flutter_markdown: ^0.6.14
+  
+  # Image handling
+  image_picker: ^1.0.7
+  flutter_image_compress: ^2.1.0
+  mime: ^1.0.4
+  
+  # Notifications
+  onesignal_flutter: ^5.0.0
+  fl_chart: ^1.1.1
+  timeago: ^3.7.1
+  connectivity_plus: ^7.0.0
+  flutter_dotenv: ^6.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.8
+  riverpod_generator: ^2.3.9
+  freezed: ^2.4.6
+  json_serializable: ^6.7.1
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - .env
+    - assets/icon/
+
+flutter_launcher_icons:
+  # iOS Configuration - App Store Compliant
+  ios: true
+  image_path_ios: "assets/icon/ios/AppIcon-1024.png"
+  remove_alpha_ios: true  # Required: iOS App Store does not allow alpha channels
+  
+  # Android Configuration - Play Store Compliant
+  android: true
+  adaptive_icon_foreground: "assets/icon/android/ic_launcher_foreground.png"
+  adaptive_icon_background: "assets/icon/android/ic_launcher_background.png"
+  
+  # Additional Android icon for legacy devices
+  image_path_android: "assets/icon/android/playstore-icon-512.png"
+

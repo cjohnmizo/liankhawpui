@@ -1,0 +1,26 @@
+﻿Analyzing liankhawpui...                                        
+
+  error - The constructor being called isn't a const constructor - lib\features\auth\presentation\edit_profile_screen.dart:67:29 - const_with_non_const
+
+flutter : 1 issue 
+found. (ran in 6.8s)
+At line:1 char:1
++ flutter analyze 
+--no-pub > 
+analysis_final.txt 
+2>&1 ; Get-Content 
+anal ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (1 is   
+ sue found. (ran    
+ in 6.8s):Strin    
+g) [], RemoteEx    
+ception
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
