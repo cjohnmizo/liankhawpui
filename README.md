@@ -85,6 +85,10 @@ lib/
 └── main.dart            # Entry point
 ```
 
+## 🛡️ Security
+
+We take security seriously. If you discover a vulnerability, please check our [Security Policy](SECURITY.md) for reporting guidelines.
+
 ## 🔒 License
 
 **Proprietary Software.**
