@@ -1,5 +1,10 @@
 # Liankhawpui
 
+![Flutter](https://img.shields.io/badge/Flutter-3.10%2B-02569B?logo=flutter)
+![Dart](https://img.shields.io/badge/Dart-3.0%2B-0175C2?logo=dart)
+![License](https://img.shields.io/badge/License-Proprietary-red)
+![Platform](https://img.shields.io/badge/Platform-iOS%20%7C%20Android-lightgrey)
+
 **⚠️ PROPRIETARY SOURCE CODE. DO NOT DISTRIBUTE.**
 
 Khawlian News Directory App.
@@ -7,13 +12,13 @@ Khawlian News Directory App.
 ## License
 Proprietary. All rights reserved. See `LICENSE` for details.
 
-## Getting Started
+## 📸 Screenshots
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd liankhawpui
-   ```
+| Home Screen | News Feed | Article Detail |
+|:-----------:|:---------:|:--------------:|
+| <img src="assets/screenshots/home.png" width="200" /> | <img src="assets/screenshots/news.png" width="200" /> | <img src="assets/screenshots/article.png" width="200" /> |
+
+*(Add screenshots to `assets/screenshots/` to display them here)*
 
 ## ✨ Features
 
