@@ -17,7 +17,7 @@ We take the security of our application seriously. If you have found a vulnerabi
 
 ### How to Report
 
-Please email the details of the vulnerability to: **john@example.com** (Replace with actual email if known, otherwise use generic placeholder or instruct to contact main developer). 
+Please email the details of the vulnerability to: **johnchangsan39@gmail.com.com** (Replace with actual email if known, otherwise use generic placeholder or instruct to contact main developer). 
 *Since I don't have the user's email, I'll use a placeholder.*
 
 Please include:
