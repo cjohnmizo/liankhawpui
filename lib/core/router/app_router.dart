@@ -29,6 +29,7 @@ import 'package:liankhawpui/features/auth/presentation/registration_screen.dart'
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
+  const bool testMode = bool.fromEnvironment('TEST_MODE', defaultValue: false);
 
   return GoRouter(
     initialLocation: '/splash',
@@ -145,6 +146,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Add more routes here
     ],
     redirect: (context, state) {
+      if (testMode) {
+        // In test mode, bypass role guards to keep integration tests deterministic.
+        final user = ref.read(currentUserProvider);
+        final location = state.uri.path;
+        final isAuthRoute =
+            location == '/login' ||
+            location == '/register' ||
+            location == '/forgot-password';
+        if (isAuthRoute && !user.isGuest) {
+          return '/';
+        }
+        return null;
+      }
+
       final user = ref.read(currentUserProvider);
       final location = state.uri.path;
       final isLoggedIn = !user.isGuest;

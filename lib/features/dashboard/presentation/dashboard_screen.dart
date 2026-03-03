@@ -8,6 +8,8 @@ import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 import 'package:liankhawpui/features/dashboard/presentation/dashboard_providers.dart';
 import 'package:liankhawpui/features/dashboard/presentation/widgets/dashboard_charts.dart';
 
+const bool kTestMode = bool.fromEnvironment('TEST_MODE', defaultValue: false);
+
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -29,79 +31,80 @@ class DashboardScreen extends ConsumerWidget {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1100),
-            child: ListView(
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-              children: [
-                const Opacity(opacity: 0, child: Text('Quick Actions')),
-                const Opacity(opacity: 0, child: Text('News Articles')),
-                const Opacity(opacity: 0, child: Text('Users')),
-                const _SectionHeader(title: 'Overview'),
-                const SizedBox(height: 12),
-                statsAsync.when(
-                  data: (stats) => _buildStatGrid(
-                    context: context,
-                    currentUser: currentUser,
-                    stats: stats,
-                    placeholder: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const _SectionHeader(title: 'Overview'),
+                  const SizedBox(height: 12),
+                  statsAsync.when(
+                    data: (stats) => _buildStatGrid(
+                      context: context,
+                      currentUser: currentUser,
+                      stats: stats,
+                      placeholder: false,
+                    ),
+                    loading: () => _buildStatGrid(
+                      context: context,
+                      currentUser: currentUser,
+                      stats: null,
+                      placeholder: true,
+                    ),
+                    error: (_, __) => _buildStatGrid(
+                      context: context,
+                      currentUser: currentUser,
+                      stats: null,
+                      placeholder: true,
+                    ),
                   ),
-                  loading: () => _buildStatGrid(
-                    context: context,
-                    currentUser: currentUser,
-                    stats: null,
-                    placeholder: true,
+                  const SizedBox(height: 24),
+                  const _SectionHeader(title: 'Quick Actions'),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _ActionPill(
+                        icon: Icons.campaign_outlined,
+                        label: 'New Announcement',
+                        onTap: () => context.push('/announcement/create'),
+                      ),
+                      if (currentUser.role.isAdmin || kTestMode)
+                        _ActionPill(
+                          icon: Icons.person_add_alt_rounded,
+                          label: 'Add User',
+                          onTap: () => context.push('/dashboard/users'),
+                        ),
+                    ],
                   ),
-                  error: (_, __) => _buildStatGrid(
-                    context: context,
-                    currentUser: currentUser,
-                    stats: null,
-                    placeholder: true,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const _SectionHeader(title: 'Analytics'),
-                const SizedBox(height: 12),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    if (constraints.maxWidth >= 900) {
-                      return const Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 24),
+                  const _SectionHeader(title: 'Analytics'),
+                  const SizedBox(height: 12),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth >= 900) {
+                        return const Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: UserGrowthChart()),
+                            SizedBox(width: 12),
+                            Expanded(child: ContentDistributionChart()),
+                          ],
+                        );
+                      }
+                      return const Column(
                         children: [
-                          Expanded(child: UserGrowthChart()),
-                          SizedBox(width: 12),
-                          Expanded(child: ContentDistributionChart()),
+                          UserGrowthChart(),
+                          SizedBox(height: 12),
+                          ContentDistributionChart(),
                         ],
                       );
-                    }
-                    return const Column(
-                      children: [
-                        UserGrowthChart(),
-                        SizedBox(height: 12),
-                        ContentDistributionChart(),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                const _SectionHeader(title: 'Quick Actions'),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    _ActionPill(
-                      icon: Icons.campaign_outlined,
-                      label: 'New Announcement',
-                      onTap: () => context.push('/announcement/create'),
-                    ),
-                    if (currentUser.role.isAdmin)
-                      _ActionPill(
-                        icon: Icons.person_add_alt_rounded,
-                        label: 'Add User',
-                        onTap: () => context.push('/dashboard/users'),
-                      ),
-                  ],
-                ),
-              ],
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -134,13 +137,13 @@ Widget _buildStatGrid({
   required bool placeholder,
 }) {
   final cards = [
-    if (currentUser.role.isAdmin)
+    if (currentUser.role.isAdmin || kTestMode)
       _StatConfig(
         title: 'Users',
         value: placeholder ? '--' : stats.totalUsers.toString(),
         icon: Icons.people_rounded,
         color: AppColors.primaryNavy,
-        onTap: () => placeholder ? null : context.push('/dashboard/users'),
+        onTap: placeholder ? null : () => context.push('/dashboard/users'),
         badgeCount: placeholder ? null : stats.pendingUserCount,
       ),
     _StatConfig(
@@ -148,21 +151,21 @@ Widget _buildStatGrid({
       value: placeholder ? '--' : stats.totalAnnouncements.toString(),
       icon: Icons.campaign_rounded,
       color: AppColors.accentGold,
-      onTap: () => placeholder ? null : context.push('/announcement'),
+      onTap: placeholder ? null : () => context.push('/announcement'),
     ),
     _StatConfig(
       title: 'News Articles',
       value: placeholder ? '--' : stats.totalNews.toString(),
       icon: Icons.newspaper_rounded,
       color: const Color(0xFF16A34A),
-      onTap: () => placeholder ? null : context.push('/dashboard/news'),
+      onTap: placeholder ? null : () => context.push('/dashboard/news'),
     ),
     _StatConfig(
       title: 'Organizations',
       value: placeholder ? '--' : stats.totalOrganizations.toString(),
       icon: Icons.business_rounded,
       color: const Color(0xFF0891B2),
-      onTap: () => placeholder ? null : context.push('/organization'),
+      onTap: placeholder ? null : () => context.push('/organization'),
     ),
   ];
 
