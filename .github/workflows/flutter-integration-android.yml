@@ -64,6 +64,29 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Preflight endpoint connectivity
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          POWERSYNC_URL: ${{ secrets.POWERSYNC_URL }}
+        run: |
+          set -euo pipefail
+
+          check_endpoint () {
+            local name="$1"
+            local url="$2"
+            local code
+            code="$(curl -sS -o /dev/null -w "%{http_code}" --connect-timeout 15 --max-time 30 "$url" || true)"
+            if [ "$code" = "000" ]; then
+              echo "::error::$name endpoint is unreachable: $url"
+              exit 1
+            fi
+            echo "$name reachable (HTTP $code)"
+          }
+
+          check_endpoint "Supabase" "$SUPABASE_URL/auth/v1/health"
+          check_endpoint "PowerSync" "$POWERSYNC_URL"
+
       - name: Run guest functional smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -76,7 +99,8 @@ jobs:
               --driver=test_driver/integration_test.dart \
               --target=integration_test/app_functional_smoke_test.dart \
               -d emulator-5554 \
-              --profile
+              --profile \
+              --dart-define=TEST_MODE=true
 
       - name: Run role dashboard smoke tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -96,6 +120,7 @@ jobs:
               --target=integration_test/role_dashboard_smoke_test.dart \
               -d emulator-5554 \
               --profile \
+              --dart-define=TEST_MODE=true \
               --dart-define=TEST_EDITOR_EMAIL="$TEST_EDITOR_EMAIL" \
               --dart-define=TEST_EDITOR_PASSWORD="$TEST_EDITOR_PASSWORD" \
               --dart-define=TEST_ADMIN_EMAIL="$TEST_ADMIN_EMAIL" \

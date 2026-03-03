@@ -11,21 +11,25 @@ class PowerSyncService {
 
   late final PowerSyncDatabase db;
   bool _isInitialized = false;
+  bool _isConnected = false;
 
-  Future<void> initialize() async {
-    if (_isInitialized) return;
+  Future<void> initialize({bool enableRemoteSync = true}) async {
+    if (!_isInitialized) {
+      final dir = await getApplicationSupportDirectory();
+      final path = join(dir.path, 'liankhawpui.db');
 
-    final dir = await getApplicationSupportDirectory();
-    final path = join(dir.path, 'liankhawpui.db');
+      // Open the database
+      db = PowerSyncDatabase(schema: schema, path: path);
+      await db.initialize();
 
-    // Open the database
-    db = PowerSyncDatabase(schema: schema, path: path);
-    await db.initialize();
+      _isInitialized = true;
+    }
 
-    // Create and connect the connector
-    final connector = SupabaseConnector(db);
-    db.connect(connector: connector);
-
-    _isInitialized = true;
+    if (enableRemoteSync && !_isConnected) {
+      // Create and connect the connector only when remote sync is enabled.
+      final connector = SupabaseConnector(db);
+      db.connect(connector: connector);
+      _isConnected = true;
+    }
   }
 }

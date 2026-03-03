@@ -5,9 +5,9 @@ class EnvConfig {
 
   // Supports both Supabase naming conventions.
   static String get supabaseAnonKey =>
-      _getOptional('SUPABASE_ANON_KEY').isNotEmpty
-      ? _getOptional('SUPABASE_ANON_KEY')
-      : _getRequired('SUPABASE_PUBLISHABLE_KEY');
+      _getOptional('SUPABASE_PUBLISHABLE_KEY').isNotEmpty
+      ? _getOptional('SUPABASE_PUBLISHABLE_KEY')
+      : _getRequired('SUPABASE_ANON_KEY');
 
   static String get powerSyncUrl => _getRequired('POWERSYNC_URL');
 

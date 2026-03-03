@@ -11,6 +11,8 @@ import 'package:liankhawpui/core/widgets/app_logo.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+const bool _testMode = bool.fromEnvironment('TEST_MODE', defaultValue: false);
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -35,22 +37,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final connectivityResult = await Connectivity().checkConnectivity();
-    if (connectivityResult.contains(ConnectivityResult.none)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Internet connection is required to login.'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(20),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+    if (!_testMode) {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult.contains(ConnectivityResult.none)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Internet connection is required to login.'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
             ),
-          ),
-        );
+          );
+        }
+        return;
       }
-      return;
     }
 
     setState(() => _isLoading = true);
@@ -65,6 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         context.go('/');
       }
     } on AuthException catch (e) {
+      debugPrint('Login AuthException: ${e.message} (status: ${e.statusCode})');
       if (mounted) {
         String message;
         if (e.message.contains('Invalid login credentials')) {
@@ -101,6 +106,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
       }
     } catch (e) {
+      debugPrint('Login unexpected exception: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

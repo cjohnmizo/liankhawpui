@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -43,10 +44,13 @@ class AuthRepository {
   }
 
   Future<void> signInWithEmail(String email, String password) async {
-    final response = await _client.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
+    final response = await _client.auth
+        .signInWithPassword(email: email, password: password)
+        .timeout(
+          const Duration(seconds: 25),
+          onTimeout: () =>
+              throw TimeoutException('Authentication request timed out'),
+        );
 
     // Self-healing: Ensure profile exists
     final user = response.user;

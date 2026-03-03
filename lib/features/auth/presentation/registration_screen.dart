@@ -12,6 +12,8 @@ import 'package:liankhawpui/core/widgets/app_logo.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
+const bool _testMode = bool.fromEnvironment('TEST_MODE', defaultValue: false);
+
 class RegistrationScreen extends ConsumerStatefulWidget {
   const RegistrationScreen({super.key});
 
@@ -44,22 +46,24 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final connectivityResult = await Connectivity().checkConnectivity();
-    if (!mounted) return;
-    if (connectivityResult.contains(ConnectivityResult.none)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Internet connection is required to register.'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(20),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+    if (!_testMode) {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (!mounted) return;
+      if (connectivityResult.contains(ConnectivityResult.none)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Internet connection is required to register.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(20),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
-        ),
-      );
+        );
 
-      return;
+        return;
+      }
     }
 
     if (_dob == null) {

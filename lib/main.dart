@@ -9,6 +9,8 @@ import 'package:liankhawpui/core/services/powersync_service.dart';
 import 'package:liankhawpui/core/services/onesignal_service.dart';
 import 'package:liankhawpui/core/router/app_router.dart';
 
+const bool _testMode = bool.fromEnvironment('TEST_MODE', defaultValue: false);
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -18,11 +20,17 @@ void main() async {
 
     // Initialize Backend Services
     await SupabaseService.initialize();
-    await PowerSyncService().initialize();
-    await OneSignalService.initialize();
-    await OneSignalService.syncExternalUserId(
-      SupabaseService.client.auth.currentUser?.id,
-    );
+    await PowerSyncService().initialize(enableRemoteSync: !_testMode);
+    if (!_testMode) {
+      await OneSignalService.initialize();
+      await OneSignalService.syncExternalUserId(
+        SupabaseService.client.auth.currentUser?.id,
+      );
+    } else {
+      debugPrint(
+        'TEST_MODE is enabled: remote PowerSync sync and OneSignal init are disabled.',
+      );
+    }
 
     runApp(const ProviderScope(child: LiankhawpuiApp()));
   } catch (e) {

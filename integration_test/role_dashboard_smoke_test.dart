@@ -128,21 +128,59 @@ Future<void> signInWithCredentials(
     timeout: const Duration(seconds: 30),
   );
 
-  final emailField = find.byType(TextFormField).at(0);
-  final passwordField = find.byType(TextFormField).at(1);
+  final formFields = find.byType(TextFormField);
+  await waitFor(tester, formFields);
+  expect(formFields, findsNWidgets(2));
+  final emailField = formFields.at(0);
+  final passwordField = formFields.at(1);
 
+  await tester.tap(emailField);
+  await tester.pump(const Duration(milliseconds: 150));
   await waitFor(tester, emailField);
   await tester.enterText(emailField, email);
   await tester.pump(const Duration(milliseconds: 250));
+  final emailText = tester.widget<TextFormField>(emailField).controller?.text;
+  expect(emailText, equals(email));
+
+  await tester.tap(passwordField);
+  await tester.pump(const Duration(milliseconds: 150));
   await tester.enterText(passwordField, password);
   await tester.pump(const Duration(milliseconds: 250));
 
-  await tapText(tester, 'Sign In');
-  await waitFor(
-    tester,
-    find.text('Menu'),
-    timeout: const Duration(seconds: 45),
-  );
+  // Trigger form submit from password field first, then fallback to button tap.
+  await tester.testTextInput.receiveAction(TextInputAction.done);
+  await tester.pump(const Duration(milliseconds: 800));
+  if (find.text('Menu').evaluate().isEmpty) {
+    await tapText(tester, 'Sign In');
+  }
+
+  final endTime = DateTime.now().add(const Duration(seconds: 45));
+  while (DateTime.now().isBefore(endTime)) {
+    await tester.pump(const Duration(milliseconds: 300));
+
+    if (find.text('Menu').evaluate().isNotEmpty) return;
+
+    final loginErrorTexts = <String>[
+      'Invalid email or password.',
+      'Please confirm your email address.',
+      'Internet connection is required to login.',
+    ];
+
+    for (final text in loginErrorTexts) {
+      if (find.text(text).evaluate().isNotEmpty) {
+        fail('Login failed: $text');
+      }
+    }
+
+    if (find
+        .textContaining('An unexpected error occurred')
+        .evaluate()
+        .isNotEmpty) {
+      fail('Login failed: unexpected error snackbar shown');
+    }
+  }
+
+  fail('Timed out waiting for Menu after sign in');
 }
 
 Future<void> openAdminDashboard(WidgetTester tester) async {
