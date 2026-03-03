@@ -32,7 +32,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final currentIndex = ref.watch(bottomNavIndexProvider);
-    debugPrint('HOME build: index=$currentIndex user=${user.role.name}');
 
     return Scaffold(
       key: _scaffoldKey,
