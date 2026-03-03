@@ -14,7 +14,7 @@ dependencies:
   # Architecture & State Management
   flutter_riverpod: ^2.4.9
   riverpod_annotation: ^2.3.3
-  go_router: ^12.1.0
+  go_router: ^17.1.0
   get_it: ^7.6.4 # Optional if using Riverpod purely, but useful for singletons
   freezed_annotation: ^2.4.1
   json_annotation: ^4.8.1
