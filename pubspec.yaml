@@ -29,7 +29,7 @@ dependencies:
   path: ^1.8.3
 
   # UI / UX
-  google_fonts: ^6.1.0
+  google_fonts: ^8.0.2
   flutter_svg: ^2.0.9
   cached_network_image: ^3.3.0
   flutter_animate: ^4.2.0 # for subtle animations
