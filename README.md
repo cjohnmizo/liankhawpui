@@ -72,7 +72,14 @@ Proprietary. All rights reserved. See `LICENSE` for details.
    flutter pub get
    ```
 
-4. **Run the App**:
+4. **Deploy Backend Functions (Recommended for production)**:
+   ```bash
+   supabase functions deploy powersync-token
+   supabase functions deploy send-notification
+   ```
+   Function configuration details: [`supabase/functions/README.md`](supabase/functions/README.md)
+
+5. **Run the App**:
    ```bash
    flutter run
    ```

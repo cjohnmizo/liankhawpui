@@ -46,13 +46,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     final session = SupabaseService.client.auth.currentSession;
     if (session == null) return null;
 
-    final token = await _fetchPowerSyncToken();
-    if (token == null || token.isEmpty) {
-      debugPrint(
-        'PowerSync credentials unavailable: token endpoint returned no token.',
-      );
-      return null;
-    }
+    final token = await _fetchPowerSyncToken() ?? session.accessToken;
 
     return PowerSyncCredentials(endpoint: EnvConfig.powerSyncUrl, token: token);
   }
@@ -64,7 +58,9 @@ class SupabaseConnector extends PowerSyncBackendConnector {
       );
       return _extractToken(response.data);
     } catch (error) {
-      debugPrint('Failed to fetch PowerSync token: $error');
+      debugPrint(
+        'PowerSync token function unavailable, using Supabase access token fallback: $error',
+      );
       return null;
     }
   }
