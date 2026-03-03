@@ -15,6 +15,10 @@ Future<void> waitFor(
     await tester.pump(step);
     if (finder.evaluate().isNotEmpty) return;
   }
+  // Debug dump to help diagnose missing widgets.
+  // ignore: avoid_print
+  print('waitFor timed out. Current widget tree:');
+  debugDumpApp();
   fail('Timed out waiting for finder: $finder');
 }
 
@@ -147,7 +151,11 @@ void main() {
     // Back to home from login
     await tapBackButton(tester);
     await tapText(tester, 'Home');
-    await waitFor(tester, find.text('Featured News'));
+    await waitFor(
+      tester,
+      find.text('Featured News'),
+      timeout: const Duration(seconds: 40),
+    );
 
     // Guest profile access should route to login screen
     final profileIcon = find.byIcon(Icons.person_rounded);

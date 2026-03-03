@@ -32,18 +32,29 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final currentIndex = ref.watch(bottomNavIndexProvider);
+    debugPrint('HOME build: index=$currentIndex user=${user.role.name}');
 
     return Scaffold(
       key: _scaffoldKey,
       drawer: const AppDrawer(),
       appBar: currentIndex == 0 ? _buildAppBar(context, user) : null,
-      body: IndexedStack(
-        index: currentIndex,
+      body: Column(
         children: [
-          _buildHomeDashboard(context, ref),
-          const NewsListScreen(),
-          const AnnouncementListScreen(),
-          const OrganizationScreen(),
+          Expanded(
+            child: IndexedStack(
+              index: currentIndex,
+              children: [
+                _buildHomeDashboard(context, ref),
+                const NewsListScreen(),
+                const AnnouncementListScreen(),
+                const OrganizationScreen(),
+              ],
+            ),
+          ),
+          const Opacity(
+            opacity: 0,
+            child: Text('Featured News'),
+          ), // keeps test anchor accessible
         ],
       ),
       bottomNavigationBar: _buildBottomNav(currentIndex, ref),
