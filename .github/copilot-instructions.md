@@ -185,7 +185,7 @@ Failure here crashes the app before UI renders.
 2. **Riverpod invalidation**: Don't over-invalidate providers — causes unnecessary rebuilds. Use `.select()` for partial state.
 3. **GoRouter guards**: Redirect loops possible if not careful with conditional logic. Test with multiple roles.
 4. **Asset paths**: Update `pubspec.yaml` after adding images/icons — `flutter pub get` is needed.
-5. **Env vars**: `.env` file not in `.gitignore` by default — **DO NOT COMMIT SECRETS**.
+5. **Env vars**: `.env` is ignored in this repo, but never commit secrets or keys to tracked files.
 
 ---
 
