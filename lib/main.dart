@@ -20,15 +20,15 @@ void main() async {
 
     // Initialize Backend Services
     await SupabaseService.initialize();
-    await PowerSyncService().initialize(enableRemoteSync: !_testMode);
-    if (!_testMode) {
+    if (_testMode) {
+      debugPrint(
+        'TEST_MODE is enabled: PowerSync and OneSignal remote services are disabled.',
+      );
+    } else {
+      await PowerSyncService().initialize(enableRemoteSync: true);
       await OneSignalService.initialize();
       await OneSignalService.syncExternalUserId(
         SupabaseService.client.auth.currentUser?.id,
-      );
-    } else {
-      debugPrint(
-        'TEST_MODE is enabled: remote PowerSync sync and OneSignal init are disabled.',
       );
     }
 

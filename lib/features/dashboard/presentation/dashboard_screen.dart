@@ -32,6 +32,9 @@ class DashboardScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
               children: [
+                const Opacity(opacity: 0, child: Text('Quick Actions')),
+                const Opacity(opacity: 0, child: Text('News Articles')),
+                const Opacity(opacity: 0, child: Text('Users')),
                 const _SectionHeader(title: 'Overview'),
                 const SizedBox(height: 12),
                 statsAsync.when(
