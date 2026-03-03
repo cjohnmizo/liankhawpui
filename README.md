@@ -84,6 +84,41 @@ Proprietary. All rights reserved. See `LICENSE` for details.
    flutter run
    ```
 
+## Integration Testing
+
+### Local emulator run
+
+Guest functional smoke test:
+
+```bash
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_functional_smoke_test.dart -d emulator-5554 --profile
+```
+
+Role dashboard smoke tests (Editor/Admin):
+
+```bash
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/role_dashboard_smoke_test.dart -d emulator-5554 --profile --dart-define=TEST_EDITOR_EMAIL=editor@example.com --dart-define=TEST_EDITOR_PASSWORD=... --dart-define=TEST_ADMIN_EMAIL=admin@example.com --dart-define=TEST_ADMIN_PASSWORD=...
+```
+
+If role credentials are not provided, role tests are skipped.
+
+### GitHub Actions CI
+
+Workflow: `.github/workflows/flutter-integration-android.yml`
+
+Required repository secrets:
+
+- `SUPABASE_URL`
+- `SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_ANON_KEY`
+- `POWERSYNC_URL`
+- `POWERSYNC_TOKEN_FUNCTION`
+- `ONESIGNAL_APP_ID`
+- `TEST_EDITOR_EMAIL` (optional, enables Editor smoke test)
+- `TEST_EDITOR_PASSWORD` (optional, enables Editor smoke test)
+- `TEST_ADMIN_EMAIL` (optional, enables Admin smoke test)
+- `TEST_ADMIN_PASSWORD` (optional, enables Admin smoke test)
+
 ## 📂 Project Structure
 
 The project follows a feature-first architecture:

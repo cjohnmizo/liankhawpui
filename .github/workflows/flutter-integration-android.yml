@@ -1,0 +1,102 @@
+name: Flutter Integration (Android Emulator)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter Version
+        run: flutter --version
+
+      - name: Create .env for integration tests
+        shell: bash
+        run: |
+          cat > .env <<EOF
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          POWERSYNC_URL=${{ secrets.POWERSYNC_URL }}
+          POWERSYNC_TOKEN_FUNCTION=${{ secrets.POWERSYNC_TOKEN_FUNCTION }}
+          ONESIGNAL_APP_ID=${{ secrets.ONESIGNAL_APP_ID }}
+          EOF
+
+      - name: Validate required .env values
+        shell: bash
+        run: |
+          required=(
+            SUPABASE_URL
+            SUPABASE_PUBLISHABLE_KEY
+            SUPABASE_ANON_KEY
+            POWERSYNC_URL
+            POWERSYNC_TOKEN_FUNCTION
+            ONESIGNAL_APP_ID
+          )
+
+          for key in "${required[@]}"; do
+            value="$(grep "^${key}=" .env | cut -d= -f2-)"
+            if [ -z "$value" ]; then
+              echo "::error::Missing $key. Set it in repository secrets."
+              exit 1
+            fi
+          done
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run guest functional smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            flutter drive \
+              --driver=test_driver/integration_test.dart \
+              --target=integration_test/app_functional_smoke_test.dart \
+              -d emulator-5554 \
+              --profile
+
+      - name: Run role dashboard smoke tests
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          TEST_EDITOR_EMAIL: ${{ secrets.TEST_EDITOR_EMAIL }}
+          TEST_EDITOR_PASSWORD: ${{ secrets.TEST_EDITOR_PASSWORD }}
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            flutter drive \
+              --driver=test_driver/integration_test.dart \
+              --target=integration_test/role_dashboard_smoke_test.dart \
+              -d emulator-5554 \
+              --profile \
+              --dart-define=TEST_EDITOR_EMAIL="$TEST_EDITOR_EMAIL" \
+              --dart-define=TEST_EDITOR_PASSWORD="$TEST_EDITOR_PASSWORD" \
+              --dart-define=TEST_ADMIN_EMAIL="$TEST_ADMIN_EMAIL" \
+              --dart-define=TEST_ADMIN_PASSWORD="$TEST_ADMIN_PASSWORD"
