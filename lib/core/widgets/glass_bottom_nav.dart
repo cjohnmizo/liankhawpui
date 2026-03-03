@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
-import 'package:liankhawpui/core/theme/glass_styles.dart';
 
-/// Glass Bottom Navigation Bar
-/// Modern floating bottom nav with glass effect
+/// Minimal, responsive bottom navigation shell.
 class GlassBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -16,34 +14,42 @@ class GlassBottomNav extends StatelessWidget {
     required this.currentIndex,
     required this.onTap,
     required this.items,
-    this.height = 65,
-    this.margin = const EdgeInsets.all(16),
+    this.height = 64,
+    this.margin = const EdgeInsets.all(12),
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
 
-    return Container(
-      margin: margin,
-      height: height,
-      decoration: GlassStyles.glassCard(
-        borderRadius: 20,
-        opacity: 0.9,
-        // Theme-aware background
-        customColor: isDark ? AppColors.surfaceVariant : AppColors.surfaceLight,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(
-            items.length,
-            (index) => _NavItem(
-              item: items[index],
-              isSelected: currentIndex == index,
-              onTap: () => onTap(index),
-              isDark: isDark,
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: margin,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Container(
+              height: height,
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.glassBorder, width: 1),
+              ),
+              child: Row(
+                children: List.generate(
+                  items.length,
+                  (index) => Expanded(
+                    child: _NavItem(
+                      item: items[index],
+                      isSelected: currentIndex == index,
+                      onTap: () => onTap(index),
+                      isDark: isDark,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -67,57 +73,40 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine inactive color based on theme for better contrast
-    // Dark Mode: inactive is grey (visible on dark)
-    // Light Mode: inactive is dark grey (visible on white)
     final inactiveColor = isDark
         ? AppColors.textTertiary
-        : AppColors.textSecondaryLight;
+        : AppColors.textTertiaryLight;
 
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isSelected ? item.activeIcon : item.icon,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSelected ? item.activeIcon : item.icon,
+              size: 22,
+              color: isSelected ? AppColors.accentGold : inactiveColor,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              item.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? AppColors.accentGold : inactiveColor,
-                size: 24,
               ),
-              const SizedBox(height: 4),
-              Text(
-                item.label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? AppColors.accentGold : inactiveColor,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              if (isSelected) ...[
-                const SizedBox(height: 4),
-                Container(
-                  width: 4,
-                  height: 4,
-                  decoration: const BoxDecoration(
-                    color: AppColors.accentGold,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// Bottom Navigation Item Model
 class BottomNavItem {
   final IconData icon;
   final IconData activeIcon;

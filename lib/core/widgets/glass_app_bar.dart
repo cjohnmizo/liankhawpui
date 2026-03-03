@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 
 /// Glass App Bar
-/// Transparent app bar with blur effect
+/// Compatibility app bar rendered in a minimal style.
 class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? title;
   final Widget? titleWidget;
@@ -25,13 +25,14 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: (backgroundColor ?? AppColors.surfaceVariant).withValues(
-          alpha: 0.9,
-        ),
+        color:
+            backgroundColor ??
+            (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
         border: Border(
-          bottom: BorderSide(color: AppColors.glassBorderLight, width: 0.5),
+          bottom: BorderSide(color: AppColors.glassBorder, width: 1),
         ),
       ),
       child: AppBar(
@@ -41,6 +42,7 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
         centerTitle: centerTitle,
         elevation: elevation,
         backgroundColor: Colors.transparent,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
@@ -83,21 +85,10 @@ class GlassSliverAppBar extends StatelessWidget {
       pinned: pinned,
       floating: floating,
       elevation: 0,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      foregroundColor: Theme.of(context).colorScheme.onSurface,
       flexibleSpace: flexibleSpace != null
-          ? Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.surfaceVariant.withValues(alpha: 0.9),
-                    AppColors.surfaceVariant.withValues(alpha: 0.7),
-                  ],
-                ),
-              ),
-              child: flexibleSpace,
-            )
+          ? Container(child: flexibleSpace)
           : null,
     );
   }

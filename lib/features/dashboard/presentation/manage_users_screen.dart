@@ -47,193 +47,168 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
               heroTag: 'manage_users_add_fab',
               onPressed: _isBusy ? null : () => _showAddUserDialog(context),
               backgroundColor: AppColors.accentGold,
-              child: const Icon(
-                Icons.add_rounded,
-                color: AppColors.backgroundDark,
-              ),
+              child: const Icon(Icons.add_rounded, color: Colors.white),
             )
           : null,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: isDark
-              ? AppColors.backgroundGradient
-              : const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.backgroundLight,
-                    AppColors.surfaceVariantLight,
-                  ],
-                ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                      color: Theme.of(context).colorScheme.onSurface,
-                      onPressed: () =>
-                          context.canPop() ? context.pop() : context.go('/'),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        isAdmin ? 'Manage Users' : 'User Directory',
-                        style: AppTextStyles.titleLarge.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        // Invalidate to refresh the stream
-                        ref.invalidate(allProfilesProvider);
-                        _showMessage('Refreshing users...');
-                      },
-                      icon: Icon(
-                        Icons.sync_rounded,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Search Bar
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
-                ),
-                child: GlassCard(
-                  isPremium: false,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100),
+            child: Column(
+              children: [
+                Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
+                    horizontal: 12,
+                    vertical: 10,
                   ),
-                  borderRadius: 12,
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() => _searchQuery = value),
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Search by email or name...',
-                      hintStyle: AppTextStyles.bodyMedium.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                        color: Theme.of(context).colorScheme.onSurface,
+                        onPressed: () =>
+                            context.canPop() ? context.pop() : context.go('/'),
                       ),
-                      border: InputBorder.none,
-                      icon: Icon(
-                        Icons.search_rounded,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear_rounded, size: 20),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                            )
-                          : null,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Filter Chips
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    _buildFilterChip('All', null),
-                    const SizedBox(width: 8),
-                    ...UserRole.values.map(
-                      (role) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: _buildFilterChip(role.name.toUpperCase(), role),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // User List
-              Expanded(
-                child: profilesAsync.when(
-                  data: (profiles) {
-                    final filteredProfiles = profiles.where((user) {
-                      // Filter by Role
-                      if (_selectedRole != null && user.role != _selectedRole) {
-                        return false;
-                      }
-
-                      // Filter by Search
-                      final query = _searchQuery.toLowerCase();
-                      final email = user.email?.toLowerCase() ?? '';
-                      final name = user.fullName?.toLowerCase() ?? '';
-                      return email.contains(query) || name.contains(query);
-                    }).toList();
-
-                    if (filteredProfiles.isEmpty) {
-                      return Center(
+                      const SizedBox(width: 6),
+                      Expanded(
                         child: Text(
-                          _searchQuery.isEmpty && _selectedRole == null
-                              ? 'No users found'
-                              : 'No matches found',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
+                          isAdmin ? 'Manage Users' : 'User Directory',
+                          style: AppTextStyles.titleLarge.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      );
-                    }
-
-                    return RefreshIndicator(
-                      onRefresh: () async {
-                        ref.invalidate(allProfilesProvider);
-                        // Optional: wait for a moment or check sync status
-                        await Future.delayed(const Duration(milliseconds: 500));
-                      },
-                      color: AppColors.accentGold,
-                      child: ListView.separated(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 80),
-                        itemCount: filteredProfiles.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final profile = filteredProfiles[index];
-                          return _buildUserCard(profile, isDark, isAdmin);
-                        },
                       ),
-                    );
-                  },
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (e, st) => Center(
-                    child: Text(
-                      'Error: $e',
-                      style: const TextStyle(color: AppColors.error),
+                      IconButton(
+                        onPressed: () {
+                          ref.invalidate(allProfilesProvider);
+                          _showMessage('Refreshing users...');
+                        },
+                        icon: const Icon(Icons.sync_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: GlassCard(
+                    isPremium: false,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 2,
+                    ),
+                    borderRadius: 12,
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (value) =>
+                          setState(() => _searchQuery = value),
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Search by email or name...',
+                        hintStyle: AppTextStyles.bodyMedium.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        border: InputBorder.none,
+                        icon: const Icon(Icons.search_rounded),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear_rounded, size: 20),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                            : null,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      _buildFilterChip('All', null),
+                      const SizedBox(width: 8),
+                      ...UserRole.values.map(
+                        (role) => Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _buildFilterChip(
+                            role.name.toUpperCase(),
+                            role,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: profilesAsync.when(
+                    data: (profiles) {
+                      final filteredProfiles = profiles.where((user) {
+                        if (_selectedRole != null &&
+                            user.role != _selectedRole) {
+                          return false;
+                        }
+                        final query = _searchQuery.toLowerCase();
+                        final email = user.email?.toLowerCase() ?? '';
+                        final name = user.fullName?.toLowerCase() ?? '';
+                        return email.contains(query) || name.contains(query);
+                      }).toList();
+
+                      if (filteredProfiles.isEmpty) {
+                        return Center(
+                          child: Text(
+                            _searchQuery.isEmpty && _selectedRole == null
+                                ? 'No users found'
+                                : 'No matches found',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        );
+                      }
+
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          ref.invalidate(allProfilesProvider);
+                          await Future.delayed(
+                            const Duration(milliseconds: 500),
+                          );
+                        },
+                        child: ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 96),
+                          itemCount: filteredProfiles.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final profile = filteredProfiles[index];
+                            return _buildUserCard(profile, isDark, isAdmin);
+                          },
+                        ),
+                      );
+                    },
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, st) => Center(
+                      child: Text(
+                        'Error: $e',
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -323,12 +298,14 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                     style: AppTextStyles.bodySmall.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    items: UserRole.values.map((role) {
-                      return DropdownMenuItem(
-                        value: role,
-                        child: Text(role.name.toUpperCase()),
-                      );
-                    }).toList(),
+                    items: UserRole.values
+                        .map(
+                          (role) => DropdownMenuItem(
+                            value: role,
+                            child: Text(role.name.toUpperCase()),
+                          ),
+                        )
+                        .toList(),
                     onChanged: isAdmin && !_isBusy
                         ? (newRole) async {
                             if (newRole != null && newRole != profile.role) {

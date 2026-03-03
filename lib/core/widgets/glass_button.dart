@@ -3,7 +3,7 @@ import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 
 /// Glass Button
-/// Premium button with glass effect
+/// Kept for compatibility; rendered in a minimal style.
 class GlassButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -24,18 +24,17 @@ class GlassButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isGold) {
-      // Gold accent button
       return ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.accentGold,
-          foregroundColor: AppColors.backgroundDark,
-          elevation: 2,
-          shadowColor: AppColors.goldGlow,
+          foregroundColor: Colors.white,
+          elevation: 0,
           padding:
               padding ??
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),
@@ -53,10 +52,11 @@ class GlassButton extends StatelessWidget {
       );
     }
 
-    // Glass button
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant.withValues(alpha: 0.6),
+        color: isDark
+            ? AppColors.surfaceVariant
+            : AppColors.surfaceVariantLight,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(color: AppColors.glassBorder, width: 1),
       ),
@@ -73,12 +73,26 @@ class GlassButton extends StatelessWidget {
                 ? Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(icon, size: 20, color: AppColors.textPrimary),
+                      Icon(
+                        icon,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       const SizedBox(width: 8),
-                      Text(text, style: AppTextStyles.button),
+                      Text(
+                        text,
+                        style: AppTextStyles.button.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
                     ],
                   )
-                : Text(text, style: AppTextStyles.button),
+                : Text(
+                    text,
+                    style: AppTextStyles.button.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
           ),
         ),
       ),
@@ -104,20 +118,15 @@ class IconGlassButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isGold) {
       return Container(
         width: size,
         height: size,
         decoration: BoxDecoration(
-          gradient: AppColors.goldGradient,
+          color: AppColors.accentGold,
           shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.goldGlow,
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          border: Border.all(color: AppColors.accentGoldDark),
         ),
         child: Material(
           color: Colors.transparent,
@@ -125,11 +134,7 @@ class IconGlassButton extends StatelessWidget {
             onTap: onPressed,
             customBorder: const CircleBorder(),
             child: Center(
-              child: Icon(
-                icon,
-                color: AppColors.backgroundDark,
-                size: size * 0.5,
-              ),
+              child: Icon(icon, color: Colors.white, size: size * 0.5),
             ),
           ),
         ),
@@ -140,7 +145,9 @@ class IconGlassButton extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant.withValues(alpha: 0.6),
+        color: isDark
+            ? AppColors.surfaceVariant
+            : AppColors.surfaceVariantLight,
         shape: BoxShape.circle,
         border: Border.all(color: AppColors.glassBorder, width: 1),
       ),
@@ -150,7 +157,11 @@ class IconGlassButton extends StatelessWidget {
           onTap: onPressed,
           customBorder: const CircleBorder(),
           child: Center(
-            child: Icon(icon, color: AppColors.textPrimary, size: size * 0.5),
+            child: Icon(
+              icon,
+              color: Theme.of(context).colorScheme.onSurface,
+              size: size * 0.5,
+            ),
           ),
         ),
       ),

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:liankhawpui/core/theme/glass_styles.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 
-/// Glass Card Widget
-/// Reusable frosted glass container with blur effect
+/// Compatibility wrapper used across screens.
+/// Kept as `GlassCard` name, but rendered as a clean minimal surface.
 class GlassCard extends StatelessWidget {
   final Widget child;
   final double borderRadius;
@@ -20,7 +19,7 @@ class GlassCard extends StatelessWidget {
     super.key,
     required this.child,
     this.borderRadius = 12,
-    this.opacity = 0.7,
+    this.opacity = 1,
     this.withGoldBorder = true,
     this.padding,
     this.margin,
@@ -33,47 +32,44 @@ class GlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark
-        ? AppColors.surfaceCard
-        : AppColors.surfaceCardLight;
+    final bgColor = isDark ? AppColors.surfaceCard : AppColors.surfaceCardLight;
 
-    final decoration = isPremium
-        ? GlassStyles.premiumGlassCard(
-            borderRadius: borderRadius,
-            opacity: opacity,
-            color: surfaceColor,
-          )
-        : GlassStyles.glassCard(
-            borderRadius: borderRadius,
-            opacity: opacity,
-            withGoldBorder: withGoldBorder,
-            customColor: surfaceColor,
-          );
+    final borderColor = isPremium
+        ? AppColors.accentGold.withValues(alpha: 0.28)
+        : (withGoldBorder
+              ? AppColors.glassBorder
+              : AppColors.glassBorder.withValues(alpha: 0.75));
 
-    Widget card = Container(
+    final card = Container(
       width: width,
       height: height,
       margin: margin,
-      decoration: decoration,
-      child: Container(
-        padding: padding ?? const EdgeInsets.all(16),
-        child: child,
+      padding: padding ?? const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor.withValues(alpha: opacity.clamp(0, 1).toDouble()),
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(color: borderColor, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? AppColors.glassShadow : AppColors.glassShadowLight,
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
+      child: child,
     );
 
-    if (onTap != null) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: card,
-      );
-    }
+    if (onTap == null) return card;
 
-    return card;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: card,
+    );
   }
 }
 
-/// Elevated Glass Card (more prominent)
 class ElevatedGlassCard extends StatelessWidget {
   final Widget child;
   final double borderRadius;
@@ -92,36 +88,17 @@ class ElevatedGlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark
-        ? AppColors.surfaceCard
-        : AppColors.surfaceCardLight;
-
-    Widget card = Container(
+    return GlassCard(
+      borderRadius: borderRadius,
       margin: margin,
-      decoration: GlassStyles.elevatedGlassCard(
-        borderRadius: borderRadius,
-        color: surfaceColor,
-      ),
-      child: Container(
-        padding: padding ?? const EdgeInsets.all(20),
-        child: child,
-      ),
+      padding: padding ?? const EdgeInsets.all(20),
+      isPremium: true,
+      onTap: onTap,
+      child: child,
     );
-
-    if (onTap != null) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: card,
-      );
-    }
-
-    return card;
   }
 }
 
-/// Subtle Glass Card (less prominent)
 class SubtleGlassCard extends StatelessWidget {
   final Widget child;
   final double borderRadius;
@@ -140,31 +117,13 @@ class SubtleGlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark
-        ? AppColors.surfaceCard
-        : AppColors.surfaceCardLight;
-
-    Widget card = Container(
+    return GlassCard(
+      borderRadius: borderRadius,
       margin: margin,
-      decoration: GlassStyles.subtleGlass(
-        borderRadius: borderRadius,
-        color: surfaceColor,
-      ),
-      child: Container(
-        padding: padding ?? const EdgeInsets.all(12),
-        child: child,
-      ),
+      padding: padding ?? const EdgeInsets.all(12),
+      withGoldBorder: false,
+      onTap: onTap,
+      child: child,
     );
-
-    if (onTap != null) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: card,
-      );
-    }
-
-    return card;
   }
 }

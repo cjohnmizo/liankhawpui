@@ -15,43 +15,37 @@ class AppDrawer extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
     final themeMode = ref.watch(themeModeProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final width = MediaQuery.sizeOf(context).width;
+    final drawerWidth = width > 700 ? 360.0 : width * 0.86;
+    final surface = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
 
     return Drawer(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      width: drawerWidth.clamp(280, 380).toDouble(),
+      backgroundColor: surface,
       child: Column(
         children: [
-          // Drawer Header
           Container(
-            padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 52, 20, 20),
             decoration: BoxDecoration(
-              gradient: isDark
-                  ? AppColors.backgroundGradient
-                  : const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppColors.primaryNavy,
-                        AppColors.primaryNavyLight,
-                      ],
-                    ),
+              color: isDark
+                  ? AppColors.surfaceVariant
+                  : AppColors.surfaceVariantLight,
               border: Border(
-                bottom: BorderSide(
-                  color: AppColors.glassBorder.withValues(alpha: 0.5),
-                  width: 0.5,
-                ),
+                bottom: BorderSide(color: AppColors.glassBorder, width: 1),
               ),
             ),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(2),
+                  padding: const EdgeInsets.all(1.5),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.accentGold, width: 2),
+                    border: Border.all(color: AppColors.glassBorder),
                   ),
                   child: const CircularAppLogo(size: 56),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,19 +55,19 @@ class AppDrawer extends ConsumerWidget {
                             ? 'Guest'
                             : (user.fullName ?? 'Community Member'),
                         style: AppTextStyles.titleMedium.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         user.isGuest
                             ? 'Sign in to access more'
                             : (user.email ?? ''),
                         style: AppTextStyles.bodySmall.copyWith(
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -85,10 +79,9 @@ class AppDrawer extends ConsumerWidget {
             ),
           ),
 
-          // Drawer Items
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
               child: Column(
                 children: [
                   _DrawerItem(
@@ -131,7 +124,7 @@ class AppDrawer extends ConsumerWidget {
                       context.push('/book');
                     },
                   ),
-                  Divider(color: AppColors.glassBorder, height: 32),
+                  Divider(color: AppColors.glassBorder, height: 26),
                   if (!user.isGuest) ...[
                     _DrawerItem(
                       icon: Icons.person_rounded,
@@ -175,7 +168,7 @@ class AppDrawer extends ConsumerWidget {
                         }
                       },
                     ),
-                  Divider(color: AppColors.glassBorder, height: 32),
+                  Divider(color: AppColors.glassBorder, height: 26),
                   _DrawerItem(
                     icon: Icons.settings_rounded,
                     label: 'Settings',
@@ -199,7 +192,7 @@ class AppDrawer extends ConsumerWidget {
                           'Dark Mode',
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: Theme.of(context).colorScheme.onSurface,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         secondary: Icon(
@@ -208,7 +201,7 @@ class AppDrawer extends ConsumerWidget {
                           size: 24,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
+                          horizontal: 12,
                         ),
                       );
                     },
@@ -218,9 +211,8 @@ class AppDrawer extends ConsumerWidget {
             ),
           ),
 
-          // Footer
           Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(16),
             child: Text(
               'App Version 1.0.0',
               style: AppTextStyles.caption.copyWith(
@@ -251,26 +243,27 @@ class _DrawerItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
       child: ListTile(
         leading: Icon(
           icon,
           color: isHighlight
               ? AppColors.accentGold
               : colorScheme.onSurfaceVariant,
-          size: 24,
+          size: 22,
         ),
         title: Text(
           label,
           style: AppTextStyles.bodyMedium.copyWith(
             color: isHighlight ? AppColors.accentGold : colorScheme.onSurface,
-            fontWeight: isHighlight ? FontWeight.bold : FontWeight.w500,
+            fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        dense: true,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         onTap: onTap,
-        hoverColor: AppColors.accentGold.withValues(alpha: 0.1),
+        hoverColor: AppColors.accentGold.withValues(alpha: 0.08),
       ),
     );
   }

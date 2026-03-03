@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
+import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/story/presentation/story_providers.dart';
-import 'package:go_router/go_router.dart';
 
 class ChapterListScreen extends ConsumerWidget {
   final String bookId;
@@ -11,127 +12,78 @@ class ChapterListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Ideally fetch book details to show title in AppBar?
-    // For now just chapters.
     final chaptersAsync = ref.watch(bookChaptersProvider(bookId));
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: isDark
-              ? AppColors.backgroundGradient
-              : const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.backgroundLight,
-                    AppColors.surfaceVariantLight,
-                  ],
-                ),
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+          icon: const Icon(Icons.arrow_back_rounded),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Custom Header
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 20,
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () =>
-                          context.canPop() ? context.pop() : context.go('/'),
-                      icon: Icon(
-                        Icons.arrow_back_rounded,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Chapters',
-                        style: AppTextStyles.titleLarge.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
+        title: const Text('Chapters'),
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: chaptersAsync.when(
+              data: (chapters) {
+                if (chapters.isEmpty) {
+                  return const Center(child: Text('No chapters available.'));
+                }
+                return ListView.builder(
+                  itemCount: chapters.length,
+                  itemBuilder: (context, index) {
+                    final chapter = chapters[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: GlassCard(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Content
-              Expanded(
-                child: chaptersAsync.when(
-                  data: (chapters) {
-                    if (chapters.isEmpty) {
-                      return const Center(
-                        child: Text('No chapters available.'),
-                      );
-                    }
-                    return ListView.builder(
-                      itemCount: chapters.length,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemBuilder: (context, index) {
-                        final chapter = chapters[index];
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surface.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: AppColors.glassBorder,
-                              width: 0.5,
-                            ),
-                          ),
-                          child: ListTile(
-                            leading: CircleAvatar(
+                        onTap: () {
+                          context.push('/book/$bookId/chapter/${chapter.id}');
+                        },
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
                               backgroundColor: AppColors.accentGold.withValues(
-                                alpha: 0.2,
+                                alpha: 0.14,
                               ),
                               child: Text(
                                 '${chapter.chapterNumber}',
-                                style: const TextStyle(
+                                style: AppTextStyles.labelSmall.copyWith(
                                   color: AppColors.accentGold,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
-                            title: Text(
-                              chapter.title,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                fontWeight: FontWeight.w600,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                chapter.title,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                            trailing: const Icon(
-                              Icons.chevron_right_rounded,
-                              color: AppColors.textTertiary,
-                            ),
-                            onTap: () {
-                              context.push(
-                                '/book/$bookId/chapter/${chapter.id}',
-                              );
-                            },
-                          ),
-                        );
-                      },
+                            const Icon(Icons.chevron_right_rounded),
+                          ],
+                        ),
+                      ),
                     );
                   },
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.accentGold,
-                    ),
-                  ),
-                  error: (e, _) => Center(child: Text('Error: $e')),
-                ),
-              ),
-            ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Error: $e')),
+            ),
           ),
         ),
       ),

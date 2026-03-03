@@ -37,18 +37,18 @@ class SettingsScreen extends ConsumerWidget {
           onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          // Appearance Section
-          _buildSectionHeader(context, 'Appearance'),
-          const SizedBox(height: 16),
-          GlassCard(
-            isPremium: false,
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                SwitchListTile(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildSectionHeader(context, 'Appearance'),
+              const SizedBox(height: 10),
+              GlassCard(
+                isPremium: false,
+                padding: EdgeInsets.zero,
+                child: SwitchListTile(
                   value:
                       themeMode == ThemeMode.dark ||
                       (themeMode == ThemeMode.system && isDark),
@@ -70,162 +70,100 @@ class SettingsScreen extends ConsumerWidget {
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  secondary: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.accentGold.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.dark_mode_rounded,
-                      color: AppColors.accentGold,
-                    ),
-                  ),
+                  secondary: const Icon(Icons.dark_mode_rounded),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 18),
+              _buildSectionHeader(context, 'Network & Sync'),
+              const SizedBox(height: 10),
+              GlassCard(
+                isPremium: false,
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      value: lowDataMode,
+                      onChanged: lowDataModeAsync.isLoading
+                          ? null
+                          : (value) {
+                              ref
+                                  .read(lowDataModeProvider.notifier)
+                                  .setEnabled(value);
+                            },
+                      title: Text(
+                        'Low Data Mode',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Reduce image quality and bandwidth usage',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      secondary: const Icon(Icons.data_saver_off_rounded),
+                    ),
+                    const Divider(height: 1),
+                    _SyncStatusSection(isDark: isDark),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              _buildSectionHeader(context, 'About'),
+              const SizedBox(height: 10),
+              GlassCard(
+                isPremium: false,
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.info_outline_rounded),
+                      title: Text(
+                        'Version',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      trailing: Text(
+                        '1.0.0',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.privacy_tip_outlined),
+                      title: Text(
+                        'Privacy Policy',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.description_outlined),
+                      title: Text(
+                        'Terms of Service',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-
-          const SizedBox(height: 32),
-
-          // Network Section
-          _buildSectionHeader(context, 'Network & Sync'),
-          const SizedBox(height: 16),
-          GlassCard(
-            isPremium: false,
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                SwitchListTile(
-                  value: lowDataMode,
-                  onChanged: lowDataModeAsync.isLoading
-                      ? null
-                      : (value) {
-                          ref
-                              .read(lowDataModeProvider.notifier)
-                              .setEnabled(value);
-                        },
-                  title: Text(
-                    'Low Data Mode',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Reduce image quality and bandwidth usage',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  secondary: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.teal.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.data_saver_off_rounded,
-                      color: Colors.teal,
-                    ),
-                  ),
-                ),
-                const Divider(height: 1),
-                _SyncStatusSection(isDark: isDark),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // About Section
-          _buildSectionHeader(context, 'About'),
-          const SizedBox(height: 16),
-          GlassCard(
-            isPremium: false,
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                ListTile(
-                  title: Text(
-                    'Version',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  trailing: Text(
-                    '1.0.0',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.info_outline_rounded,
-                      color: Colors.blue,
-                    ),
-                  ),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  title: Text(
-                    'Privacy Policy',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.privacy_tip_outlined,
-                      color: Colors.green,
-                    ),
-                  ),
-                  onTap: () {
-                    // TODO: Navigate to Privacy Policy
-                  },
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  title: Text(
-                    'Terms of Service',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.description_outlined,
-                      color: Colors.orange,
-                    ),
-                  ),
-                  onTap: () {
-                    // TODO: Navigate to Terms
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -236,9 +174,8 @@ class SettingsScreen extends ConsumerWidget {
       child: Text(
         title,
         style: AppTextStyles.titleSmall.copyWith(
-          color: AppColors.accentGold,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.2,
+          color: Theme.of(context).colorScheme.onSurface,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

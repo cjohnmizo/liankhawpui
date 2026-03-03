@@ -1,186 +1,92 @@
 import 'package:flutter/material.dart';
 
-/// App Color Palette
-/// Based on t_logo.png colors: Deep Navy Blue + Luxurious Gold
+/// Core color tokens used across the app.
+/// Names are preserved for compatibility with existing screens.
 class AppColors {
-  AppColors._(); // Private constructor
+  AppColors._();
 
-  // ============================================================================
-  // Primary Colors (Navy Blue from Logo)
-  // ============================================================================
+  // Brand / primary
+  static const Color primaryNavy = Color(0xFF1F2937);
+  static const Color primaryNavyDark = Color(0xFF111827);
+  static const Color primaryNavyLight = Color(0xFF374151);
+  static const Color primaryNavyLighter = Color(0xFF4B5563);
 
-  /// Deep navy blue - Primary brand color (Slightly more saturated)
-  static const Color primaryNavy = Color(0xFF151B54); // Deep Royal Blue
-  static const Color primaryNavyDark = Color(0xFF0A0E2E); // Almost Black Blue
-  static const Color primaryNavyLight = Color(
-    0xFF304FFE,
-  ); // Vibrant accent blue
-  static const Color primaryNavyLighter = Color(0xFF536DFE);
+  // Accent (kept key names for compatibility)
+  static const Color accentGold = Color(0xFF2563EB);
+  static const Color accentGoldLight = Color(0xFF60A5FA);
+  static const Color accentGoldDark = Color(0xFF1D4ED8);
+  static const Color accentBeige = Color(0xFFE5E7EB);
+  static const Color accentBeigeLight = Color(0xFFF3F4F6);
 
-  // ============================================================================
-  // Accent Colors (Gold from Logo)
-  // ============================================================================
+  // Dark surfaces
+  static const Color backgroundDark = Color(0xFF0B1220);
+  static const Color surfaceDark = Color(0xFF111827);
+  static const Color surfaceVariant = Color(0xFF1F2937);
+  static const Color surfaceCard = Color(0xFF101827);
 
-  /// Luxurious gold - Premium accent color (More metallic, less yellow)
-  static const Color accentGold = Color(0xFFC5A059); // Metallic Gold
-  static const Color accentGoldLight = Color(0xFFE6C888); // Champagne
-  static const Color accentGoldDark = Color(0xFF8D7132); // Bronze
-
-  /// Beige/Cream from logo highlights
-  static const Color accentBeige = Color(0xFFF3E5AB); // Vanilla
-  static const Color accentBeigeLight = Color(0xFFFFF8E1);
-
-  // ============================================================================
-  // Dark Mode Backgrounds
-  // ============================================================================
-
-  /// Very dark background (Neutral Black)
-  static const Color backgroundDark = Color(0xFF000000);
-
-  /// Dark surface (Neutral Dark Grey)
-  static const Color surfaceDark = Color(0xFF121212);
-
-  /// Lighter surface variant (Neutral Grey)
-  static const Color surfaceVariant = Color(0xFF1E1E1E);
-
-  /// Card surface -> Pure Black for high contrast minimal glass
-  static const Color surfaceCard = Color(0xFF000000);
-
-  // ============================================================================
-  // Light Mode Backgrounds
-  // ============================================================================
-
-  /// Light background - soft white/grey
-  static const Color backgroundLight = Color(0xFFFAFAFA);
-
-  /// Light surface - pure white
+  // Light surfaces
+  static const Color backgroundLight = Color(0xFFF8FAFC);
   static const Color surfaceLight = Color(0xFFFFFFFF);
-
-  /// Light surface variant - subtle grey/blue tint
-  static const Color surfaceVariantLight = Color(0xFFEEF2F6);
-
-  /// Light card surface
+  static const Color surfaceVariantLight = Color(0xFFF1F5F9);
   static const Color surfaceCardLight = Color(0xFFFFFFFF);
 
-  // ============================================================================
-  // Glass Effect Colors
-  // ============================================================================
+  // Glass-ish helpers used by legacy widgets
+  static Color get glassSurface => surfaceVariant.withValues(alpha: 0.88);
+  static Color get glassSurfaceLight => surfaceLight.withValues(alpha: 0.92);
+  static Color get glassBorder =>
+      const Color(0xFFCBD5E1).withValues(alpha: 0.55);
+  static Color get glassBorderLight =>
+      const Color(0xFFE2E8F0).withValues(alpha: 0.32);
+  static Color get glassBorderLightMode => const Color(0xFFCBD5E1);
+  static Color get glassShadow => Colors.black.withValues(alpha: 0.14);
+  static Color get glassShadowLight => Colors.black.withValues(alpha: 0.06);
 
-  /// Glass surface with opacity (use with BackdropFilter) - Dark mode
-  static Color get glassSurface => surfaceVariant.withValues(alpha: 0.6);
-
-  /// Glass surface for light mode
-  static Color get glassSurfaceLight => surfaceLight.withValues(alpha: 0.7);
-
-  /// Glass border - subtle gold tint
-  static Color get glassBorder => accentGold.withValues(alpha: 0.15);
-
-  /// Glass border light variant
-  static Color get glassBorderLight => Colors.white.withValues(alpha: 0.05);
-
-  /// Glass border for light mode
-  static Color get glassBorderLightMode => primaryNavy.withValues(alpha: 0.08);
-
-  /// Glass shadow
-  static Color get glassShadow => Colors.black.withValues(alpha: 0.5);
-
-  /// Glass shadow for light mode
-  static Color get glassShadowLight =>
-      const Color(0xFF9EA3B8).withValues(alpha: 0.2);
-
-  // ============================================================================
-  // Text Colors (Dark Mode)
-  // ============================================================================
-
-  /// Primary text on dark background
-  static const Color textPrimary = Color(0xFFFFFFFF);
-
-  /// Secondary text (slightly dimmed)
-  static const Color textSecondary = Color(0xFFB0B3C5);
-
-  /// Tertiary text (more dimmed)
-  static const Color textTertiary = Color(0xFF7E84A3);
-
-  /// Disabled text
-  static const Color textDisabled = Color(0xFF555B7D);
-
-  /// Gold text for highlights
+  // Text colors
+  static const Color textPrimary = Color(0xFFF8FAFC);
+  static const Color textSecondary = Color(0xFFCBD5E1);
+  static const Color textTertiary = Color(0xFF94A3B8);
+  static const Color textDisabled = Color(0xFF64748B);
   static const Color textGold = accentGold;
 
-  // ============================================================================
-  // Text Colors (Light Mode)
-  // ============================================================================
+  static const Color textPrimaryLight = Color(0xFF0F172A);
+  static const Color textSecondaryLight = Color(0xFF334155);
+  static const Color textTertiaryLight = Color(0xFF64748B);
+  static const Color textDisabledLight = Color(0xFF94A3B8);
 
-  /// Primary text on light background
-  static const Color textPrimaryLight = Color(0xFF121212);
+  // Semantic
+  static const Color success = Color(0xFF16A34A);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color error = Color(0xFFDC2626);
+  static const Color info = Color(0xFF0EA5E9);
 
-  /// Secondary text (light mode)
-  static const Color textSecondaryLight = Color(0xFF424242);
-
-  /// Tertiary text (light mode)
-  static const Color textTertiaryLight = Color(0xFF757575);
-
-  /// Disabled text (light mode)
-  static const Color textDisabledLight = Color(0xFFBDBDBD);
-
-  // ============================================================================
-  // Semantic Colors
-  // ============================================================================
-
-  /// Success color
-  static const Color success = Color(0xFF00C853);
-
-  /// Warning color
-  static const Color warning = Color(0xFFFFAB00);
-
-  /// Error color
-  static const Color error = Color(0xFFD50000);
-
-  /// Info color (light blue)
-  static const Color info = Color(0xFF2962FF);
-
-  // ============================================================================
-  // Gradients
-  // ============================================================================
-
-  /// Primary navy gradient
+  // Gradients kept for compatibility but intentionally subtle/minimal
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [primaryNavy, primaryNavyLight],
+    colors: [primaryNavyDark, primaryNavy],
   );
 
-  /// Gold accent gradient
   static const LinearGradient goldGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [accentGoldDark, accentGold, accentGoldLight],
+    colors: [accentGoldDark, accentGold],
   );
 
-  /// Dark background gradient
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [backgroundDark, surfaceDark],
+    colors: [backgroundDark, backgroundDark],
   );
 
-  /// Glass surface gradient
   static LinearGradient get glassGradient => LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      surfaceVariant.withValues(alpha: 0.8),
-      surfaceVariant.withValues(alpha: 0.6),
+      surfaceVariant.withValues(alpha: 0.9),
+      surfaceVariant.withValues(alpha: 0.82),
     ],
   );
 
-  // ============================================================================
-  // Glow Effects
-  // ============================================================================
-
-  /// Gold glow color for premium elements
-  static Color get goldGlow => accentGold.withValues(alpha: 0.5);
-
-  /// Navy glow for primary elements
-  static Color get navyGlow => primaryNavy.withValues(alpha: 0.5);
+  static Color get goldGlow => accentGold.withValues(alpha: 0.22);
+  static Color get navyGlow => primaryNavy.withValues(alpha: 0.18);
 }

@@ -18,71 +18,48 @@ class AnnouncementCard extends StatelessWidget {
 
     return GlassCard(
       onTap: onTap,
-      isPremium: true,
+      isPremium: false,
       padding: EdgeInsets.zero,
-      borderRadius: 20,
+      borderRadius: 12,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image Section
           if (announcement.imageUrl != null &&
               announcement.imageUrl!.isNotEmpty)
             SizedBox(
-              height: 180,
+              height: 140,
               width: double.infinity,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  AdaptiveCachedImage(
-                    imageUrl: announcement.imageUrl!,
-                    fit: BoxFit.cover,
-                    placeholderBuilder: (_) => Container(
-                      color: isDark
-                          ? AppColors.surfaceVariant
-                          : AppColors.surfaceVariantLight,
-                      child: const Center(
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                    errorBuilder: (_) => Container(
-                      color: isDark
-                          ? AppColors.surfaceVariant
-                          : AppColors.surfaceVariantLight,
-                      child: const Icon(
-                        Icons.broken_image_rounded,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
+              child: AdaptiveCachedImage(
+                imageUrl: announcement.imageUrl!,
+                fit: BoxFit.cover,
+                placeholderBuilder: (_) => Container(
+                  color: isDark
+                      ? AppColors.surfaceVariant
+                      : AppColors.surfaceVariantLight,
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  // Gradient Overlay
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.6),
-                          ],
-                        ),
-                      ),
-                    ),
+                ),
+                errorBuilder: (_) => Container(
+                  color: isDark
+                      ? AppColors.surfaceVariant
+                      : AppColors.surfaceVariantLight,
+                  child: const Icon(
+                    Icons.broken_image_rounded,
+                    color: AppColors.textTertiary,
                   ),
-                ],
+                ),
               ),
             ),
 
-          // Content Section
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Pinned Badge
                 if (announcement.isPinned)
                   Container(
-                    margin: const EdgeInsets.only(bottom: 12),
+                    margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 4,
@@ -112,19 +89,16 @@ class AnnouncementCard extends StatelessWidget {
                     ),
                   ),
 
-                // Title
                 Text(
                   announcement.title,
-                  style: AppTextStyles.titleLarge.copyWith(
+                  style: AppTextStyles.titleMedium.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
-
-                // Content Preview
+                const SizedBox(height: 6),
                 Text(
                   announcement.content,
                   style: AppTextStyles.bodyMedium.copyWith(
@@ -134,9 +108,7 @@ class AnnouncementCard extends StatelessWidget {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 16),
-
-                // Date
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     const Icon(
