@@ -18,5 +18,6 @@ If the function is not yet deployed, the Flutter app currently falls back to the
 ## Suggested Server Functions
 1. `powersync-token`: returns signed PowerSync token.
 2. `send-notification`: sends OneSignal push using server-side REST key.
+3. `admin-users`: admin-only create/delete users and role updates using service role key.
 
 Function source and deploy commands are in [`supabase/functions/README.md`](functions/README.md).

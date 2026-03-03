@@ -78,6 +78,7 @@ Proprietary. All rights reserved. See `LICENSE` for details.
    ```bash
    supabase functions deploy powersync-token
    supabase functions deploy send-notification
+   supabase functions deploy admin-users
    ```
    Function configuration details: [`supabase/functions/README.md`](supabase/functions/README.md)
 

@@ -156,6 +156,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final requiresEditor =
           location == '/announcement/create' ||
           location.startsWith('/dashboard');
+      final requiresAdminOnly = location.startsWith('/dashboard/users');
 
       if (!isLoggedIn && (requiresSignedIn || requiresEditor)) {
         return '/login';
@@ -167,6 +168,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (isLoggedIn && requiresEditor && !user.role.isEditor) {
         return '/';
+      }
+
+      if (isLoggedIn && requiresAdminOnly && !user.role.isAdmin) {
+        return '/dashboard';
       }
 
       return null;

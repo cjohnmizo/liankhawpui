@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 import 'package:liankhawpui/features/dashboard/presentation/dashboard_providers.dart';
 import 'package:liankhawpui/features/auth/domain/user_role.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
@@ -19,6 +20,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   UserRole? _selectedRole; // Null means "All"
+  bool _isBusy = false;
 
   @override
   void initState() {
@@ -35,14 +37,21 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
   @override
   Widget build(BuildContext context) {
     final profilesAsync = ref.watch(allProfilesProvider);
+    final currentUser = ref.watch(currentUserProvider);
+    final isAdmin = currentUser.role.isAdmin;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddUserDialog(context),
-        backgroundColor: AppColors.accentGold,
-        child: const Icon(Icons.add_rounded, color: AppColors.backgroundDark),
-      ),
+      floatingActionButton: isAdmin
+          ? FloatingActionButton(
+              onPressed: _isBusy ? null : () => _showAddUserDialog(context),
+              backgroundColor: AppColors.accentGold,
+              child: const Icon(
+                Icons.add_rounded,
+                color: AppColors.backgroundDark,
+              ),
+            )
+          : null,
       body: Container(
         decoration: BoxDecoration(
           gradient: isDark
@@ -76,7 +85,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Manage Users',
+                        isAdmin ? 'Manage Users' : 'User Directory',
                         style: AppTextStyles.titleLarge.copyWith(
                           color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
@@ -87,14 +96,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                       onPressed: () {
                         // Invalidate to refresh the stream
                         ref.invalidate(allProfilesProvider);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Refreshing users...'),
-                            duration: Duration(seconds: 1),
-                            behavior: SnackBarBehavior.floating,
-                            backgroundColor: AppColors.accentGold,
-                          ),
-                        );
+                        _showMessage('Refreshing users...');
                       },
                       icon: Icon(
                         Icons.sync_rounded,
@@ -215,7 +217,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final profile = filteredProfiles[index];
-                          return _buildUserCard(profile, isDark);
+                          return _buildUserCard(profile, isDark, isAdmin);
                         },
                       ),
                     );
@@ -255,7 +257,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
     );
   }
 
-  Widget _buildUserCard(profile, bool isDark) {
+  Widget _buildUserCard(profile, bool isDark, bool isAdmin) {
     return GlassCard(
       isPremium: false,
       padding: const EdgeInsets.all(16),
@@ -313,6 +315,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                   child: DropdownButton<UserRole>(
                     value: profile.role,
                     icon: const Icon(Icons.arrow_drop_down_rounded, size: 20),
+                    disabledHint: Text(profile.role.name.toUpperCase()),
                     dropdownColor: isDark
                         ? AppColors.surfaceVariant
                         : AppColors.surfaceLight,
@@ -325,13 +328,19 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                         child: Text(role.name.toUpperCase()),
                       );
                     }).toList(),
-                    onChanged: (newRole) {
-                      if (newRole != null && newRole != profile.role) {
-                        ref
-                            .read(dashboardRepositoryProvider)
-                            .updateUserRole(profile.id, newRole);
-                      }
-                    },
+                    onChanged: isAdmin && !_isBusy
+                        ? (newRole) async {
+                            if (newRole != null && newRole != profile.role) {
+                              await _runAdminAction(
+                                () => ref
+                                    .read(dashboardRepositoryProvider)
+                                    .updateUserRole(profile.id, newRole),
+                                successMessage:
+                                    'Role updated to ${newRole.name.toUpperCase()}',
+                              );
+                            }
+                          }
+                        : null,
                   ),
                 ),
               ),
@@ -346,7 +355,9 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
               // Actions based on role
               if (profile.role == UserRole.guest) ...[
                 TextButton.icon(
-                  onPressed: () => _confirmDecline(profile),
+                  onPressed: isAdmin && !_isBusy
+                      ? () => _confirmDecline(profile)
+                      : null,
                   icon: const Icon(
                     Icons.close_rounded,
                     size: 18,
@@ -359,11 +370,16 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                 ),
                 const SizedBox(width: 8),
                 TextButton.icon(
-                  onPressed: () {
-                    ref
-                        .read(dashboardRepositoryProvider)
-                        .approveUser(profile.id);
-                  },
+                  onPressed: isAdmin && !_isBusy
+                      ? () async {
+                          await _runAdminAction(
+                            () => ref
+                                .read(dashboardRepositoryProvider)
+                                .approveUser(profile.id),
+                            successMessage: 'User approved.',
+                          );
+                        }
+                      : null,
                   icon: const Icon(
                     Icons.check_circle_outline_rounded,
                     size: 18,
@@ -376,7 +392,9 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                 ),
               ] else ...[
                 TextButton.icon(
-                  onPressed: () => _confirmDelete(profile),
+                  onPressed: isAdmin && !_isBusy
+                      ? () => _confirmDelete(profile)
+                      : null,
                   icon: const Icon(
                     Icons.delete_outline_rounded,
                     size: 18,
@@ -397,8 +415,10 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
 
   void _showAddUserDialog(BuildContext context) {
     final emailController = TextEditingController();
+    final passwordController = TextEditingController();
     final nameController = TextEditingController();
     UserRole selectedRole = UserRole.user;
+    bool isSubmitting = false;
 
     showDialog(
       context: context,
@@ -411,8 +431,19 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
               children: [
                 TextField(
                   controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Temporary Password',
+                    helperText: 'At least 6 characters',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -452,24 +483,59 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: () {
-                  if (emailController.text.isNotEmpty &&
-                      nameController.text.isNotEmpty) {
-                    ref
-                        .read(dashboardRepositoryProvider)
-                        .createUser(
-                          email: emailController.text,
-                          fullName: nameController.text,
-                          role: selectedRole,
-                        );
-                    Navigator.pop(context);
-                  }
-                },
+                onPressed: isSubmitting
+                    ? null
+                    : () async {
+                        if (emailController.text.isEmpty ||
+                            passwordController.text.isEmpty ||
+                            nameController.text.isEmpty) {
+                          _showMessage(
+                            'Please fill all fields.',
+                            isError: true,
+                          );
+                          return;
+                        }
+                        if (passwordController.text.trim().length < 6) {
+                          _showMessage(
+                            'Password must be at least 6 characters.',
+                            isError: true,
+                          );
+                          return;
+                        }
+
+                        setState(() => isSubmitting = true);
+                        try {
+                          await _runAdminAction(
+                            () => ref
+                                .read(dashboardRepositoryProvider)
+                                .createUser(
+                                  email: emailController.text,
+                                  password: passwordController.text,
+                                  fullName: nameController.text,
+                                  role: selectedRole,
+                                ),
+                            successMessage: 'User account created.',
+                          );
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                          }
+                        } finally {
+                          if (context.mounted) {
+                            setState(() => isSubmitting = false);
+                          }
+                        }
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accentGold,
                   foregroundColor: AppColors.backgroundDark,
                 ),
-                child: const Text('Add'),
+                child: isSubmitting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Add'),
               ),
             ],
           );
@@ -492,9 +558,14 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              ref.read(dashboardRepositoryProvider).deleteUser(profile.id);
+            onPressed: () async {
               Navigator.pop(context);
+              await _runAdminAction(
+                () => ref
+                    .read(dashboardRepositoryProvider)
+                    .deleteUser(profile.id),
+                successMessage: 'User deleted.',
+              );
             },
             child: const Text(
               'Delete',
@@ -520,9 +591,14 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              ref.read(dashboardRepositoryProvider).deleteUser(profile.id);
+            onPressed: () async {
               Navigator.pop(context);
+              await _runAdminAction(
+                () => ref
+                    .read(dashboardRepositoryProvider)
+                    .deleteUser(profile.id),
+                successMessage: 'Request declined.',
+              );
             },
             child: const Text(
               'Decline',
@@ -530,6 +606,50 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _runAdminAction(
+    Future<void> Function() action, {
+    required String successMessage,
+  }) async {
+    if (_isBusy) return;
+    setState(() => _isBusy = true);
+    try {
+      await action();
+      ref.invalidate(allProfilesProvider);
+      _showMessage(successMessage);
+    } catch (e) {
+      _showMessage(_friendlyError(e), isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _isBusy = false);
+      }
+    }
+  }
+
+  String _friendlyError(Object error) {
+    final raw = error.toString();
+    if (raw.contains('User already registered')) {
+      return 'Email already exists.';
+    }
+    if (raw.contains('Invalid login credentials')) {
+      return 'Invalid credentials.';
+    }
+    if (raw.startsWith('Exception: ')) {
+      return raw.substring('Exception: '.length);
+    }
+    return raw;
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: isError ? AppColors.error : AppColors.accentGold,
       ),
     );
   }

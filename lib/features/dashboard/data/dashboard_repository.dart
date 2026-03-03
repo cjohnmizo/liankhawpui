@@ -1,4 +1,5 @@
 import 'package:liankhawpui/core/services/powersync_service.dart';
+import 'package:liankhawpui/core/services/supabase_service.dart';
 import 'package:liankhawpui/features/auth/domain/app_user.dart';
 import 'package:liankhawpui/features/auth/domain/user_role.dart';
 
@@ -20,6 +21,7 @@ class DashboardStats {
 
 class DashboardRepository {
   final _db = PowerSyncService().db;
+  final _client = SupabaseService.client;
 
   Future<DashboardStats> getStats() async {
     final usersRow = await _db.get('SELECT count(*) as count FROM profiles');
@@ -44,11 +46,7 @@ class DashboardRepository {
   }
 
   Stream<List<AppUser>> watchAllProfiles() {
-    return _db.watch('SELECT * FROM profiles').map((rows) {
-      // Debug logging
-      // for (var row in rows) {
-      //   print('Profile: ${row['email']}, Role: ${row['role']}');
-      // }
+    return _db.watch('SELECT * FROM profiles ORDER BY email ASC').map((rows) {
       return rows.map((row) {
         return AppUser(
           id: row['id'] as String,
@@ -67,20 +65,40 @@ class DashboardRepository {
 
   Future<void> createUser({
     required String email,
+    required String password,
     required String fullName,
     required UserRole role,
   }) async {
-    final uuid = await _db.get('SELECT uuid() as id');
-    final id = uuid['id'] as String;
+    final normalizedEmail = email.trim().toLowerCase();
+    final normalizedName = fullName.trim();
+    final normalizedPassword = password.trim();
 
-    await _db.execute(
-      'INSERT INTO profiles (id, email, full_name, role) VALUES (?, ?, ?, ?)',
-      [id, email, fullName, role.name],
+    if (normalizedEmail.isEmpty ||
+        normalizedName.isEmpty ||
+        normalizedPassword.length < 6) {
+      throw Exception('Invalid user data. Check email/name/password values.');
+    }
+
+    final response = await _client.functions.invoke(
+      'admin-users',
+      body: {
+        'action': 'create_user',
+        'email': normalizedEmail,
+        'password': normalizedPassword,
+        'full_name': normalizedName,
+        'role': role.name,
+      },
     );
+
+    _ensureFunctionSuccess(response.data, fallback: 'Failed to create user.');
   }
 
   Future<void> deleteUser(String userId) async {
-    await _db.execute('DELETE FROM profiles WHERE id = ?', [userId]);
+    final response = await _client.functions.invoke(
+      'admin-users',
+      body: {'action': 'delete_user', 'user_id': userId, 'hard_delete': true},
+    );
+    _ensureFunctionSuccess(response.data, fallback: 'Failed to delete user.');
   }
 
   Future<void> approveUser(String userId) async {
@@ -88,9 +106,34 @@ class DashboardRepository {
   }
 
   Future<void> updateUserRole(String userId, UserRole role) async {
-    await _db.execute('UPDATE profiles SET role = ? WHERE id = ?', [
-      role.name,
-      userId,
-    ]);
+    final response = await _client.functions.invoke(
+      'admin-users',
+      body: {'action': 'update_role', 'user_id': userId, 'role': role.name},
+    );
+    _ensureFunctionSuccess(
+      response.data,
+      fallback: 'Failed to update user role.',
+    );
+  }
+
+  void _ensureFunctionSuccess(dynamic data, {required String fallback}) {
+    if (data is Map<String, dynamic>) {
+      final error = data['error'];
+      if (error is String && error.trim().isNotEmpty) {
+        throw Exception(error);
+      }
+      return;
+    }
+
+    if (data is Map) {
+      final mapped = Map<String, dynamic>.from(data);
+      final error = mapped['error'];
+      if (error is String && error.trim().isNotEmpty) {
+        throw Exception(error);
+      }
+      return;
+    }
+
+    throw Exception(fallback);
   }
 }

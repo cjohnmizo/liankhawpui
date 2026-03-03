@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 import 'package:liankhawpui/features/dashboard/presentation/dashboard_providers.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
@@ -13,6 +14,7 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(dashboardStatsProvider);
+    final currentUser = ref.watch(currentUserProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -139,24 +141,25 @@ class DashboardScreen extends ConsumerWidget {
                                 mainAxisSpacing: 16,
                                 childAspectRatio: isDesktop ? 1.5 : 1.0,
                                 children: [
-                                  _StatCard(
-                                    title: 'Users',
-                                    value: stats.totalUsers.toString(),
-                                    icon: Icons.people_rounded,
-                                    color: isDark
-                                        ? const Color(0xFF5c6bc0)
-                                        : AppColors.primaryNavy,
-                                    onTap: () {
-                                      if (stats.pendingUserCount > 0) {
-                                        context.push(
-                                          '/dashboard/users?filter=guest',
-                                        );
-                                      } else {
-                                        context.push('/dashboard/users');
-                                      }
-                                    },
-                                    badgeCount: stats.pendingUserCount,
-                                  ),
+                                  if (currentUser.role.isAdmin)
+                                    _StatCard(
+                                      title: 'Users',
+                                      value: stats.totalUsers.toString(),
+                                      icon: Icons.people_rounded,
+                                      color: isDark
+                                          ? const Color(0xFF5c6bc0)
+                                          : AppColors.primaryNavy,
+                                      onTap: () {
+                                        if (stats.pendingUserCount > 0) {
+                                          context.push(
+                                            '/dashboard/users?filter=guest',
+                                          );
+                                        } else {
+                                          context.push('/dashboard/users');
+                                        }
+                                      },
+                                      badgeCount: stats.pendingUserCount,
+                                    ),
                                   _StatCard(
                                     title: 'Announcements',
                                     value: stats.totalAnnouncements.toString(),
@@ -247,11 +250,12 @@ class DashboardScreen extends ConsumerWidget {
                               label: 'New Announcement',
                               onTap: () => context.push('/announcement/create'),
                             ),
-                            _QuickActionButton(
-                              icon: Icons.person_add_outlined,
-                              label: 'Add User',
-                              onTap: () => context.push('/register'),
-                            ),
+                            if (currentUser.role.isAdmin)
+                              _QuickActionButton(
+                                icon: Icons.person_add_outlined,
+                                label: 'Add User',
+                                onTap: () => context.push('/dashboard/users'),
+                              ),
                             // Add more actions as needed
                           ],
                         ),
