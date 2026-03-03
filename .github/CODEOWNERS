@@ -1,0 +1,10 @@
+# Default owners for all files
+* @cjohn
+
+# Backend ownership
+/supabase/ @cjohn
+
+# Mobile app ownership
+/lib/ @cjohn
+/android/ @cjohn
+/ios/ @cjohn

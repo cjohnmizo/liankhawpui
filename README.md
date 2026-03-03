@@ -53,7 +53,7 @@ Proprietary. All rights reserved. See `LICENSE` for details.
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/Liankhawpui.git
+   git clone https://github.com/your-org-or-user/liankhawpui.git
    cd liankhawpui
    ```
 
