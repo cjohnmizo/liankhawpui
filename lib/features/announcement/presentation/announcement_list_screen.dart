@@ -170,6 +170,7 @@ class AnnouncementListScreen extends ConsumerWidget {
       ),
       floatingActionButton: user.role.isEditor
           ? FloatingActionButton(
+              heroTag: 'announcement_create_fab',
               onPressed: () => context.push('/announcement/create'),
               backgroundColor: AppColors.accentGold,
               elevation: 4,

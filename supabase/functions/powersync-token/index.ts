@@ -41,12 +41,14 @@ Deno.serve(async (req) => {
     }
 
     const supabaseUrl = requiredEnv("SUPABASE_URL");
-    const supabaseAnonKey =
-      Deno.env.get("SUPABASE_ANON_KEY")?.trim() ??
+    const supabasePublishableKey =
       Deno.env.get("SUPABASE_PUBLISHABLE_KEY")?.trim();
+    const supabaseAnonKey =
+      supabasePublishableKey ??
+      Deno.env.get("SUPABASE_ANON_KEY")?.trim();
     if (!supabaseAnonKey) {
       throw new Error(
-        "Missing SUPABASE_ANON_KEY (or SUPABASE_PUBLISHABLE_KEY) environment variable",
+        "Missing SUPABASE_PUBLISHABLE_KEY (or SUPABASE_ANON_KEY) environment variable",
       );
     }
 

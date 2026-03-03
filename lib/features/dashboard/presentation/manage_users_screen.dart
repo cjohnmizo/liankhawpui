@@ -44,6 +44,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
     return Scaffold(
       floatingActionButton: isAdmin
           ? FloatingActionButton(
+              heroTag: 'manage_users_add_fab',
               onPressed: _isBusy ? null : () => _showAddUserDialog(context),
               backgroundColor: AppColors.accentGold,
               child: const Icon(

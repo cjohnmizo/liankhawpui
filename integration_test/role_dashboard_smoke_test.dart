@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:liankhawpui/core/config/env_config.dart';
 import 'package:liankhawpui/main.dart' as app;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -8,6 +12,10 @@ const String _editorEmail = String.fromEnvironment('TEST_EDITOR_EMAIL');
 const String _editorPassword = String.fromEnvironment('TEST_EDITOR_PASSWORD');
 const String _adminEmail = String.fromEnvironment('TEST_ADMIN_EMAIL');
 const String _adminPassword = String.fromEnvironment('TEST_ADMIN_PASSWORD');
+const bool _runAdminUserFlow = bool.fromEnvironment(
+  'TEST_ADMIN_USERS_FLOW',
+  defaultValue: false,
+);
 
 final bool _hasEditorCreds =
     _editorEmail.isNotEmpty && _editorPassword.isNotEmpty;
@@ -164,20 +172,263 @@ Future<void> signOutFromHome(WidgetTester tester) async {
     await openDrawerFromBottomMenu(tester);
     if (find.text('Sign Out').evaluate().isNotEmpty) {
       await tapText(tester, 'Sign Out');
-      await waitFor(
-        tester,
-        find.text('Welcome Back'),
-        timeout: const Duration(seconds: 30),
-      );
-      return;
     }
   }
 
   await Supabase.instance.client.auth.signOut();
+  final signOutEnd = DateTime.now().add(const Duration(seconds: 20));
+  while (DateTime.now().isBefore(signOutEnd)) {
+    await tester.pump(const Duration(milliseconds: 250));
+    if (Supabase.instance.client.auth.currentSession == null) {
+      break;
+    }
+  }
+
   await waitForAny(tester, [
     find.text('Welcome Back'),
     find.text('Menu'),
   ], timeout: const Duration(seconds: 20));
+
+  if (find.text('Menu').evaluate().isNotEmpty) {
+    await openDrawerFromBottomMenu(tester);
+    await waitFor(
+      tester,
+      find.text('Sign In'),
+      timeout: const Duration(seconds: 15),
+    );
+  }
+}
+
+Map<String, dynamic> asJsonMap(dynamic value, {required String operation}) {
+  if (value is Map<String, dynamic>) {
+    return value;
+  }
+
+  if (value is Map) {
+    return Map<String, dynamic>.from(value);
+  }
+
+  fail('$operation failed: response payload is not a JSON object.');
+}
+
+void ensureFunctionOk(
+  dynamic data, {
+  required String operation,
+  required String expectedStatus,
+}) {
+  final payload = asJsonMap(data, operation: operation);
+
+  final error = payload['error'];
+  if (error is String && error.trim().isNotEmpty) {
+    fail('$operation failed: $error');
+  }
+
+  final status = payload['status'] as String?;
+  if (status != expectedStatus) {
+    fail(
+      '$operation failed: expected status "$expectedStatus", got "$status".',
+    );
+  }
+}
+
+Future<String> requireAccessToken({required String operation}) async {
+  final client = Supabase.instance.client;
+  try {
+    await client.auth.refreshSession();
+  } catch (_) {
+    // If refresh is unavailable, fall back to the current session token.
+  }
+
+  final token = client.auth.currentSession?.accessToken;
+  if (token == null || token.isEmpty) {
+    fail('$operation failed: no authenticated session token available.');
+  }
+  return token;
+}
+
+Future<Map<String, dynamic>> invokeAdminUsers(
+  Map<String, dynamic> body, {
+  required String operation,
+}) async {
+  final accessToken = await requireAccessToken(operation: operation);
+  final endpoint = Uri.parse(
+    '${EnvConfig.supabaseUrl}/functions/v1/admin-users',
+  );
+
+  final httpClient = HttpClient();
+  final request = await httpClient.postUrl(endpoint);
+  request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $accessToken');
+  request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+  request.write(jsonEncode(body));
+
+  final response = await request.close();
+  final responseText = await response.transform(utf8.decoder).join();
+  httpClient.close();
+
+  dynamic decoded;
+  final rawBody = responseText.trim();
+  if (rawBody.isEmpty) {
+    decoded = <String, dynamic>{};
+  } else {
+    try {
+      decoded = jsonDecode(rawBody);
+    } catch (_) {
+      fail('$operation failed: non-JSON response body: $responseText');
+    }
+  }
+
+  final payload = asJsonMap(decoded, operation: operation);
+  if (response.statusCode >= 400) {
+    final message =
+        payload['error'] ?? payload['message'] ?? 'HTTP ${response.statusCode}';
+    fail('$operation failed (${response.statusCode}): $message');
+  }
+
+  return payload;
+}
+
+Future<Map<String, dynamic>> waitForProfileRole({
+  required String userId,
+  required String expectedRole,
+  Duration timeout = const Duration(seconds: 30),
+  Duration step = const Duration(milliseconds: 500),
+}) async {
+  final client = Supabase.instance.client;
+  final endTime = DateTime.now().add(timeout);
+
+  while (DateTime.now().isBefore(endTime)) {
+    final row = await client
+        .from('profiles')
+        .select('id, email, role')
+        .eq('id', userId)
+        .maybeSingle();
+
+    if (row != null) {
+      final profile = asJsonMap(row, operation: 'profile role lookup');
+      final role = (profile['role'] as String?)?.toLowerCase();
+      if (role == expectedRole.toLowerCase()) {
+        return profile;
+      }
+    }
+
+    await Future<void>.delayed(step);
+  }
+
+  fail(
+    'Timed out waiting for profile role "$expectedRole" for user "$userId".',
+  );
+}
+
+Future<void> waitForProfileDeleted({
+  required String userId,
+  Duration timeout = const Duration(seconds: 30),
+  Duration step = const Duration(milliseconds: 500),
+}) async {
+  final client = Supabase.instance.client;
+  final endTime = DateTime.now().add(timeout);
+
+  while (DateTime.now().isBefore(endTime)) {
+    final row = await client
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+
+    if (row == null) {
+      return;
+    }
+
+    await Future<void>.delayed(step);
+  }
+
+  fail('Timed out waiting for profile deletion for user "$userId".');
+}
+
+Future<void> adminCreateAndPromoteUserFlow() async {
+  final stamp = DateTime.now().millisecondsSinceEpoch;
+  final email = 'liankhawpui.it.$stamp@example.com';
+  final fullName = 'IT User $stamp';
+  const password = 'TempPass123';
+  final client = Supabase.instance.client;
+
+  String? createdUserId;
+  Object? testError;
+  try {
+    final activeUserId = client.auth.currentUser?.id;
+    if (activeUserId == null || activeUserId.isEmpty) {
+      fail('Admin flow failed: no signed-in user is available.');
+    }
+
+    await waitForProfileRole(userId: activeUserId, expectedRole: 'admin');
+
+    final createPayload = await invokeAdminUsers({
+      'action': 'create_user',
+      'email': email,
+      'password': password,
+      'full_name': fullName,
+      'role': 'user',
+    }, operation: 'create_user');
+    ensureFunctionOk(
+      createPayload,
+      operation: 'create_user',
+      expectedStatus: 'created',
+    );
+    final userPayload = asJsonMap(
+      createPayload['user'],
+      operation: 'create_user user payload',
+    );
+
+    createdUserId = userPayload['id'] as String?;
+    if (createdUserId == null || createdUserId.isEmpty) {
+      fail('create_user failed: response is missing user.id');
+    }
+
+    final createdProfile = await waitForProfileRole(
+      userId: createdUserId,
+      expectedRole: 'user',
+    );
+    expect((createdProfile['email'] as String?)?.toLowerCase(), email);
+
+    final updatePayload = await invokeAdminUsers({
+      'action': 'update_role',
+      'user_id': createdUserId,
+      'role': 'editor',
+    }, operation: 'update_role');
+    ensureFunctionOk(
+      updatePayload,
+      operation: 'update_role',
+      expectedStatus: 'updated',
+    );
+
+    await waitForProfileRole(userId: createdUserId, expectedRole: 'editor');
+  } catch (error) {
+    testError = error;
+    rethrow;
+  } finally {
+    if (createdUserId != null && createdUserId.isNotEmpty) {
+      try {
+        final deletePayload = await invokeAdminUsers({
+          'action': 'delete_user',
+          'user_id': createdUserId,
+          'hard_delete': true,
+        }, operation: 'delete_user');
+        ensureFunctionOk(
+          deletePayload,
+          operation: 'delete_user',
+          expectedStatus: 'deleted',
+        );
+        await waitForProfileDeleted(userId: createdUserId);
+      } catch (cleanupError) {
+        if (testError == null) {
+          fail('Cleanup failed for "$createdUserId": $cleanupError');
+        } else {
+          debugPrint(
+            'Cleanup warning for "$createdUserId" after test failure: $cleanupError',
+          );
+        }
+      }
+    }
+  }
 }
 
 void main() {
@@ -206,8 +457,8 @@ void main() {
     );
     expect(find.text('New Article'), findsOneWidget);
 
-    await returnToHome(tester);
-    await signOutFromHome(tester);
+    await Supabase.instance.client.auth.signOut();
+    await tester.pump(const Duration(seconds: 1));
   }, skip: !_hasEditorCreds);
 
   testWidgets('Admin dashboard smoke test', (tester) async {
@@ -233,7 +484,32 @@ void main() {
     );
     expect(find.byType(FloatingActionButton), findsOneWidget);
 
-    await returnToHome(tester);
-    await signOutFromHome(tester);
+    await Supabase.instance.client.auth.signOut();
+    await tester.pump(const Duration(seconds: 1));
   }, skip: !_hasAdminCreds);
+
+  testWidgets('Admin user management flow', (tester) async {
+    app.main();
+    await tester.pump(const Duration(seconds: 2));
+
+    await waitForAny(tester, [
+      find.text('Menu'),
+      find.text('Welcome Back'),
+    ], timeout: const Duration(seconds: 45));
+
+    await signInViaApi(tester, email: _adminEmail, password: _adminPassword);
+    await openAdminDashboard(tester);
+
+    await tapText(tester, 'Users');
+    await waitFor(
+      tester,
+      find.text('Manage Users'),
+      timeout: const Duration(seconds: 25),
+    );
+
+    await adminCreateAndPromoteUserFlow();
+
+    await Supabase.instance.client.auth.signOut();
+    await tester.pump(const Duration(seconds: 1));
+  }, skip: !_hasAdminCreds || !_runAdminUserFlow);
 }

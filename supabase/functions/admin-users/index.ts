@@ -46,12 +46,14 @@ Deno.serve(async (req) => {
     }
 
     const supabaseUrl = requiredEnv("SUPABASE_URL");
-    const supabaseAnonKey =
-      Deno.env.get("SUPABASE_ANON_KEY")?.trim() ??
+    const supabasePublishableKey =
       Deno.env.get("SUPABASE_PUBLISHABLE_KEY")?.trim();
+    const supabaseAnonKey =
+      supabasePublishableKey ??
+      Deno.env.get("SUPABASE_ANON_KEY")?.trim();
     if (!supabaseAnonKey) {
       throw new Error(
-        "Missing SUPABASE_ANON_KEY (or SUPABASE_PUBLISHABLE_KEY) environment variable",
+        "Missing SUPABASE_PUBLISHABLE_KEY (or SUPABASE_ANON_KEY) environment variable",
       );
     }
     const serviceRoleKey = requiredEnv("SUPABASE_SERVICE_ROLE_KEY");
@@ -214,6 +216,18 @@ Deno.serve(async (req) => {
       if (deleteError) {
         return jsonResponse(
           { error: `Failed to delete user: ${deleteError.message}` },
+          400,
+        );
+      }
+
+      // Ensure profile cleanup even if DB-level cascades are not configured.
+      const { error: profileDeleteError } = await adminClient
+        .from("profiles")
+        .delete()
+        .eq("id", userId);
+      if (profileDeleteError) {
+        return jsonResponse(
+          { error: `Failed to delete profile: ${profileDeleteError.message}` },
           400,
         );
       }

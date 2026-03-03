@@ -89,6 +89,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           ? Container(
               margin: const EdgeInsets.only(bottom: 75),
               child: FloatingActionButton(
+                heroTag: 'home_create_fab',
                 onPressed: () => _showCreateMenu(context),
                 backgroundColor: AppColors.accentGold,
                 child: const Icon(
