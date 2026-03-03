@@ -69,6 +69,7 @@ const schema = Schema([
     Column.text('dob'), // ISO string
     Column.text('address'),
     Column.text('role'), // 'guest', 'user', 'editor', 'admin'
+    Column.text('photo_url'),
     Column.text('avatar_url'),
   ]),
 ]);

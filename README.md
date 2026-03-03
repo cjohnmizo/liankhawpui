@@ -56,13 +56,16 @@ Proprietary. All rights reserved. See `LICENSE` for details.
    ```
 
 2. **Environment Setup**:
-   Create a `.env` file in the root directory and add your keys:
+   Copy `.env.example` to `.env` and keep only client-safe keys in it:
    ```env
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_ANON_KEY=your_supabase_anon_key
-   POWERSYNC_URL=your_powersync_url
-   ONESIGNAL_APP_ID=your_onesignal_app_id
+   SUPABASE_URL=...
+   SUPABASE_ANON_KEY=...
+   POWERSYNC_URL=...
+   POWERSYNC_TOKEN_FUNCTION=powersync-token
+   ONESIGNAL_APP_ID=...
    ```
+
+   `SUPABASE_SERVICE_ROLE_KEY` and `ONESIGNAL_REST_API_KEY` must stay server-side only.
 
 3. **Install Dependencies**:
    ```bash
@@ -93,6 +96,10 @@ lib/
 ## 🛡️ Security
 
 We take security seriously. If you discover a vulnerability, please check our [Security Policy](SECURITY.md) for reporting guidelines.
+
+Backend setup notes:
+- RLS baseline: [`supabase/sql/rls_policies.sql`](supabase/sql/rls_policies.sql)
+- Edge function guidance: [`supabase/README.md`](supabase/README.md)
 
 ## 🔒 License
 

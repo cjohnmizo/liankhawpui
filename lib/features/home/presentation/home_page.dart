@@ -555,7 +555,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               color: const Color(0xFF10B981),
               onTap: () {
                 Navigator.pop(context);
-                context.push('/news/create');
+                context.push('/dashboard/news/create');
               },
             ),
             const SizedBox(height: 16),

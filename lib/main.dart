@@ -1,25 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:liankhawpui/core/config/env_config.dart';
 import 'package:liankhawpui/core/theme/app_theme.dart';
 import 'package:liankhawpui/core/theme/theme_provider.dart';
 import 'package:liankhawpui/core/services/supabase_service.dart';
 import 'package:liankhawpui/core/services/powersync_service.dart';
+import 'package:liankhawpui/core/services/onesignal_service.dart';
 import 'package:liankhawpui/core/router/app_router.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   try {
-    WidgetsFlutterBinding.ensureInitialized();
     await dotenv.load(fileName: ".env");
+    EnvConfig.validateRequired();
 
     // Initialize Backend Services
     await SupabaseService.initialize();
     await PowerSyncService().initialize();
+    await OneSignalService.initialize();
+    await OneSignalService.syncExternalUserId(
+      SupabaseService.client.auth.currentUser?.id,
+    );
 
     runApp(const ProviderScope(child: LiankhawpuiApp()));
   } catch (e) {
-    debugPrint('CRITICAL: Initialization failed: $e');
-    // Run a error app or rethrow depending on needs, but printing helps debugging
+    debugPrint('CRITICAL: app initialization failed: $e');
+    runApp(AppBootstrapError(error: e.toString()));
   }
 }
 
@@ -38,6 +46,30 @@ class LiankhawpuiApp extends ConsumerWidget {
       themeMode: themeMode,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+class AppBootstrapError extends StatelessWidget {
+  final String error;
+
+  const AppBootstrapError({required this.error, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'App configuration error.\n$error',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

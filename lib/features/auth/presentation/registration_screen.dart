@@ -101,7 +101,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
         // Navigate to home or login? Usually Supabase signs in automatically on signup unless email confirm is strictly enforced.
         // If email confirmation is ON, we should tell user to check email.
         // For now, let's pop back to login or go to home if session established.
-        if (ref.read(authRepositoryProvider).currentUser.isGuest == false) {
+        if (ref.read(authRepositoryProvider).currentUserSnapshot.isGuest ==
+            false) {
           context.go('/');
         } else {
           // Email confirmation likely needed

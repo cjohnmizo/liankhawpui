@@ -1,4 +1,4 @@
-package com.example.liankhawpui
+package com.cjohnmizo.liankhawpui
 
 import io.flutter.embedding.android.FlutterActivity
 

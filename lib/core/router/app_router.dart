@@ -110,21 +110,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/dashboard',
         builder: (context, state) => const DashboardScreen(),
-        redirect: (context, state) {
-          final user = ref.read(currentUserProvider);
-          if (user.role != UserRole.admin && user.role != UserRole.editor) {
-            return '/';
-          }
-          return null;
-        },
         routes: [
           GoRoute(
             path: 'users',
             builder: (context, state) {
               final filter = state.uri.queryParameters['filter'];
-              final role = filter == 'guest'
-                  ? UserRole.guest
-                  : null; // Can extend for other roles
+              final role = filter == 'guest' ? UserRole.guest : null;
               return ManageUsersScreen(initialRole: role);
             },
           ),
@@ -155,10 +146,26 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
     redirect: (context, state) {
       final user = ref.read(currentUserProvider);
+      final location = state.uri.path;
       final isLoggedIn = !user.isGuest;
-      final isLoggingIn = state.uri.toString() == '/login';
+      final isAuthRoute =
+          location == '/login' ||
+          location == '/register' ||
+          location == '/forgot-password';
+      final requiresSignedIn = location.startsWith('/profile');
+      final requiresEditor =
+          location == '/announcement/create' ||
+          location.startsWith('/dashboard');
 
-      if (isLoggedIn && isLoggingIn) {
+      if (!isLoggedIn && (requiresSignedIn || requiresEditor)) {
+        return '/login';
+      }
+
+      if (isLoggedIn && isAuthRoute) {
+        return '/';
+      }
+
+      if (isLoggedIn && requiresEditor && !user.role.isEditor) {
         return '/';
       }
 

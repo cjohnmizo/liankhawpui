@@ -8,7 +8,7 @@
 PRODUCT_NAME = liankhawpui
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.liankhawpui
+PRODUCT_BUNDLE_IDENTIFIER = com.cjohnmizo.liankhawpui
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 C. John. All rights reserved.

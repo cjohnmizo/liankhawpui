@@ -12,6 +12,7 @@ final authStateProvider = StreamProvider<AppUser>((ref) {
 });
 
 final currentUserProvider = Provider<AppUser>((ref) {
+  final authRepo = ref.watch(authRepositoryProvider);
   final asyncUser = ref.watch(authStateProvider);
-  return asyncUser.value ?? AppUser.guest;
+  return asyncUser.value ?? authRepo.currentUserSnapshot;
 });
