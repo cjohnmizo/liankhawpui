@@ -38,76 +38,23 @@ class DashboardScreen extends ConsumerWidget {
                 const _SectionHeader(title: 'Overview'),
                 const SizedBox(height: 12),
                 statsAsync.when(
-                  data: (stats) {
-                    final cards = [
-                      if (currentUser.role.isAdmin)
-                        _StatConfig(
-                          title: 'Users',
-                          value: stats.totalUsers.toString(),
-                          icon: Icons.people_rounded,
-                          color: AppColors.primaryNavy,
-                          onTap: () => context.push('/dashboard/users'),
-                          badgeCount: stats.pendingUserCount,
-                        ),
-                      _StatConfig(
-                        title: 'Announcements',
-                        value: stats.totalAnnouncements.toString(),
-                        icon: Icons.campaign_rounded,
-                        color: AppColors.accentGold,
-                        onTap: () => context.push('/announcement'),
-                      ),
-                      _StatConfig(
-                        title: 'News Articles',
-                        value: stats.totalNews.toString(),
-                        icon: Icons.newspaper_rounded,
-                        color: const Color(0xFF16A34A),
-                        onTap: () => context.push('/dashboard/news'),
-                      ),
-                      _StatConfig(
-                        title: 'Organizations',
-                        value: stats.totalOrganizations.toString(),
-                        icon: Icons.business_rounded,
-                        color: const Color(0xFF0891B2),
-                        onTap: () => context.push('/organization'),
-                      ),
-                    ];
-
-                    return LayoutBuilder(
-                      builder: (context, constraints) {
-                        final width = constraints.maxWidth;
-                        final count = width >= 1000
-                            ? 4
-                            : width >= 680
-                            ? 2
-                            : 1;
-                        return GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: cards.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: count,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                childAspectRatio: count == 1 ? 2.4 : 1.45,
-                              ),
-                          itemBuilder: (context, index) =>
-                              _StatCard(config: cards[index]),
-                        );
-                      },
-                    );
-                  },
-                  loading: () => const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Center(child: CircularProgressIndicator()),
+                  data: (stats) => _buildStatGrid(
+                    context: context,
+                    currentUser: currentUser,
+                    stats: stats,
+                    placeholder: false,
                   ),
-                  error: (_, __) => Center(
-                    child: Text(
-                      'Error loading stats',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.error,
-                      ),
-                    ),
+                  loading: () => _buildStatGrid(
+                    context: context,
+                    currentUser: currentUser,
+                    stats: null,
+                    placeholder: true,
+                  ),
+                  error: (_, __) => _buildStatGrid(
+                    context: context,
+                    currentUser: currentUser,
+                    stats: null,
+                    placeholder: true,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -180,12 +127,75 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+Widget _buildStatGrid({
+  required BuildContext context,
+  required dynamic currentUser,
+  required dynamic stats,
+  required bool placeholder,
+}) {
+  final cards = [
+    if (currentUser.role.isAdmin)
+      _StatConfig(
+        title: 'Users',
+        value: placeholder ? '--' : stats.totalUsers.toString(),
+        icon: Icons.people_rounded,
+        color: AppColors.primaryNavy,
+        onTap: () => placeholder ? null : context.push('/dashboard/users'),
+        badgeCount: placeholder ? null : stats.pendingUserCount,
+      ),
+    _StatConfig(
+      title: 'Announcements',
+      value: placeholder ? '--' : stats.totalAnnouncements.toString(),
+      icon: Icons.campaign_rounded,
+      color: AppColors.accentGold,
+      onTap: () => placeholder ? null : context.push('/announcement'),
+    ),
+    _StatConfig(
+      title: 'News Articles',
+      value: placeholder ? '--' : stats.totalNews.toString(),
+      icon: Icons.newspaper_rounded,
+      color: const Color(0xFF16A34A),
+      onTap: () => placeholder ? null : context.push('/dashboard/news'),
+    ),
+    _StatConfig(
+      title: 'Organizations',
+      value: placeholder ? '--' : stats.totalOrganizations.toString(),
+      icon: Icons.business_rounded,
+      color: const Color(0xFF0891B2),
+      onTap: () => placeholder ? null : context.push('/organization'),
+    ),
+  ];
+
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final width = constraints.maxWidth;
+      final count = width >= 1000
+          ? 4
+          : width >= 680
+          ? 2
+          : 1;
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: cards.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: count,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: count == 1 ? 2.4 : 1.45,
+        ),
+        itemBuilder: (context, index) => _StatCard(config: cards[index]),
+      );
+    },
+  );
+}
+
 class _StatConfig {
   final String title;
   final String value;
   final IconData icon;
   final Color color;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final int? badgeCount;
 
   _StatConfig({
