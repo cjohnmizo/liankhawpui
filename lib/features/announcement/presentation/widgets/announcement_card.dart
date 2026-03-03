@@ -3,7 +3,7 @@ import 'package:liankhawpui/features/announcement/domain/announcement.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:intl/intl.dart';
 
 class AnnouncementCard extends StatelessWidget {
@@ -33,10 +33,10 @@ class AnnouncementCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  CachedNetworkImage(
+                  AdaptiveCachedImage(
                     imageUrl: announcement.imageUrl!,
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => Container(
+                    placeholderBuilder: (_) => Container(
                       color: isDark
                           ? AppColors.surfaceVariant
                           : AppColors.surfaceVariantLight,
@@ -44,7 +44,7 @@ class AnnouncementCard extends StatelessWidget {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                     ),
-                    errorWidget: (_, __, ___) => Container(
+                    errorBuilder: (_) => Container(
                       color: isDark
                           ? AppColors.surfaceVariant
                           : AppColors.surfaceVariantLight,

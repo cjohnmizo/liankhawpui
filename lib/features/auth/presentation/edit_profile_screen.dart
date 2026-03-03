@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -199,12 +200,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (source == null) return;
 
     setState(() => _isUploadingPhoto = true);
+    final lowDataMode = ref.read(lowDataModeEnabledProvider);
 
     try {
       // Pick image
       final File? imageFile = source == ImageSource.gallery
-          ? await _imageService.pickImageFromGallery()
-          : await _imageService.pickImageFromCamera();
+          ? await _imageService.pickImageFromGallery(lowDataMode: lowDataMode)
+          : await _imageService.pickImageFromCamera(lowDataMode: lowDataMode);
 
       if (imageFile == null) {
         setState(() => _isUploadingPhoto = false);
@@ -212,9 +214,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       }
 
       // Compress image
-      final compressedData = await _imageService.compressImageToTargetSize(
+      final compressedData = await _imageService.compressForUpload(
         imageFile,
-        targetSizeKb: 40,
+        lowDataMode: lowDataMode,
       );
 
       if (compressedData == null) {
@@ -240,7 +242,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               children: [
                 const Icon(Icons.check_circle_outline, color: Colors.white),
                 const SizedBox(width: 12),
-                Text('Photo uploaded! (${sizeKb.toStringAsFixed(1)} KB)'),
+                Text(
+                  'Photo uploaded (${sizeKb.toStringAsFixed(1)} KB${lowDataMode ? ', low-data' : ''})',
+                ),
               ],
             ),
             behavior: SnackBarBehavior.floating,

@@ -5,7 +5,7 @@ import 'package:liankhawpui/features/news/presentation/news_providers.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:intl/intl.dart';
 
 class NewsListScreen extends ConsumerWidget {
@@ -163,10 +163,10 @@ class NewsListScreen extends ConsumerWidget {
                                       fit: StackFit.expand,
                                       children: [
                                         if (news.imageUrl != null)
-                                          CachedNetworkImage(
+                                          AdaptiveCachedImage(
                                             imageUrl: news.imageUrl!,
                                             fit: BoxFit.cover,
-                                            placeholder: (_, __) => Container(
+                                            placeholderBuilder: (_) => Container(
                                               color: isDark
                                                   ? AppColors.surfaceVariant
                                                   : AppColors
@@ -176,16 +176,15 @@ class NewsListScreen extends ConsumerWidget {
                                                     CircularProgressIndicator(),
                                               ),
                                             ),
-                                            errorWidget: (_, __, ___) =>
-                                                Container(
-                                                  color: isDark
-                                                      ? AppColors.surfaceVariant
-                                                      : AppColors
-                                                            .surfaceVariantLight,
-                                                  child: const Icon(
-                                                    Icons.broken_image_rounded,
-                                                  ),
-                                                ),
+                                            errorBuilder: (_) => Container(
+                                              color: isDark
+                                                  ? AppColors.surfaceVariant
+                                                  : AppColors
+                                                        .surfaceVariantLight,
+                                              child: const Icon(
+                                                Icons.broken_image_rounded,
+                                              ),
+                                            ),
                                           )
                                         else
                                           Container(

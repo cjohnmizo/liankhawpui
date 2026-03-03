@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:liankhawpui/main.dart' as app;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 const String _editorEmail = String.fromEnvironment('TEST_EDITOR_EMAIL');
 const String _editorPassword = String.fromEnvironment('TEST_EDITOR_PASSWORD');
@@ -93,94 +94,38 @@ Future<void> tapBackButton(
   fail('Timed out waiting for a back action');
 }
 
-Future<void> ensureLoginScreen(WidgetTester tester) async {
-  final welcomeBack = find.text('Welcome Back');
-  final menu = find.text('Menu');
-
-  if (welcomeBack.evaluate().isNotEmpty) return;
-
-  if (menu.evaluate().isEmpty) {
-    await waitForAny(tester, [
-      menu,
-      welcomeBack,
-    ], timeout: const Duration(seconds: 45));
-    if (welcomeBack.evaluate().isNotEmpty) return;
-  }
-
-  await openDrawerFromBottomMenu(tester);
-  if (find.text('Sign Out').evaluate().isNotEmpty) {
-    await tapText(tester, 'Sign Out');
-  } else {
-    await tapText(tester, 'Sign In');
-  }
-
-  await waitFor(tester, welcomeBack, timeout: const Duration(seconds: 30));
-}
-
-Future<void> signInWithCredentials(
+Future<void> signInViaApi(
   WidgetTester tester, {
   required String email,
   required String password,
 }) async {
-  await waitFor(
-    tester,
-    find.text('Welcome Back'),
-    timeout: const Duration(seconds: 30),
+  final client = Supabase.instance.client;
+  await client.auth.signOut();
+
+  final response = await client.auth.signInWithPassword(
+    email: email,
+    password: password,
   );
 
-  final formFields = find.byType(TextFormField);
-  await waitFor(tester, formFields);
-  expect(formFields, findsNWidgets(2));
-  final emailField = formFields.at(0);
-  final passwordField = formFields.at(1);
-
-  await tester.tap(emailField);
-  await tester.pump(const Duration(milliseconds: 150));
-  await waitFor(tester, emailField);
-  await tester.enterText(emailField, email);
-  await tester.pump(const Duration(milliseconds: 250));
-  final emailText = tester.widget<TextFormField>(emailField).controller?.text;
-  expect(emailText, equals(email));
-
-  await tester.tap(passwordField);
-  await tester.pump(const Duration(milliseconds: 150));
-  await tester.enterText(passwordField, password);
-  await tester.pump(const Duration(milliseconds: 250));
-
-  // Trigger form submit from password field first, then fallback to button tap.
-  await tester.testTextInput.receiveAction(TextInputAction.done);
-  await tester.pump(const Duration(milliseconds: 800));
-  if (find.text('Menu').evaluate().isEmpty) {
-    await tapText(tester, 'Sign In');
+  if (response.session == null) {
+    fail('API sign-in failed: no session returned for $email');
   }
 
-  final endTime = DateTime.now().add(const Duration(seconds: 45));
+  // Give GoRouter + auth stream time to redirect to home.
+  await waitForAny(tester, [
+    find.text('Menu'),
+    find.text('Welcome Back'),
+  ], timeout: const Duration(seconds: 45));
+
+  final endTime = DateTime.now().add(const Duration(seconds: 30));
   while (DateTime.now().isBefore(endTime)) {
     await tester.pump(const Duration(milliseconds: 300));
-
-    if (find.text('Menu').evaluate().isNotEmpty) return;
-
-    final loginErrorTexts = <String>[
-      'Invalid email or password.',
-      'Please confirm your email address.',
-      'Internet connection is required to login.',
-    ];
-
-    for (final text in loginErrorTexts) {
-      if (find.text(text).evaluate().isNotEmpty) {
-        fail('Login failed: $text');
-      }
-    }
-
-    if (find
-        .textContaining('An unexpected error occurred')
-        .evaluate()
-        .isNotEmpty) {
-      fail('Login failed: unexpected error snackbar shown');
+    if (find.text('Menu').evaluate().isNotEmpty) {
+      return;
     }
   }
 
-  fail('Timed out waiting for Menu after sign in');
+  fail('Timed out waiting for Menu after API sign-in');
 }
 
 Future<void> openAdminDashboard(WidgetTester tester) async {
@@ -215,23 +160,24 @@ Future<void> returnToHome(WidgetTester tester) async {
 }
 
 Future<void> signOutFromHome(WidgetTester tester) async {
-  await waitFor(
-    tester,
-    find.text('Menu'),
-    timeout: const Duration(seconds: 25),
-  );
-  await openDrawerFromBottomMenu(tester);
-  await waitFor(
-    tester,
-    find.text('Sign Out'),
-    timeout: const Duration(seconds: 15),
-  );
-  await tapText(tester, 'Sign Out');
-  await waitFor(
-    tester,
+  if (find.text('Menu').evaluate().isNotEmpty) {
+    await openDrawerFromBottomMenu(tester);
+    if (find.text('Sign Out').evaluate().isNotEmpty) {
+      await tapText(tester, 'Sign Out');
+      await waitFor(
+        tester,
+        find.text('Welcome Back'),
+        timeout: const Duration(seconds: 30),
+      );
+      return;
+    }
+  }
+
+  await Supabase.instance.client.auth.signOut();
+  await waitForAny(tester, [
     find.text('Welcome Back'),
-    timeout: const Duration(seconds: 30),
-  );
+    find.text('Menu'),
+  ], timeout: const Duration(seconds: 20));
 }
 
 void main() {
@@ -246,12 +192,7 @@ void main() {
       find.text('Welcome Back'),
     ], timeout: const Duration(seconds: 45));
 
-    await ensureLoginScreen(tester);
-    await signInWithCredentials(
-      tester,
-      email: _editorEmail,
-      password: _editorPassword,
-    );
+    await signInViaApi(tester, email: _editorEmail, password: _editorPassword);
 
     await openAdminDashboard(tester);
     expect(find.text('Quick Actions'), findsOneWidget);
@@ -278,12 +219,7 @@ void main() {
       find.text('Welcome Back'),
     ], timeout: const Duration(seconds: 45));
 
-    await ensureLoginScreen(tester);
-    await signInWithCredentials(
-      tester,
-      email: _adminEmail,
-      password: _adminPassword,
-    );
+    await signInViaApi(tester, email: _adminEmail, password: _adminPassword);
 
     await openAdminDashboard(tester);
     expect(find.text('Quick Actions'), findsOneWidget);

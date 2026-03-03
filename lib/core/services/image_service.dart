@@ -8,14 +8,24 @@ class ImageService {
   final ImagePicker _picker = ImagePicker();
 
   /// Pick image from gallery
-  Future<File?> pickImageFromGallery() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+  Future<File?> pickImageFromGallery({bool lowDataMode = false}) async {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: lowDataMode ? 70 : 88,
+      maxWidth: lowDataMode ? 1280 : 2048,
+      maxHeight: lowDataMode ? 1280 : 2048,
+    );
     return image != null ? File(image.path) : null;
   }
 
   /// Pick image from camera
-  Future<File?> pickImageFromCamera() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+  Future<File?> pickImageFromCamera({bool lowDataMode = false}) async {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: lowDataMode ? 68 : 85,
+      maxWidth: lowDataMode ? 1280 : 1920,
+      maxHeight: lowDataMode ? 1280 : 1920,
+    );
     return image != null ? File(image.path) : null;
   }
 
@@ -25,14 +35,17 @@ class ImageService {
     File imageFile, {
     int targetSizeKb = 40,
     int maxIterations = 10,
+    int minWidth = 800,
+    int minHeight = 800,
+    int initialQuality = 85,
   }) async {
     try {
       final int targetBytes = targetSizeKb * 1024;
 
       // Start with a reasonable quality
-      int quality = 85;
       int minQuality = 10;
       int maxQuality = 95;
+      int quality = initialQuality.clamp(minQuality, maxQuality).toInt();
 
       Uint8List? compressedData;
 
@@ -41,8 +54,8 @@ class ImageService {
           imageFile.absolute.path,
           quality: quality,
           format: CompressFormat.jpeg,
-          minWidth: 800,
-          minHeight: 800,
+          minWidth: minWidth,
+          minHeight: minHeight,
         );
 
         if (compressedData == null) return null;
@@ -72,6 +85,20 @@ class ImageService {
     } catch (e) {
       throw Exception('Failed to compress image: $e');
     }
+  }
+
+  /// Network profile helper for poor connectivity scenarios.
+  Future<Uint8List?> compressForUpload(
+    File imageFile, {
+    required bool lowDataMode,
+  }) {
+    return compressImageToTargetSize(
+      imageFile,
+      targetSizeKb: lowDataMode ? 28 : 50,
+      minWidth: lowDataMode ? 640 : 900,
+      minHeight: lowDataMode ? 640 : 900,
+      initialQuality: lowDataMode ? 70 : 84,
+    );
   }
 
   /// Get MIME type of file

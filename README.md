@@ -30,6 +30,8 @@ Proprietary. All rights reserved. See `LICENSE` for details.
 - **⚙️ Admin Dashboard**: Comprehensive tools for content creators to manage news, users, and approvals.
 - **🌑 Dark Mode**: Fully supported system-wide dark theme.
 - **📴 Offline First**: Powered by **PowerSync** for seamless offline access.
+- **📶 Low Data Mode**: Lower image bandwidth and upload size for weak internet.
+- **🔄 Sync Transparency**: Settings show sync status, upload queue, and manual sync.
 
 ## 🛠️ Tech Stack
 

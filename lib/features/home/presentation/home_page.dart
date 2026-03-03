@@ -17,6 +17,7 @@ import 'package:liankhawpui/core/widgets/app_logo.dart'; // Restored Import // A
 import 'package:liankhawpui/features/news/presentation/news_providers.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_providers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 
 // State provider for bottom nav index
 final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
@@ -597,13 +598,12 @@ class _FeaturedNewsCard extends StatelessWidget {
           children: [
             // Image
             if (news.imageUrl != null)
-              CachedNetworkImage(
+              AdaptiveCachedImage(
                 imageUrl: news.imageUrl!,
                 fit: BoxFit.cover,
-                placeholder: (_, __) =>
+                placeholderBuilder: (_) =>
                     Container(color: AppColors.surfaceVariant),
-                errorWidget: (_, __, ___) =>
-                    Container(color: AppColors.surfaceVariant),
+                errorBuilder: (_) => Container(color: AppColors.surfaceVariant),
               )
             else
               Container(
