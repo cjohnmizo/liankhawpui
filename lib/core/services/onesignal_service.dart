@@ -24,8 +24,12 @@ class OneSignalService {
       await OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
     }
 
-    await OneSignal.Notifications.requestPermission(false);
     _isInitialized = true;
+  }
+
+  static Future<void> requestNotificationPermission() async {
+    if (!_isInitialized || kIsWeb) return;
+    await OneSignal.Notifications.requestPermission(false);
   }
 
   static Future<void> syncExternalUserId(String? userId) async {

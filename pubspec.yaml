@@ -50,6 +50,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
   flutter_lints: ^3.0.0
   build_runner: ^2.4.8
   riverpod_generator: ^2.3.9
@@ -62,6 +64,7 @@ flutter:
   
   assets:
     - assets/images/
+    - assets/landscape.png
     - .env
     - assets/icon/
 
