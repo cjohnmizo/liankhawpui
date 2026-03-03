@@ -18,7 +18,7 @@ dependencies:
   get_it: ^9.2.1 # Optional if using Riverpod purely, but useful for singletons
   freezed_annotation: ^3.1.0
   json_annotation: ^4.11.0
-  uuid: ^4.2.0
+  uuid: ^4.5.3
   intl: ^0.20.2
 
   # Backend & Sync
