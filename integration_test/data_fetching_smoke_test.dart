@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:liankhawpui/core/services/powersync_service.dart';
@@ -56,6 +57,34 @@ Future<void> tapText(
   await tester.pump(const Duration(milliseconds: 300));
   await tester.tap(finder.first);
   await tester.pump(const Duration(milliseconds: 700));
+}
+
+Future<void> scrollUntilTextVisible(
+  WidgetTester tester,
+  String text, {
+  Duration timeout = const Duration(seconds: 25),
+  double dy = 360,
+}) async {
+  final endTime = DateTime.now().add(timeout);
+  final finder = find.text(text);
+
+  while (DateTime.now().isBefore(endTime)) {
+    await tester.pump(const Duration(milliseconds: 250));
+    if (finder.evaluate().isNotEmpty) {
+      await tester.ensureVisible(finder.first);
+      await tester.pump(const Duration(milliseconds: 350));
+      return;
+    }
+
+    final scrollable = find.byType(Scrollable);
+    if (scrollable.evaluate().isEmpty) {
+      continue;
+    }
+    await tester.drag(scrollable.first, Offset(0, -dy));
+    await tester.pump(const Duration(milliseconds: 450));
+  }
+
+  fail('Timed out scrolling to text: "$text"');
 }
 
 Future<void> openDrawerFromBottomMenu(WidgetTester tester) async {
@@ -275,10 +304,10 @@ void main() {
         find.text(sample.bookTitle),
         timeout: const Duration(seconds: 30),
       );
-      await waitFor(
+      await scrollUntilTextVisible(
         tester,
-        find.text(sample.chapterTitle),
-        timeout: const Duration(seconds: 20),
+        sample.chapterTitle,
+        timeout: const Duration(seconds: 25),
       );
       await tapText(tester, sample.chapterTitle);
 

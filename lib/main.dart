@@ -22,8 +22,16 @@ void main() async {
     EnvConfig.validateRequired();
 
     // Initialize Backend Services
-    await SupabaseService.initialize();
-    await PowerSyncService().initialize(enableRemoteSync: false);
+    await _runWithTimeout(
+      'Supabase',
+      SupabaseService.initialize(),
+      timeout: const Duration(seconds: 12),
+    );
+    await _runWithTimeout(
+      'PowerSync local DB',
+      PowerSyncService().initialize(enableRemoteSync: false),
+      timeout: const Duration(seconds: 12),
+    );
 
     runApp(const ProviderScope(child: LiankhawpuiApp()));
 
@@ -40,6 +48,20 @@ void main() async {
   } catch (e) {
     debugPrint('CRITICAL: app initialization failed: $e');
     runApp(AppBootstrapError(error: e.toString()));
+  }
+}
+
+Future<T> _runWithTimeout<T>(
+  String label,
+  Future<T> task, {
+  Duration timeout = const Duration(seconds: 12),
+}) async {
+  try {
+    return await task.timeout(timeout);
+  } on TimeoutException {
+    throw StateError(
+      '$label initialization timed out after ${timeout.inSeconds}s.',
+    );
   }
 }
 

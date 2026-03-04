@@ -94,6 +94,21 @@ Proprietary. All rights reserved. See `LICENSE` for details.
    flutter run
    ```
 
+## Android Release Signing
+
+1. Copy the template and fill real values:
+   ```bash
+   cp android/key.properties.example android/key.properties
+   ```
+2. Put your keystore at `android/app/upload-keystore.jks` (or change `storeFile`).
+3. Build signed release artifacts:
+   ```bash
+   flutter build apk --release --split-per-abi
+   flutter build appbundle --release
+   ```
+
+If `android/key.properties` is missing, release builds fall back to debug signing.
+
 ## Integration Testing
 
 ### Local emulator run
