@@ -39,9 +39,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       appBar: currentIndex == 0 ? _buildAppBar(context, user) : null,
       body: Column(
         children: [
-          Expanded(
-            child: _buildActiveTab(currentIndex, ref),
-          ),
+          Expanded(child: _buildActiveTab(currentIndex, ref)),
           const Opacity(
             opacity: 0,
             child: Text('Featured News'),
@@ -463,6 +461,7 @@ class _CompactAnnouncementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
+      onTap: () => context.push('/announcement/${announcement.id}'),
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [

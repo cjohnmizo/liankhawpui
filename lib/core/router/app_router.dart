@@ -4,7 +4,7 @@ import 'package:liankhawpui/features/news/presentation/news_edit_screen.dart';
 import 'package:liankhawpui/features/news/domain/news.dart';
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 import 'package:liankhawpui/features/auth/presentation/login_screen.dart';
@@ -14,6 +14,7 @@ import 'package:liankhawpui/features/organization/presentation/organization_scre
 import 'package:liankhawpui/features/organization/presentation/organization_detail_screen.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_list_screen.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_create_screen.dart';
+import 'package:liankhawpui/features/announcement/presentation/announcement_detail_screen.dart';
 import 'package:liankhawpui/features/news/presentation/news_list_screen.dart';
 import 'package:liankhawpui/features/story/presentation/book_list_screen.dart';
 import 'package:liankhawpui/features/story/presentation/chapter_reader_screen.dart';
@@ -27,11 +28,14 @@ import 'package:liankhawpui/features/settings/presentation/settings_screen.dart'
 import 'package:liankhawpui/features/auth/presentation/forgot_password_screen.dart';
 import 'package:liankhawpui/features/auth/presentation/registration_screen.dart';
 
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+
 final routerProvider = Provider<GoRouter>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   const bool testMode = bool.fromEnvironment('TEST_MODE', defaultValue: false);
 
   return GoRouter(
+    navigatorKey: appNavigatorKey,
     initialLocation: testMode ? '/' : '/splash',
     refreshListenable: GoRouterRefreshStream(authRepository.authStateChanges),
     routes: [
@@ -66,6 +70,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'create',
             builder: (context, state) => const AnnouncementCreateScreen(),
+          ),
+          GoRoute(
+            path: ':announcementId',
+            builder: (context, state) {
+              final announcementId = state.pathParameters['announcementId']!;
+              return AnnouncementDetailScreen(announcementId: announcementId);
+            },
           ),
         ],
       ),

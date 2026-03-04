@@ -8,6 +8,7 @@ import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/theme/theme_provider.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
+import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 import 'package:powersync/powersync.dart' show SyncStatus, UploadQueueStats;
 
 class SettingsScreen extends ConsumerWidget {
@@ -190,15 +191,28 @@ class _SyncStatusSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final service = ref.watch(powerSyncServiceProvider);
+    final user = ref.watch(currentUserProvider);
     final statusAsync = ref.watch(powerSyncStatusProvider);
     final queueStatsAsync = ref.watch(uploadQueueStatsProvider);
     final status = statusAsync.valueOrNull;
     final queueStats = queueStatsAsync.valueOrNull;
-    final hasSyncError = status?.anyError != null || statusAsync.hasError;
+    final signedIn = !user.isGuest;
+    final hasSyncError = _hasBlockingSyncError(
+      status: status,
+      statusAsync: statusAsync,
+      signedIn: signedIn,
+      remoteSyncEnabled: service.isRemoteSyncEnabled,
+    );
+    final errorMessage = _buildErrorMessage(
+      status: status,
+      statusAsync: statusAsync,
+      hasError: hasSyncError,
+    );
 
     final connectionLabel = _buildConnectionLabel(
       status: status,
       remoteSyncEnabled: service.isRemoteSyncEnabled,
+      signedIn: signedIn,
       hasError: hasSyncError,
     );
     final lastSynced = _formatLastSynced(status?.lastSyncedAt);
@@ -235,6 +249,10 @@ class _SyncStatusSection extends ConsumerWidget {
           _StatusRow(label: 'Last Synced', value: lastSynced),
           const SizedBox(height: 8),
           _StatusRow(label: 'Upload Queue', value: pendingUploads),
+          if (errorMessage != null) ...[
+            const SizedBox(height: 8),
+            _StatusRow(label: 'Last Error', value: errorMessage),
+          ],
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -263,16 +281,17 @@ class _SyncStatusSection extends ConsumerWidget {
   String _buildConnectionLabel({
     required SyncStatus? status,
     required bool remoteSyncEnabled,
+    required bool signedIn,
     required bool hasError,
   }) {
     if (!remoteSyncEnabled) {
       return 'Remote sync disabled';
     }
+    if (!signedIn) {
+      return 'Sign in to sync';
+    }
     if (status == null) {
       return 'Checking...';
-    }
-    if (hasError) {
-      return 'Error';
     }
     if (status.connecting) {
       return 'Connecting';
@@ -283,7 +302,47 @@ class _SyncStatusSection extends ConsumerWidget {
     if (status.connected) {
       return 'Connected';
     }
+    if (hasError) {
+      return 'Reconnecting';
+    }
     return 'Offline';
+  }
+
+  bool _hasBlockingSyncError({
+    required SyncStatus? status,
+    required AsyncValue<SyncStatus> statusAsync,
+    required bool signedIn,
+    required bool remoteSyncEnabled,
+  }) {
+    if (!remoteSyncEnabled || !signedIn) return false;
+    if (statusAsync.hasError) return true;
+    if (status == null) return false;
+    if (status.connected || status.connecting) return false;
+    if (status.downloading || status.uploading) return false;
+    return status.anyError != null;
+  }
+
+  String? _buildErrorMessage({
+    required SyncStatus? status,
+    required AsyncValue<SyncStatus> statusAsync,
+    required bool hasError,
+  }) {
+    if (!hasError) return null;
+    final raw = statusAsync.hasError
+        ? statusAsync.error.toString()
+        : status?.anyError?.toString();
+    if (raw == null || raw.trim().isEmpty) return null;
+    return _compactError(raw);
+  }
+
+  String _compactError(String error) {
+    final singleLine = error.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final redacted = singleLine.replaceAll(
+      RegExp(r'Bearer\s+[A-Za-z0-9._-]+', caseSensitive: false),
+      'Bearer ***',
+    );
+    if (redacted.length <= 80) return redacted;
+    return '${redacted.substring(0, 77)}...';
   }
 
   String _formatLastSynced(DateTime? value) {

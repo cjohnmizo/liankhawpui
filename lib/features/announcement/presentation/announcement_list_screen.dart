@@ -59,7 +59,10 @@ class AnnouncementListScreen extends ConsumerWidget {
                       ),
                       itemBuilder: (context, index) {
                         final item = list[index];
-                        return AnnouncementCard(announcement: item);
+                        return AnnouncementCard(
+                          announcement: item,
+                          onTap: () => context.push('/announcement/${item.id}'),
+                        );
                       },
                     );
                   },

@@ -92,6 +92,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
           'title': 'New Announcement',
           'message': _buildAnnouncementMessage(title: title, content: content),
           'included_segments': ['Active Subscriptions'],
+          'url': 'liankhawpui://announcement/$announcementId',
           'idempotency_key': announcementId,
           'data': {'type': 'announcement', 'announcement_id': announcementId},
         }),

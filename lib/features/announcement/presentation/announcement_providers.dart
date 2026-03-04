@@ -10,3 +10,9 @@ final announcementsProvider = StreamProvider<List<Announcement>>((ref) {
   final repo = ref.watch(announcementRepositoryProvider);
   return repo.watchAnnouncements();
 });
+
+final announcementDetailsProvider =
+    StreamProvider.family<Announcement?, String>((ref, announcementId) {
+      final repo = ref.watch(announcementRepositoryProvider);
+      return repo.watchAnnouncementById(announcementId);
+    });

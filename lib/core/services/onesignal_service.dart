@@ -1,11 +1,15 @@
 import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:liankhawpui/core/config/env_config.dart';
+import 'package:liankhawpui/core/router/app_router.dart';
 
 class OneSignalService {
   static bool _isInitialized = false;
   static bool _isDisabled = false;
+  static bool _clickListenerAttached = false;
   static String? _lastExternalUserId;
+  static String? _pendingAnnouncementId;
 
   static bool get isInitialized => _isInitialized;
 
@@ -24,11 +28,17 @@ class OneSignalService {
     try {
       OneSignal.initialize(appId);
 
+      if (!_clickListenerAttached) {
+        OneSignal.Notifications.addClickListener(_onNotificationClicked);
+        _clickListenerAttached = true;
+      }
+
       if (kDebugMode) {
         await OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
       }
 
       _isInitialized = true;
+      flushPendingNavigation();
     } catch (error) {
       _isDisabled = true;
       debugPrint('OneSignal initialization failed. Push disabled: $error');
@@ -75,5 +85,81 @@ class OneSignalService {
     final value = OneSignal.User.pushSubscription.id?.trim();
     if (value == null || value.isEmpty) return null;
     return value;
+  }
+
+  static void flushPendingNavigation() {
+    final pendingId = _pendingAnnouncementId?.trim();
+    if (pendingId == null || pendingId.isEmpty) return;
+    if (_openAnnouncementRoute(pendingId)) {
+      _pendingAnnouncementId = null;
+    }
+  }
+
+  static void _onNotificationClicked(OSNotificationClickEvent event) {
+    final announcementId = _extractAnnouncementId(event)?.trim();
+    if (announcementId == null || announcementId.isEmpty) {
+      return;
+    }
+
+    if (!_openAnnouncementRoute(announcementId)) {
+      _pendingAnnouncementId = announcementId;
+    }
+  }
+
+  static String? _extractAnnouncementId(OSNotificationClickEvent event) {
+    final data = event.notification.additionalData;
+    final type = data?['type']?.toString().trim().toLowerCase();
+    final idFromData =
+        _normalizeId(data?['announcement_id']) ??
+        _normalizeId(data?['announcementId']);
+
+    if (idFromData != null &&
+        (type == null || type.isEmpty || type == 'announcement')) {
+      return idFromData;
+    }
+
+    return _extractAnnouncementIdFromUrl(event.result.url) ??
+        _extractAnnouncementIdFromUrl(event.notification.launchUrl);
+  }
+
+  static String? _extractAnnouncementIdFromUrl(String? rawUrl) {
+    final trimmed = rawUrl?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null) return null;
+    final segments = uri.pathSegments
+        .where((value) => value.isNotEmpty)
+        .toList();
+
+    if (uri.scheme == 'liankhawpui' && uri.host == 'announcement') {
+      if (segments.isNotEmpty) {
+        return _normalizeId(segments.first);
+      }
+      return null;
+    }
+
+    for (var i = 0; i < segments.length - 1; i++) {
+      if (segments[i] == 'announcement') {
+        return _normalizeId(segments[i + 1]);
+      }
+    }
+
+    return null;
+  }
+
+  static String? _normalizeId(Object? value) {
+    final parsed = value?.toString().trim();
+    if (parsed == null || parsed.isEmpty) return null;
+    return parsed;
+  }
+
+  static bool _openAnnouncementRoute(String announcementId) {
+    final context = appNavigatorKey.currentContext;
+    if (context == null) return false;
+
+    final router = GoRouter.of(context);
+    router.go('/announcement/$announcementId');
+    return true;
   }
 }

@@ -35,6 +35,7 @@ void main() async {
     }
 
     // Keep first render fast; initialize remote services after app start.
+    unawaited(PowerSyncService().startAutoSyncLifecycle());
     unawaited(_initializeDeferredServices());
   } catch (e) {
     debugPrint('CRITICAL: app initialization failed: $e');
@@ -43,12 +44,6 @@ void main() async {
 }
 
 Future<void> _initializeDeferredServices() async {
-  try {
-    await PowerSyncService().initialize(enableRemoteSync: true);
-  } catch (e) {
-    debugPrint('WARN: PowerSync remote sync initialization failed: $e');
-  }
-
   try {
     await OneSignalService.initialize();
     await OneSignalService.requestNotificationPermission();
@@ -65,6 +60,10 @@ class LiankhawpuiApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      OneSignalService.flushPendingNavigation();
+    });
+
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
 

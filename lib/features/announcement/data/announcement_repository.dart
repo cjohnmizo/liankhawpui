@@ -16,6 +16,18 @@ class AnnouncementRepository {
         });
   }
 
+  Stream<Announcement?> watchAnnouncementById(String id) {
+    return _db
+        .watch(
+          'SELECT * FROM announcements WHERE id = ? LIMIT 1',
+          parameters: [id],
+        )
+        .map((results) {
+          if (results.isEmpty) return null;
+          return Announcement.fromRow(results.first);
+        });
+  }
+
   Future<void> createAnnouncement({
     required String title,
     required String content,
@@ -32,6 +44,15 @@ class AnnouncementRepository {
       ''',
       [id, title, content, imageUrl, userId, now, now, 0],
     );
+  }
+
+  Future<Announcement?> getAnnouncementById(String id) async {
+    final row = await _db.getOptional(
+      'SELECT * FROM announcements WHERE id = ? LIMIT 1',
+      [id],
+    );
+    if (row == null) return null;
+    return Announcement.fromRow(row);
   }
 
   Future<void> deleteAnnouncement(String id) async {
