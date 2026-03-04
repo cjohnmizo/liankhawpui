@@ -31,8 +31,6 @@ set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
-alter table storage.objects enable row level security;
-
 drop policy if exists post_attachments_public_read on storage.objects;
 create policy post_attachments_public_read
 on storage.objects
