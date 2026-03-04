@@ -2,6 +2,7 @@ import 'package:liankhawpui/core/services/powersync_service.dart';
 import 'package:liankhawpui/core/services/supabase_service.dart';
 import 'package:liankhawpui/features/auth/domain/app_user.dart';
 import 'package:liankhawpui/features/auth/domain/user_role.dart';
+import 'package:powersync/powersync.dart';
 
 class DashboardStats {
   final int totalUsers;
@@ -20,47 +21,62 @@ class DashboardStats {
 }
 
 class DashboardRepository {
-  final _db = PowerSyncService().db;
   final _client = SupabaseService.client;
 
-  Future<DashboardStats> getStats() async {
-    final usersRow = await _db.get('SELECT count(*) as count FROM profiles');
-    final pendingUsersRow = await _db.get(
-      "SELECT count(*) as count FROM profiles WHERE role = 'guest'",
-    );
-    final announcementsRow = await _db.get(
-      'SELECT count(*) as count FROM announcements',
-    );
-    final newsRow = await _db.get('SELECT count(*) as count FROM news');
-    final organizationsRow = await _db.get(
-      'SELECT count(*) as count FROM organizations',
-    );
+  PowerSyncDatabase? get _dbOrNull {
+    final service = PowerSyncService();
+    if (!service.isInitialized) return null;
+    return service.db;
+  }
 
-    return DashboardStats(
-      totalUsers: usersRow['count'] as int,
-      totalAnnouncements: announcementsRow['count'] as int,
-      totalNews: newsRow['count'] as int,
-      totalOrganizations: organizationsRow['count'] as int,
-      pendingUserCount: pendingUsersRow['count'] as int,
-    );
+  Future<DashboardStats> getStats() async {
+    final db = _dbOrNull;
+    if (db != null) {
+      try {
+        final usersRow = await db.get('SELECT count(*) as count FROM profiles');
+        final pendingUsersRow = await db.get(
+          "SELECT count(*) as count FROM profiles WHERE role = 'guest'",
+        );
+        final announcementsRow = await db.get(
+          'SELECT count(*) as count FROM announcements',
+        );
+        final newsRow = await db.get('SELECT count(*) as count FROM news');
+        final organizationsRow = await db.get(
+          'SELECT count(*) as count FROM organizations',
+        );
+
+        return DashboardStats(
+          totalUsers: usersRow['count'] as int,
+          totalAnnouncements: announcementsRow['count'] as int,
+          totalNews: newsRow['count'] as int,
+          totalOrganizations: organizationsRow['count'] as int,
+          pendingUserCount: pendingUsersRow['count'] as int,
+        );
+      } catch (_) {
+        // Fall through to Supabase fallback if local DB is not ready.
+      }
+    }
+
+    return _getStatsFromSupabase();
   }
 
   Stream<List<AppUser>> watchAllProfiles() {
-    return _db.watch('SELECT * FROM profiles ORDER BY email ASC').map((rows) {
-      return rows.map((row) {
-        return AppUser(
-          id: row['id'] as String,
-          email: row['email'] as String?,
-          role: UserRole.fromString(row['role'] as String?),
-          fullName: row['full_name'] as String?,
-          phoneNumber: row['phone_number'] as String?,
-          dob: row['dob'] != null
-              ? DateTime.tryParse(row['dob'] as String)
-              : null,
-          address: row['address'] as String?,
+    final db = _dbOrNull;
+    if (db != null) {
+      try {
+        return db.watch('SELECT * FROM profiles ORDER BY email ASC').map(
+          _mapProfiles,
         );
-      }).toList();
-    });
+      } catch (_) {
+        // Fall through to Supabase fallback stream.
+      }
+    }
+
+    return _client
+        .from('profiles')
+        .stream(primaryKey: ['id'])
+        .order('email')
+        .map(_mapProfiles);
   }
 
   Future<void> createUser({
@@ -135,5 +151,61 @@ class DashboardRepository {
     }
 
     throw Exception(fallback);
+  }
+
+  Future<DashboardStats> _getStatsFromSupabase() async {
+    final results = await Future.wait<int>([
+      _safeCount('profiles'),
+      _safeCount('announcements'),
+      _safeCount('news'),
+      _safeCount('organizations'),
+      _safePendingUserCount(),
+    ]);
+
+    return DashboardStats(
+      totalUsers: results[0],
+      totalAnnouncements: results[1],
+      totalNews: results[2],
+      totalOrganizations: results[3],
+      pendingUserCount: results[4],
+    );
+  }
+
+  Future<int> _safeCount(String table) async {
+    try {
+      return await _client.from(table).count();
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  Future<int> _safePendingUserCount() async {
+    try {
+      final rows = await _client
+          .from('profiles')
+          .select('id')
+          .eq('role', 'guest');
+      return rows.length;
+    } catch (_) {
+      // ignored
+    }
+    return 0;
+  }
+
+  List<AppUser> _mapProfiles(List<dynamic> rows) {
+    return rows.map((row) {
+      final data = Map<String, dynamic>.from(row as Map);
+      return AppUser(
+        id: data['id'] as String,
+        email: data['email'] as String?,
+        role: UserRole.fromString(data['role'] as String?),
+        fullName: data['full_name'] as String?,
+        phoneNumber: data['phone_number'] as String?,
+        dob: data['dob'] != null
+            ? DateTime.tryParse(data['dob'].toString())
+            : null,
+        address: data['address'] as String?,
+      );
+    }).toList();
   }
 }

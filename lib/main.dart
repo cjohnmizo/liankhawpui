@@ -8,6 +8,7 @@ import 'package:liankhawpui/core/services/supabase_service.dart';
 import 'package:liankhawpui/core/services/powersync_service.dart';
 import 'package:liankhawpui/core/services/onesignal_service.dart';
 import 'package:liankhawpui/core/router/app_router.dart';
+import 'package:liankhawpui/core/widgets/network_status_overlay.dart';
 
 const bool _testMode = bool.fromEnvironment('TEST_MODE', defaultValue: false);
 
@@ -20,12 +21,12 @@ void main() async {
 
     // Initialize Backend Services
     await SupabaseService.initialize();
+    await PowerSyncService().initialize(enableRemoteSync: !_testMode);
     if (_testMode) {
       debugPrint(
-        'TEST_MODE is enabled: PowerSync and OneSignal remote services are disabled.',
+        'TEST_MODE is enabled: remote PowerSync sync and OneSignal are disabled.',
       );
     } else {
-      await PowerSyncService().initialize(enableRemoteSync: true);
       await OneSignalService.initialize();
       await OneSignalService.syncExternalUserId(
         SupabaseService.client.auth.currentUser?.id,
@@ -53,6 +54,10 @@ class LiankhawpuiApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       routerConfig: router,
+      builder: (context, child) {
+        if (child == null) return const SizedBox.shrink();
+        return NetworkStatusOverlay(child: child);
+      },
       debugShowCheckedModeBanner: false,
     );
   }

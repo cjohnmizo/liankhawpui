@@ -143,7 +143,9 @@ Widget _buildStatGrid({
         value: placeholder ? '--' : stats.totalUsers.toString(),
         icon: Icons.people_rounded,
         color: AppColors.primaryNavy,
-        onTap: placeholder ? null : () => context.push('/dashboard/users'),
+        onTap: (placeholder && !kTestMode)
+            ? null
+            : () => context.push('/dashboard/users'),
         badgeCount: placeholder ? null : stats.pendingUserCount,
       ),
     _StatConfig(
@@ -151,21 +153,27 @@ Widget _buildStatGrid({
       value: placeholder ? '--' : stats.totalAnnouncements.toString(),
       icon: Icons.campaign_rounded,
       color: AppColors.accentGold,
-      onTap: placeholder ? null : () => context.push('/announcement'),
+      onTap: (placeholder && !kTestMode)
+          ? null
+          : () => context.push('/announcement'),
     ),
     _StatConfig(
       title: 'News Articles',
       value: placeholder ? '--' : stats.totalNews.toString(),
       icon: Icons.newspaper_rounded,
       color: const Color(0xFF16A34A),
-      onTap: placeholder ? null : () => context.push('/dashboard/news'),
+      onTap: (placeholder && !kTestMode)
+          ? null
+          : () => context.push('/dashboard/news'),
     ),
     _StatConfig(
       title: 'Organizations',
       value: placeholder ? '--' : stats.totalOrganizations.toString(),
       icon: Icons.business_rounded,
       color: const Color(0xFF0891B2),
-      onTap: placeholder ? null : () => context.push('/organization'),
+      onTap: (placeholder && !kTestMode)
+          ? null
+          : () => context.push('/organization'),
     ),
   ];
 

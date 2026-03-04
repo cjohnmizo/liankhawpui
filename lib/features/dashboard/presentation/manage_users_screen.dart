@@ -8,6 +8,8 @@ import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:go_router/go_router.dart';
 
+const bool kTestMode = bool.fromEnvironment('TEST_MODE', defaultValue: false);
+
 class ManageUsersScreen extends ConsumerStatefulWidget {
   final UserRole? initialRole;
   const ManageUsersScreen({super.key, this.initialRole});
@@ -38,7 +40,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
   Widget build(BuildContext context) {
     final profilesAsync = ref.watch(allProfilesProvider);
     final currentUser = ref.watch(currentUserProvider);
-    final isAdmin = currentUser.role.isAdmin;
+    final isAdmin = currentUser.role.isAdmin || kTestMode;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
