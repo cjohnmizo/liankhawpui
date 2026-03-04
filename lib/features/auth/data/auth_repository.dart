@@ -163,13 +163,25 @@ class AuthRepository {
       throw StateError('User must be authenticated to upload profile photos.');
     }
 
-    final fileName = 'avatar_$userId.jpg';
+    final avatarFolder = userId;
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final fileName = '$avatarFolder/avatar_$timestamp.jpg';
 
-    // Delete old photo if exists
+    // Delete old photos for this user to avoid stale cache pointers.
     try {
-      await _client.storage.from('avatars').remove([fileName]);
+      final existing = await _client.storage
+          .from('avatars')
+          .list(path: avatarFolder);
+      final existingPaths = existing
+          .map((item) => item.name)
+          .where((name) => name.isNotEmpty)
+          .map((name) => '$avatarFolder/$name')
+          .toList();
+      if (existingPaths.isNotEmpty) {
+        await _client.storage.from('avatars').remove(existingPaths);
+      }
     } catch (e) {
-      // Ignore error if file doesn't exist
+      // Ignore cleanup failures and continue with upload.
     }
 
     // Upload new photo
@@ -181,6 +193,7 @@ class AuthRepository {
           fileOptions: const FileOptions(
             contentType: 'image/jpeg',
             upsert: true,
+            cacheControl: 'public, max-age=604800',
           ),
         );
 
