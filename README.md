@@ -79,7 +79,7 @@ Proprietary. All rights reserved. See `LICENSE` for details.
 4. **Deploy Backend Functions (Recommended for production)**:
    ```bash
    supabase functions deploy powersync-token --no-verify-jwt
-   supabase functions deploy send-notification
+   supabase functions deploy send-notification --no-verify-jwt
    supabase functions deploy admin-users
    ```
    Function configuration details: [`supabase/functions/README.md`](supabase/functions/README.md)

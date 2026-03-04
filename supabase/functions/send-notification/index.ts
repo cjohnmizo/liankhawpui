@@ -17,13 +17,28 @@ function sanitizeStringArray(input: unknown): string[] {
     .filter((item) => item.length > 0);
 }
 
+function hasOneSignalErrors(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object") return false;
+  const record = payload as Record<string, unknown>;
+  const errors = record.errors;
+
+  if (Array.isArray(errors)) return errors.length > 0;
+  if (typeof errors === "string") return errors.trim().length > 0;
+  if (errors && typeof errors === "object") {
+    return Object.keys(errors as Record<string, unknown>).length > 0;
+  }
+  return false;
+}
+
 type NotifyBody = {
   title?: string;
   message?: string;
   external_user_ids?: string[];
+  include_subscription_ids?: string[];
   included_segments?: string[];
   data?: Record<string, unknown>;
   url?: string;
+  idempotency_key?: string;
 };
 
 Deno.serve(async (req) => {
@@ -79,19 +94,27 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as NotifyBody;
     const title = body.title?.trim() || "Liankhawpui";
     const message = body.message?.trim();
+    const idempotencyKey = body.idempotency_key?.trim();
 
     if (!message) {
       return jsonResponse({ error: "Field `message` is required." }, 400);
     }
 
     const externalUserIds = sanitizeStringArray(body.external_user_ids);
+    const includeSubscriptionIds = sanitizeStringArray(
+      body.include_subscription_ids,
+    );
     const includedSegments = sanitizeStringArray(body.included_segments);
 
-    if (externalUserIds.length == 0 && includedSegments.length == 0) {
+    if (
+      externalUserIds.length == 0 &&
+      includeSubscriptionIds.length == 0 &&
+      includedSegments.length == 0
+    ) {
       return jsonResponse(
         {
           error:
-            "Provide `external_user_ids` or `included_segments` for recipient targeting.",
+            "Provide `external_user_ids`, `include_subscription_ids`, or `included_segments` for recipient targeting.",
         },
         400,
       );
@@ -108,8 +131,13 @@ Deno.serve(async (req) => {
     if (body.url && body.url.trim().length > 0) {
       payload.url = body.url.trim();
     }
+    if (idempotencyKey && idempotencyKey.length > 0) {
+      payload.idempotency_key = idempotencyKey;
+    }
 
-    if (externalUserIds.length > 0) {
+    if (includeSubscriptionIds.length > 0) {
+      payload.include_subscription_ids = includeSubscriptionIds;
+    } else if (externalUserIds.length > 0) {
       payload.include_aliases = {
         external_id: externalUserIds,
       };
@@ -127,13 +155,30 @@ Deno.serve(async (req) => {
     });
 
     const responseBody = await oneSignalResponse.text();
+    let parsedResponse: unknown = null;
+    try {
+      parsedResponse = JSON.parse(responseBody);
+    } catch (_) {
+      parsedResponse = null;
+    }
 
     if (!oneSignalResponse.ok) {
       return jsonResponse(
         {
           error: "OneSignal request failed.",
           status: oneSignalResponse.status,
-          response: responseBody,
+          response: parsedResponse ?? responseBody,
+        },
+        502,
+      );
+    }
+
+    if (hasOneSignalErrors(parsedResponse)) {
+      return jsonResponse(
+        {
+          error: "OneSignal accepted request with delivery errors.",
+          status: oneSignalResponse.status,
+          response: parsedResponse,
         },
         502,
       );
@@ -141,7 +186,7 @@ Deno.serve(async (req) => {
 
     return jsonResponse({
       status: "sent",
-      response: responseBody,
+      response: parsedResponse ?? responseBody,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

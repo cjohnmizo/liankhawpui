@@ -3,6 +3,7 @@ import 'package:liankhawpui/core/services/supabase_service.dart';
 import 'package:liankhawpui/features/auth/domain/app_user.dart';
 import 'package:liankhawpui/features/auth/domain/user_role.dart';
 import 'package:powersync/powersync.dart';
+import 'package:uuid/uuid.dart';
 
 class DashboardStats {
   final int totalUsers;
@@ -22,6 +23,7 @@ class DashboardStats {
 
 class DashboardRepository {
   final _client = SupabaseService.client;
+  final _uuid = const Uuid();
 
   PowerSyncDatabase? get _dbOrNull {
     final service = PowerSyncService();
@@ -64,9 +66,9 @@ class DashboardRepository {
     final db = _dbOrNull;
     if (db != null) {
       try {
-        return db.watch('SELECT * FROM profiles ORDER BY email ASC').map(
-          _mapProfiles,
-        );
+        return db
+            .watch('SELECT * FROM profiles ORDER BY email ASC')
+            .map(_mapProfiles);
       } catch (_) {
         // Fall through to Supabase fallback stream.
       }
@@ -132,18 +134,48 @@ class DashboardRepository {
     );
   }
 
-  void _ensureFunctionSuccess(dynamic data, {required String fallback}) {
-    if (data is Map<String, dynamic>) {
-      final error = data['error'];
-      if (error is String && error.trim().isNotEmpty) {
-        throw Exception(error);
-      }
-      return;
+  Future<void> sendTestPushToCurrentUser({
+    required String userId,
+    required String displayName,
+    String? subscriptionId,
+  }) async {
+    final name = displayName.trim().isEmpty ? 'there' : displayName.trim();
+    final safeSubscriptionId = subscriptionId?.trim();
+    final response = await _client.functions.invoke(
+      'send-notification',
+      body: {
+        'title': 'Liankhawpui Test Push',
+        'message': 'Hi $name, push notifications are working on your device.',
+        'external_user_ids': [userId],
+        if (safeSubscriptionId != null && safeSubscriptionId.isNotEmpty)
+          'include_subscription_ids': [safeSubscriptionId]
+        else
+          'included_segments': ['Active Subscriptions'],
+        'idempotency_key': _uuid.v4(),
+        'data': {'type': 'push_test', 'user_id': userId},
+      },
+    );
+
+    final data = _normalizeMap(response.data);
+    if (data == null) {
+      throw Exception('Notification service returned an invalid response.');
     }
 
-    if (data is Map) {
-      final mapped = Map<String, dynamic>.from(data);
-      final error = mapped['error'];
+    final error = data['error'];
+    if (error is String && error.trim().isNotEmpty) {
+      final details = data['response'];
+      throw Exception(_formatNotificationError(error.trim(), details));
+    }
+
+    if (data['status'] != 'sent') {
+      throw Exception('Notification service did not confirm delivery request.');
+    }
+  }
+
+  void _ensureFunctionSuccess(dynamic data, {required String fallback}) {
+    final normalized = _normalizeMap(data);
+    if (normalized != null) {
+      final error = normalized['error'];
       if (error is String && error.trim().isNotEmpty) {
         throw Exception(error);
       }
@@ -151,6 +183,26 @@ class DashboardRepository {
     }
 
     throw Exception(fallback);
+  }
+
+  Map<String, dynamic>? _normalizeMap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return null;
+  }
+
+  String _formatNotificationError(String error, dynamic details) {
+    if (details == null) return error;
+    final message = details.toString();
+
+    if (message.contains('invalid_aliases')) {
+      return 'This account is not linked to push yet. Open the app once, allow notifications, then retry.';
+    }
+    if (message.contains('not subscribed')) {
+      return 'No subscribed device found. Enable notifications and reopen the app.';
+    }
+
+    return '$error $message';
   }
 
   Future<DashboardStats> _getStatsFromSupabase() async {

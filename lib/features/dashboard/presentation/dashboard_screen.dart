@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
+import 'package:liankhawpui/core/services/onesignal_service.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 import 'package:liankhawpui/features/dashboard/presentation/dashboard_providers.dart';
@@ -76,6 +77,12 @@ class DashboardScreen extends ConsumerWidget {
                         label: 'Manage Khawlian Chanchin',
                         onTap: () => context.push('/book/manage'),
                       ),
+                      if (currentUser.role.isEditor || kTestMode)
+                        _ActionPill(
+                          icon: Icons.notifications_active_rounded,
+                          label: 'Send Test Push',
+                          onTap: () => _sendTestPush(context, ref, currentUser),
+                        ),
                       if (currentUser.role.isAdmin || kTestMode)
                         _ActionPill(
                           icon: Icons.person_add_alt_rounded,
@@ -332,5 +339,52 @@ class _ActionPill extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+Future<void> _sendTestPush(
+  BuildContext context,
+  WidgetRef ref,
+  dynamic currentUser,
+) async {
+  final userId = currentUser.id?.toString().trim();
+  if (userId == null || userId.isEmpty || userId == 'guest') {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Sign in with an editor/admin account to send test push.',
+        ),
+      ),
+    );
+    return;
+  }
+
+  final fullName = currentUser.fullName?.toString().trim() ?? '';
+  final email = currentUser.email?.toString().trim() ?? '';
+  final displayName = fullName.isNotEmpty
+      ? fullName
+      : (email.isNotEmpty ? email : 'there');
+  final subscriptionId = OneSignalService.currentSubscriptionId();
+
+  try {
+    await ref
+        .read(dashboardRepositoryProvider)
+        .sendTestPushToCurrentUser(
+          userId: userId,
+          displayName: displayName,
+          subscriptionId: subscriptionId,
+        );
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Test push queued. Check your notification tray now.'),
+      ),
+    );
+  } catch (error) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Push failed: $error')));
   }
 }

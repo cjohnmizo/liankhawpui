@@ -46,6 +46,8 @@ app.*.map.json
 key.properties
 **/*.keystore
 **/*.jks
+/android/app/google-services.json
+*firebase-adminsdk*.json
 
 # Android Studio will place build artifacts here
 /android/app/debug

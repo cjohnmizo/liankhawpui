@@ -51,6 +51,7 @@ Future<void> _initializeDeferredServices() async {
 
   try {
     await OneSignalService.initialize();
+    await OneSignalService.requestNotificationPermission();
     await OneSignalService.syncExternalUserId(
       SupabaseService.client.auth.currentUser?.id,
     );

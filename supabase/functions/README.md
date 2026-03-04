@@ -2,19 +2,26 @@
 
 ## Functions
 - `powersync-token`: issues short-lived PowerSync JWT for the signed-in user.
-- `send-notification`: sends push notifications through OneSignal (editor/admin only).
+- `send-notification`: sends push notifications through OneSignal (editor/admin only, supports optional `idempotency_key`).
 - `admin-users`: admin-only user lifecycle operations (create user, update role, delete user).
+
+## Announcement Push Flow
+- Announcements are written locally first and uploaded by PowerSync.
+- After an `announcements` create operation reaches Supabase, the app calls `send-notification` server-side.
+- The call uses `included_segments: ["Active Subscriptions"]` and `idempotency_key: "<announcement-id-uuid>"` to avoid duplicates during retry.
 
 ## Deploy
 ```bash
 supabase functions deploy powersync-token --no-verify-jwt
-supabase functions deploy send-notification
+supabase functions deploy send-notification --no-verify-jwt
 supabase functions deploy admin-users
 ```
 
 `powersync-token` performs user validation inside the function (`auth.getUser()`),
 so it should be deployed with `--no-verify-jwt` to avoid gateway JWT
 verification conflicts with modern Supabase access token formats.
+`send-notification` follows the same pattern (`auth.getUser()` + role checks),
+and should also be deployed with `--no-verify-jwt` for the same reason.
 
 ## Required Secrets
 Set once per project:
@@ -49,9 +56,28 @@ curl -X POST \
   -H "Authorization: Bearer <user_access_token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Village Update",
+    "title": "New Announcement",
     "message": "Community meeting at 7 PM.",
-    "external_user_ids": ["<supabase-user-id>"]
+    "included_segments": ["Active Subscriptions"],
+    "idempotency_key": "<announcement-id-uuid>",
+    "data": {
+      "type": "announcement",
+      "announcement_id": "<announcement-id>"
+    }
+  }'
+```
+
+`send-notification` direct subscription targeting:
+
+```bash
+curl -X POST \
+  "$SUPABASE_URL/functions/v1/send-notification" \
+  -H "Authorization: Bearer <user_access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Device Test",
+    "message": "Push directly to one device subscription.",
+    "include_subscription_ids": ["<onesignal-subscription-id>"]
   }'
 ```
 
