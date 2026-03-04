@@ -64,6 +64,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Run static analysis
+        run: flutter analyze
+
       - name: Preflight endpoint connectivity
         shell: bash
         env:
@@ -87,6 +90,31 @@ jobs:
           check_endpoint "Supabase" "$SUPABASE_URL/auth/v1/health"
           check_endpoint "PowerSync" "$POWERSYNC_URL"
 
+      - name: Validate role test secrets
+        shell: bash
+        env:
+          TEST_EDITOR_EMAIL: ${{ secrets.TEST_EDITOR_EMAIL }}
+          TEST_EDITOR_PASSWORD: ${{ secrets.TEST_EDITOR_PASSWORD }}
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          required=(
+            TEST_EDITOR_EMAIL
+            TEST_EDITOR_PASSWORD
+            TEST_ADMIN_EMAIL
+            TEST_ADMIN_PASSWORD
+          )
+
+          for key in "${required[@]}"; do
+            value="${!key:-}"
+            if [ -z "$value" ]; then
+              echo "::error::Missing $key. Set it in repository secrets."
+              exit 1
+            fi
+          done
+
       - name: Run guest functional smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -109,7 +137,6 @@ jobs:
           TEST_EDITOR_PASSWORD: ${{ secrets.TEST_EDITOR_PASSWORD }}
           TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
           TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
-          TEST_ADMIN_USERS_FLOW: ${{ secrets.TEST_ADMIN_USERS_FLOW }}
         with:
           api-level: 34
           arch: x86_64
@@ -126,4 +153,4 @@ jobs:
               --dart-define=TEST_EDITOR_PASSWORD="$TEST_EDITOR_PASSWORD" \
               --dart-define=TEST_ADMIN_EMAIL="$TEST_ADMIN_EMAIL" \
               --dart-define=TEST_ADMIN_PASSWORD="$TEST_ADMIN_PASSWORD" \
-              --dart-define=TEST_ADMIN_USERS_FLOW="${TEST_ADMIN_USERS_FLOW:-true}"
+              --dart-define=TEST_ADMIN_USERS_FLOW=true

@@ -117,11 +117,12 @@ Required repository secrets:
 - `POWERSYNC_URL`
 - `POWERSYNC_TOKEN_FUNCTION`
 - `ONESIGNAL_APP_ID`
-- `TEST_EDITOR_EMAIL` (optional, enables Editor smoke test)
-- `TEST_EDITOR_PASSWORD` (optional, enables Editor smoke test)
-- `TEST_ADMIN_EMAIL` (optional, enables Admin smoke test)
-- `TEST_ADMIN_PASSWORD` (optional, enables Admin smoke test)
-- `TEST_ADMIN_USERS_FLOW` (optional, defaults to `true` in CI to validate admin create/update/delete user flow)
+- `TEST_EDITOR_EMAIL` (required for CI role smoke tests)
+- `TEST_EDITOR_PASSWORD` (required for CI role smoke tests)
+- `TEST_ADMIN_EMAIL` (required for CI role smoke tests)
+- `TEST_ADMIN_PASSWORD` (required for CI role smoke tests)
+
+CI now always runs admin create/update/delete user flow with `TEST_ADMIN_USERS_FLOW=true`.
 
 ## 📂 Project Structure
 
