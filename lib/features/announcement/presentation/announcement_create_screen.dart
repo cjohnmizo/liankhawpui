@@ -197,6 +197,27 @@ class _AnnouncementCreateScreenState
                         'Images are auto-optimized (Normal/Low Data). Documents up to 5 MB.',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
+                      if (_imageUrlController.text.trim().isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Icon(Icons.image_rounded, size: 16),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Cover image selected from device',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                setState(() => _imageUrlController.clear());
+                              },
+                              child: const Text('Remove cover'),
+                            ),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 8,
@@ -245,16 +266,7 @@ class _AnnouncementCreateScreenState
                   ),
                 ),
                 const SizedBox(height: 12),
-                GlassCard(
-                  child: TextField(
-                    controller: _imageUrlController,
-                    decoration: const InputDecoration(
-                      labelText: 'Cover Image URL (Optional)',
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 4),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(

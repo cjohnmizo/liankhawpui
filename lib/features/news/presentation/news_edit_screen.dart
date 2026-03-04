@@ -267,17 +267,6 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  _fieldLabel(context, 'Image URL (Optional)'),
-                  _fieldCard(
-                    child: TextFormField(
-                      controller: _imageUrlController,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        hintText: 'https://example.com/image.jpg',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   _fieldLabel(context, 'Attachments'),
                   GlassCard(
                     padding: const EdgeInsets.all(12),
@@ -292,6 +281,31 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
                             ).colorScheme.onSurfaceVariant,
                           ),
                         ),
+                        if (_imageUrlController.text.trim().isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              const Icon(Icons.image_rounded, size: 16),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Cover image selected from device',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  setState(() => _imageUrlController.clear());
+                                },
+                                child: const Text('Remove cover'),
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 8,

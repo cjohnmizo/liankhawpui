@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
+import 'package:liankhawpui/core/services/post_attachment_service.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
@@ -20,10 +22,12 @@ class _StoryManageScreenState extends ConsumerState<StoryManageScreen> {
   final _authorController = TextEditingController();
   final _coverUrlController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _attachmentService = PostAttachmentService();
 
   String? _bookId;
   bool _bookInitialized = false;
   bool _savingBook = false;
+  bool _uploadingBookCover = false;
 
   @override
   void dispose() {
@@ -75,17 +79,17 @@ class _StoryManageScreenState extends ConsumerState<StoryManageScreen> {
     Chapter? chapter,
     required int suggestedChapterNumber,
   }) async {
+    final lowDataMode = ref.read(lowDataModeEnabledProvider);
     final formKey = GlobalKey<FormState>();
     final numberController = TextEditingController(
       text: '${chapter?.chapterNumber ?? suggestedChapterNumber}',
     );
     final titleController = TextEditingController(text: chapter?.title ?? '');
-    final imageUrlController = TextEditingController(
-      text: chapter?.imageUrl ?? '',
-    );
     final contentController = TextEditingController(
       text: chapter?.content ?? '',
     );
+    var chapterImageUrl = chapter?.imageUrl;
+    var isUploadingImage = false;
     var isSaving = false;
 
     final result = await showDialog<bool>(
@@ -130,12 +134,75 @@ class _StoryManageScreenState extends ConsumerState<StoryManageScreen> {
                           },
                         ),
                         const SizedBox(height: 10),
-                        TextFormField(
-                          controller: imageUrlController,
-                          decoration: const InputDecoration(
-                            labelText: 'Image URL (Optional)',
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: isUploadingImage
+                                    ? null
+                                    : () async {
+                                        setDialogState(
+                                          () => isUploadingImage = true,
+                                        );
+                                        try {
+                                          final result =
+                                              await _attachmentService
+                                                  .pickCompressAndUploadImage(
+                                                    folder: 'book-chapters',
+                                                    lowDataMode: lowDataMode,
+                                                  );
+                                          if (result != null) {
+                                            setDialogState(() {
+                                              chapterImageUrl =
+                                                  result.publicUrl;
+                                            });
+                                          }
+                                        } catch (e) {
+                                          if (!context.mounted) return;
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Image upload failed: $e',
+                                              ),
+                                              backgroundColor: AppColors.error,
+                                            ),
+                                          );
+                                        } finally {
+                                          if (context.mounted) {
+                                            setDialogState(
+                                              () => isUploadingImage = false,
+                                            );
+                                          }
+                                        }
+                                      },
+                                icon: const Icon(Icons.image_rounded),
+                                label: const Text('Pick Chapter Image'),
+                              ),
+                            ),
+                            if ((chapterImageUrl ?? '').isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              TextButton(
+                                onPressed: isUploadingImage
+                                    ? null
+                                    : () {
+                                        setDialogState(
+                                          () => chapterImageUrl = null,
+                                        );
+                                      },
+                                child: const Text('Remove'),
+                              ),
+                            ],
+                          ],
                         ),
+                        if (isUploadingImage) ...[
+                          const SizedBox(height: 8),
+                          const LinearProgressIndicator(),
+                        ] else if ((chapterImageUrl ?? '').isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          const Text('Chapter image selected from device'),
+                        ],
                         const SizedBox(height: 10),
                         TextFormField(
                           controller: contentController,
@@ -183,7 +250,7 @@ class _StoryManageScreenState extends ConsumerState<StoryManageScreen> {
                                 bookId: _bookId!,
                                 title: titleController.text.trim(),
                                 content: contentController.text.trim(),
-                                imageUrl: _normalize(imageUrlController.text),
+                                imageUrl: chapterImageUrl,
                                 chapterNumber: chapterNumber,
                               );
                             } else {
@@ -191,7 +258,7 @@ class _StoryManageScreenState extends ConsumerState<StoryManageScreen> {
                                 id: chapter.id,
                                 title: titleController.text.trim(),
                                 content: contentController.text.trim(),
-                                imageUrl: _normalize(imageUrlController.text),
+                                imageUrl: chapterImageUrl,
                                 chapterNumber: chapterNumber,
                               );
                             }
@@ -219,7 +286,6 @@ class _StoryManageScreenState extends ConsumerState<StoryManageScreen> {
 
     numberController.dispose();
     titleController.dispose();
-    imageUrlController.dispose();
     contentController.dispose();
 
     if (result == true) {
@@ -269,6 +335,36 @@ class _StoryManageScreenState extends ConsumerState<StoryManageScreen> {
   String? _normalize(String value) {
     final trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  Future<void> _pickBookCover() async {
+    if (_savingBook || _uploadingBookCover) return;
+    setState(() => _uploadingBookCover = true);
+    final lowDataMode = ref.read(lowDataModeEnabledProvider);
+
+    try {
+      final result = await _attachmentService.pickCompressAndUploadImage(
+        folder: 'book-covers',
+        lowDataMode: lowDataMode,
+      );
+      if (result == null || !mounted) return;
+      setState(() => _coverUrlController.text = result.publicUrl);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Book cover selected from device')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to upload cover image: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingBookCover = false);
+      }
+    }
   }
 
   @override
@@ -340,12 +436,47 @@ class _StoryManageScreenState extends ConsumerState<StoryManageScreen> {
                               ),
                             ),
                             const SizedBox(height: 10),
-                            TextFormField(
-                              controller: _coverUrlController,
-                              decoration: const InputDecoration(
-                                labelText: 'Cover Image URL (Optional)',
-                              ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed:
+                                        _uploadingBookCover || _savingBook
+                                        ? null
+                                        : _pickBookCover,
+                                    icon: const Icon(
+                                      Icons.photo_library_rounded,
+                                    ),
+                                    label: const Text('Pick Cover Image'),
+                                  ),
+                                ),
+                                if (_coverUrlController.text
+                                    .trim()
+                                    .isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  TextButton(
+                                    onPressed:
+                                        _uploadingBookCover || _savingBook
+                                        ? null
+                                        : () {
+                                            setState(() {
+                                              _coverUrlController.clear();
+                                            });
+                                          },
+                                    child: const Text('Remove'),
+                                  ),
+                                ],
+                              ],
                             ),
+                            if (_uploadingBookCover) ...[
+                              const SizedBox(height: 8),
+                              const LinearProgressIndicator(),
+                            ] else if (_coverUrlController.text
+                                .trim()
+                                .isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              const Text('Cover image selected from device'),
+                            ],
                             const SizedBox(height: 10),
                             TextFormField(
                               controller: _descriptionController,
