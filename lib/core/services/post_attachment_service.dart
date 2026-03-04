@@ -97,6 +97,7 @@ class PostAttachmentService {
     required String folder,
     required bool lowDataMode,
   }) async {
+    _assertNoUrlInput(folder);
     // Retained for backward compatibility; image uploads now use fixed folders.
     final _ = folder;
     final imageFile = await _imageService.pickImageFromGallery(
@@ -159,6 +160,7 @@ class PostAttachmentService {
   Future<PostAttachmentUploadResult?> pickAndUploadDocument({
     required String folder,
   }) async {
+    _assertNoUrlInput(folder);
     final picked = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowMultiple: false,
@@ -250,6 +252,8 @@ class PostAttachmentService {
     required String cacheControl,
     required bool generatePublicUrl,
   }) async {
+    _assertNoUrlInput(folder);
+    _assertNoUrlInput(objectFileName);
     final userId = SupabaseService.client.auth.currentUser?.id;
     if (userId == null) {
       throw Exception('Sign in required before uploading attachments.');
@@ -367,4 +371,13 @@ class PostAttachmentService {
   }
 
   String _toKb(int bytes) => (bytes / 1024).toStringAsFixed(1);
+
+  void _assertNoUrlInput(String value) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+      throw Exception(
+        'URL uploads are disabled. Please pick a file from your device.',
+      );
+    }
+  }
 }
