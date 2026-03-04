@@ -17,3 +17,8 @@ final allNewsStreamProvider = StreamProvider<List<News>>((ref) {
   final repo = ref.watch(newsRepositoryProvider);
   return repo.watchAllNews();
 });
+
+final newsDetailsProvider = StreamProvider.family<News?, String>((ref, newsId) {
+  final repo = ref.watch(newsRepositoryProvider);
+  return repo.watchNewsById(newsId);
+});

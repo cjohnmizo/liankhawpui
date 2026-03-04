@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/features/news/presentation/news_manage_screen.dart';
 import 'package:liankhawpui/features/news/presentation/news_edit_screen.dart';
+import 'package:liankhawpui/features/news/presentation/news_detail_screen.dart';
 import 'package:liankhawpui/features/news/domain/news.dart';
 
 import 'dart:async';
@@ -83,6 +84,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/news',
         builder: (context, state) => const NewsListScreen(),
+        routes: [
+          GoRoute(
+            path: ':newsId',
+            builder: (context, state) {
+              final newsId = state.pathParameters['newsId']!;
+              return NewsDetailScreen(newsId: newsId);
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: '/book',

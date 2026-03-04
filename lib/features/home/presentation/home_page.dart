@@ -13,6 +13,7 @@ import 'package:liankhawpui/features/announcement/presentation/announcement_list
 import 'package:liankhawpui/features/announcement/presentation/announcement_providers.dart';
 import 'package:liankhawpui/features/auth/domain/app_user.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
+import 'package:liankhawpui/features/news/domain/news.dart';
 import 'package:liankhawpui/features/news/presentation/news_list_screen.dart';
 import 'package:liankhawpui/features/news/presentation/news_providers.dart';
 import 'package:liankhawpui/features/organization/presentation/organization_screen.dart';
@@ -377,7 +378,7 @@ class _EmptyCard extends StatelessWidget {
 }
 
 class _FeaturedNewsCard extends StatelessWidget {
-  final dynamic news;
+  final News news;
 
   const _FeaturedNewsCard({required this.news});
 
@@ -386,6 +387,7 @@ class _FeaturedNewsCard extends StatelessWidget {
     return SizedBox(
       width: 290,
       child: GlassCard(
+        onTap: () => context.push('/news/${news.id}'),
         padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -54,6 +54,7 @@ class NewsListScreen extends ConsumerWidget {
                       itemBuilder: (context, index) {
                         final news = newsList[index];
                         return GlassCard(
+                          onTap: () => context.push('/news/${news.id}'),
                           padding: EdgeInsets.zero,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

@@ -25,6 +25,24 @@ class NewsRepository {
     });
   }
 
+  Stream<News?> watchNewsById(String id) {
+    return _db
+        .watch('SELECT * FROM news WHERE id = ? LIMIT 1', parameters: [id])
+        .map((results) {
+          if (results.isEmpty) return null;
+          return News.fromRow(results.first);
+        });
+  }
+
+  Future<News?> getNewsById(String id) async {
+    final row = await _db.getOptional(
+      'SELECT * FROM news WHERE id = ? LIMIT 1',
+      [id],
+    );
+    if (row == null) return null;
+    return News.fromRow(row);
+  }
+
   Future<void> createNews({
     required String title,
     required String content,
