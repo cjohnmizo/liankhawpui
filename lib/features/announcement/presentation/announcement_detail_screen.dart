@@ -3,6 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:liankhawpui/core/services/post_attachment_service.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
@@ -141,7 +142,8 @@ class AnnouncementDetailScreen extends ConsumerWidget {
                             ),
                             onTapLink: (_, href, __) async {
                               if (href == null || href.isEmpty) return;
-                              final uri = Uri.tryParse(href);
+                              final uri = await PostAttachmentService()
+                                  .resolveLaunchUri(href);
                               if (uri == null) return;
                               await launchUrl(
                                 uri,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:liankhawpui/core/services/post_attachment_service.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -55,6 +56,7 @@ class RichMarkdownEditor extends StatefulWidget {
 
 class _RichMarkdownEditorState extends State<RichMarkdownEditor> {
   bool _previewMode = false;
+  final PostAttachmentService _attachmentService = PostAttachmentService();
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +145,9 @@ class _RichMarkdownEditorState extends State<RichMarkdownEditor> {
                         selectable: true,
                         onTapLink: (_, href, __) async {
                           if (href == null || href.isEmpty) return;
-                          final uri = Uri.tryParse(href);
+                          final uri = await _attachmentService.resolveLaunchUri(
+                            href,
+                          );
                           if (uri == null) return;
                           await launchUrl(
                             uri,

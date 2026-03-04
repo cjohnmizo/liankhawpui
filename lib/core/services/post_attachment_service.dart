@@ -42,7 +42,19 @@ class PostAttachmentUploadResult {
       final imageHref = publicUrl.trim().isNotEmpty ? publicUrl : objectPath;
       return '![$label]($imageHref)';
     }
-    return '[$label]($publicUrl)';
+    return '[$label](${encodePrivateDocumentHref(objectPath)})';
+  }
+
+  static String encodePrivateDocumentHref(String objectPath) {
+    return 'lpdoc://attachment?path=${Uri.encodeComponent(objectPath)}';
+  }
+
+  static String? decodePrivateDocumentPath(String href) {
+    final uri = Uri.tryParse(href);
+    if (uri == null || uri.scheme != 'lpdoc') return null;
+    final encodedPath = uri.queryParameters['path'];
+    if (encodedPath == null || encodedPath.trim().isEmpty) return null;
+    return Uri.decodeComponent(encodedPath);
   }
 
   String _escapeMarkdown(String value) {
@@ -185,17 +197,49 @@ class PostAttachmentService {
       objectFileName: objectFileName,
       contentType: contentType,
       cacheControl: _documentCacheControl,
-      generatePublicUrl: true,
+      generatePublicUrl: false,
     );
 
     return PostAttachmentUploadResult(
       type: PostAttachmentType.document,
       fileName: file.name,
       sizeBytes: bytes.length,
-      publicUrl: upload.publicUrl ?? '',
+      publicUrl: '',
       objectPath: upload.objectPath,
       contentType: contentType,
     );
+  }
+
+  Future<String> createSignedUrl({
+    required String objectPath,
+    int expiresInSeconds = 3600,
+  }) async {
+    final normalized = _normalizeObjectPath(objectPath);
+    if (normalized.isEmpty) {
+      throw Exception('Attachment path is empty');
+    }
+    try {
+      return await SupabaseService.client.storage
+          .from(bucketName)
+          .createSignedUrl(normalized, expiresInSeconds);
+    } on StorageException catch (error) {
+      throw Exception('Could not create signed URL: ${error.message}');
+    }
+  }
+
+  Future<Uri?> resolveLaunchUri(
+    String href, {
+    int expiresInSeconds = 3600,
+  }) async {
+    final privatePath = _extractPrivateDocumentPath(href);
+    if (privatePath != null) {
+      final signed = await createSignedUrl(
+        objectPath: privatePath,
+        expiresInSeconds: expiresInSeconds,
+      );
+      return Uri.tryParse(signed);
+    }
+    return Uri.tryParse(href);
   }
 
   Future<_UploadObject> _uploadBytes({
@@ -292,6 +336,34 @@ class PostAttachmentService {
     );
     if (cleaned.isEmpty) return 'posts';
     return cleaned;
+  }
+
+  String _normalizeObjectPath(String objectPath) {
+    var value = objectPath.trim();
+    if (value.startsWith('/')) {
+      value = value.substring(1);
+    }
+    if (value.startsWith('$bucketName/')) {
+      value = value.substring(bucketName.length + 1);
+    }
+    return value;
+  }
+
+  String? _extractPrivateDocumentPath(String href) {
+    final fromCustomScheme =
+        PostAttachmentUploadResult.decodePrivateDocumentPath(href);
+    if (fromCustomScheme != null && fromCustomScheme.isNotEmpty) {
+      return _normalizeObjectPath(fromCustomScheme);
+    }
+
+    final uri = Uri.tryParse(href);
+    if (uri == null) return null;
+    final hasScheme = uri.scheme.isNotEmpty;
+    if (!hasScheme && href.contains('/')) {
+      final normalized = _normalizeObjectPath(href);
+      return normalized.isEmpty ? null : normalized;
+    }
+    return null;
   }
 
   String _toKb(int bytes) => (bytes / 1024).toStringAsFixed(1);
