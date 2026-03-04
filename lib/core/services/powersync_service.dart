@@ -20,11 +20,13 @@ class PowerSyncService {
   bool _isInitialized = false;
   bool _isConnected = false;
   bool _remoteSyncEnabled = true;
+  bool _pausedForAuthError = false;
   SupabaseConnector? _connector;
   bool _lifecycleStarted = false;
   bool _syncInFlight = false;
   StreamSubscription<AuthState>? _authStateSubscription;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  StreamSubscription<SyncStatus>? _statusSubscription;
   Timer? _retryTimer;
 
   static const Duration _retryDelay = Duration(seconds: 8);
@@ -81,6 +83,7 @@ class PowerSyncService {
     if (!_isInitialized || !_remoteSyncEnabled) return;
     if (_syncInFlight) return;
 
+    _pausedForAuthError = false;
     await _attemptAutoSync(reason: 'manual_sync_prepare');
     if (!_isConnected || _syncInFlight) return;
 
@@ -134,6 +137,8 @@ class PowerSyncService {
 
     db = PowerSyncDatabase(schema: schema, path: path);
     await db.initialize();
+    await _statusSubscription?.cancel();
+    _statusSubscription = db.statusStream.listen(_onSyncStatusChanged);
     _isInitialized = true;
   }
 
@@ -162,7 +167,7 @@ class PowerSyncService {
   }
 
   Future<void> _attemptAutoSync({required String reason}) async {
-    if (!_remoteSyncEnabled || _syncInFlight) return;
+    if (!_remoteSyncEnabled || _syncInFlight || _pausedForAuthError) return;
     _syncInFlight = true;
 
     try {
@@ -195,17 +200,59 @@ class PowerSyncService {
       case AuthChangeEvent.signedOut:
       // ignore: deprecated_member_use
       case AuthChangeEvent.userDeleted:
+        _pausedForAuthError = false;
         unawaited(_disconnectIfNeeded());
         _cancelRetry();
         return;
       case AuthChangeEvent.signedIn:
-      case AuthChangeEvent.tokenRefreshed:
       case AuthChangeEvent.userUpdated:
       case AuthChangeEvent.initialSession:
       case AuthChangeEvent.passwordRecovery:
       case AuthChangeEvent.mfaChallengeVerified:
+        _pausedForAuthError = false;
         unawaited(_attemptAutoSync(reason: 'auth_${state.event.name}'));
         return;
+      case AuthChangeEvent.tokenRefreshed:
+        if (_pausedForAuthError) return;
+        unawaited(_attemptAutoSync(reason: 'auth_${state.event.name}'));
+        return;
+    }
+  }
+
+  void _onSyncStatusChanged(SyncStatus status) {
+    if (!_remoteSyncEnabled) return;
+    if (_pausedForAuthError) return;
+    final session = SupabaseService.client.auth.currentSession;
+    if (session == null) return;
+
+    final rawError = status.anyError?.toString();
+    if (rawError == null || rawError.isEmpty) return;
+
+    final normalized = rawError.toLowerCase();
+    final isAuthError =
+        normalized.contains('authorization error') ||
+        normalized.contains('401 unauthorized') ||
+        normalized.contains('psync_s2101') ||
+        normalized.contains('token kid') ||
+        normalized.contains('credentials error');
+    final isMissingRulesError =
+        normalized.contains('psync_s2302') ||
+        normalized.contains('no sync rules available');
+    if (!isAuthError && !isMissingRulesError) return;
+
+    _pausedForAuthError = true;
+    _cancelRetry();
+    unawaited(_disconnectIfNeeded());
+    if (isMissingRulesError) {
+      debugPrint(
+        'PowerSync paused: no sync rules available on the PowerSync instance. '
+        'Deploy sync rules and tap Sync Now.',
+      );
+    } else {
+      debugPrint(
+        'PowerSync paused due to repeated authentication errors. '
+        'Use Sync Now after backend JWT key config is fixed.',
+      );
     }
   }
 

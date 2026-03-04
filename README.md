@@ -84,7 +84,12 @@ Proprietary. All rights reserved. See `LICENSE` for details.
    ```
    Function configuration details: [`supabase/functions/README.md`](supabase/functions/README.md)
 
-5. **Run the App**:
+5. **Deploy PowerSync Sync Rules (Required)**:
+   If sync status shows `PSYNC_S2302: No sync rules available`, open your
+   PowerSync dashboard and deploy the rules from
+   [`powersync/sync-rules.yaml`](powersync/sync-rules.yaml).
+
+6. **Run the App**:
    ```bash
    flutter run
    ```

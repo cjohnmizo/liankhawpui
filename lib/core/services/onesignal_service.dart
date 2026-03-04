@@ -65,17 +65,44 @@ class OneSignalService {
     final safeUserId = userId?.trim();
     try {
       if (safeUserId == null || safeUserId.isEmpty || safeUserId == 'guest') {
-        // Avoid logging out on cold start when there was never a mapped user.
-        if (_lastExternalUserId != null) {
-          await OneSignal.logout();
-          _lastExternalUserId = null;
-        }
+        await OneSignal.logout();
+        _lastExternalUserId = null;
         return;
+      }
+
+      if (_lastExternalUserId == safeUserId) {
+        return;
+      }
+
+      if (_lastExternalUserId != null && _lastExternalUserId != safeUserId) {
+        await OneSignal.logout();
       }
 
       await OneSignal.login(safeUserId);
       _lastExternalUserId = safeUserId;
     } catch (error) {
+      final message = error.toString();
+      if (message.contains('user-2') ||
+          message.contains('claimed by another User')) {
+        debugPrint(
+          'OneSignal alias conflict detected for $safeUserId. Retrying with forced logout/login.',
+        );
+        try {
+          await OneSignal.logout();
+          if (safeUserId != null &&
+              safeUserId.isNotEmpty &&
+              safeUserId != 'guest') {
+            await OneSignal.login(safeUserId);
+            _lastExternalUserId = safeUserId;
+          } else {
+            _lastExternalUserId = null;
+          }
+          return;
+        } catch (retryError) {
+          debugPrint('OneSignal alias conflict retry failed: $retryError');
+        }
+      }
+
       debugPrint('OneSignal user sync failed: $error');
     }
   }

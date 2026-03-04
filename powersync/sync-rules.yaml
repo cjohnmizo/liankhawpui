@@ -1,0 +1,28 @@
+bucket_definitions:
+  public_content:
+    data:
+      - SELECT * FROM announcements
+      - SELECT * FROM organizations
+      - SELECT * FROM office_bearers
+      - SELECT * FROM books
+      - SELECT * FROM chapters
+      - SELECT * FROM news
+        WHERE is_published = true
+
+  self_profile:
+    parameters: |
+      SELECT
+        request.user_id() AS user_id
+    data:
+      - SELECT * FROM profiles
+        WHERE id = bucket.user_id
+
+  staff_content:
+    parameters: |
+      SELECT
+        ifnull(request.jwt() ->> 'role', 'guest') AS role
+    data:
+      - SELECT * FROM news
+        WHERE bucket.role = 'editor' OR bucket.role = 'admin'
+      - SELECT * FROM profiles
+        WHERE bucket.role = 'editor' OR bucket.role = 'admin'

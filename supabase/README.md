@@ -14,7 +14,7 @@ The Flutter client calls an Edge Function named `powersync-token` (configurable 
 ```
 
 Use the function to mint a short-lived PowerSync JWT per authenticated user.
-If the function is not yet deployed, the Flutter app currently falls back to the Supabase access token.
+If the function is not yet deployed (or returns an invalid token), remote PowerSync sync will remain disconnected.
 
 ## Suggested Server Functions
 1. `powersync-token`: returns signed PowerSync token.

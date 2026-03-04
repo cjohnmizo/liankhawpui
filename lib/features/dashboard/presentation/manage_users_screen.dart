@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:liankhawpui/features/auth/domain/app_user.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 import 'package:liankhawpui/features/dashboard/presentation/dashboard_providers.dart';
 import 'package:liankhawpui/features/auth/domain/user_role.dart';
@@ -235,7 +236,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
     );
   }
 
-  Widget _buildUserCard(profile, bool isDark, bool isAdmin) {
+  Widget _buildUserCard(AppUser profile, bool isDark, bool isAdmin) {
     return GlassCard(
       isPremium: false,
       padding: const EdgeInsets.all(16),
@@ -524,7 +525,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
     );
   }
 
-  void _confirmDelete(profile) {
+  void _confirmDelete(AppUser profile) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -557,7 +558,7 @@ class _ManageUsersScreenState extends ConsumerState<ManageUsersScreen> {
     );
   }
 
-  void _confirmDecline(profile) {
+  void _confirmDecline(AppUser profile) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

@@ -62,8 +62,7 @@ Deno.serve(async (req) => {
     }
 
     const secretB64Url = requiredEnv("POWERSYNC_JWT_SECRET_BASE64URL");
-    const jwtKid = Deno.env.get("POWERSYNC_JWT_KID")?.trim() ??
-      "powersync-hs256";
+    const jwtKid = Deno.env.get("POWERSYNC_JWT_KID")?.trim() ?? "";
     const jwtIssuer = Deno.env.get("POWERSYNC_JWT_ISSUER")?.trim() ??
       `${supabaseUrl}/functions/v1/powersync-token`;
     const ttlSeconds = parseTtlSeconds(
@@ -102,12 +101,16 @@ Deno.serve(async (req) => {
       ["sign"],
     );
 
+    const protectedHeader: Record<string, string> = {
+      alg: "HS256",
+      typ: "JWT",
+    };
+    if (jwtKid.length > 0) {
+      protectedHeader.kid = jwtKid;
+    }
+
     const token = await new SignJWT({ role })
-      .setProtectedHeader({
-        alg: "HS256",
-        typ: "JWT",
-        kid: jwtKid,
-      })
+      .setProtectedHeader(protectedHeader)
       .setSubject(user.id)
       .setIssuer(jwtIssuer)
       .setAudience(powersyncUrl)

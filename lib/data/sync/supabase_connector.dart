@@ -140,23 +140,56 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     final session = await _getFreshSession();
     if (session == null) return null;
 
-    final token =
-        await _fetchPowerSyncToken(session.accessToken) ?? session.accessToken;
+    final token = await _fetchPowerSyncToken(session.accessToken);
+    if (token == null || token.isEmpty) {
+      debugPrint(
+        'PowerSync credentials unavailable: token function did not return a valid token.',
+      );
+      return null;
+    }
 
     return PowerSyncCredentials(endpoint: EnvConfig.powerSyncUrl, token: token);
   }
 
   Future<Session?> _getFreshSession() async {
     final auth = SupabaseService.client.auth;
-    try {
-      await auth.refreshSession();
-    } catch (_) {
-      // Fall back to the active session snapshot.
+    final current = auth.currentSession;
+    if (current == null) return null;
+
+    final expiresAt = current.expiresAt;
+    final nowInSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final expiresInSeconds = expiresAt == null
+        ? null
+        : expiresAt - nowInSeconds;
+
+    // Reuse a healthy session to avoid unnecessary refresh noise while app state settles.
+    if (expiresInSeconds == null || expiresInSeconds > 45) {
+      return current;
     }
-    return auth.currentSession;
+
+    try {
+      final refreshed = await auth.refreshSession();
+      if (refreshed.session != null) {
+        return refreshed.session;
+      }
+    } catch (error) {
+      debugPrint(
+        'Supabase session refresh failed, using current session snapshot: $error',
+      );
+    }
+
+    if (expiresAt != null && expiresAt <= nowInSeconds) {
+      return null;
+    }
+    return current;
   }
 
   Future<String?> _fetchPowerSyncToken(String accessToken) async {
+    final sdkToken = await _fetchPowerSyncTokenViaSdk();
+    if (sdkToken != null && sdkToken.isNotEmpty) {
+      return sdkToken;
+    }
+
     final bearer = accessToken.startsWith('Bearer ')
         ? accessToken
         : 'Bearer $accessToken';
@@ -182,12 +215,32 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         }
       } else {
         debugPrint(
-          'PowerSync token function HTTP call failed (${response.statusCode}), falling back to Supabase access token.',
+          'PowerSync token function HTTP call failed (${response.statusCode}).',
         );
       }
     } catch (error) {
+      debugPrint('PowerSync token function HTTP call unavailable: $error');
+    }
+
+    return null;
+  }
+
+  Future<String?> _fetchPowerSyncTokenViaSdk() async {
+    try {
+      final response = await SupabaseService.client.functions.invoke(
+        EnvConfig.powerSyncTokenFunction,
+        body: const <String, dynamic>{},
+      );
+      final token = _extractToken(response.data);
+      if (token != null && token.isNotEmpty) {
+        return token;
+      }
       debugPrint(
-        'PowerSync token function HTTP call unavailable, falling back to Supabase access token: $error',
+        'PowerSync token function SDK invoke returned an empty token. Falling back to HTTP call.',
+      );
+    } catch (error) {
+      debugPrint(
+        'PowerSync token function SDK invoke failed, falling back to HTTP call: $error',
       );
     }
 
