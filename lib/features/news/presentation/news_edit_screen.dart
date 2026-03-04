@@ -132,7 +132,8 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
       setState(() {
         _attachments.add(result);
         if (_imageUrlController.text.trim().isEmpty) {
-          _imageUrlController.text = result.publicUrl;
+          _imageUrlController.text =
+              result.preferredListImageUrl ?? result.publicUrl;
         }
       });
 
@@ -284,7 +285,7 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Image up to 40 KB, document up to 70 KB.',
+                          'Images are auto-optimized (Normal/Low Data). Documents up to 5 MB.',
                           style: AppTextStyles.bodySmall.copyWith(
                             color: Theme.of(
                               context,

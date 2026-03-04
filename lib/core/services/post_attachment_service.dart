@@ -16,18 +16,31 @@ class PostAttachmentUploadResult {
   final String fileName;
   final int sizeBytes;
   final String publicUrl;
+  final String objectPath;
+  final String contentType;
+  final String? thumbObjectPath;
+  final String? thumbPublicUrl;
+  final String? thumbContentType;
 
   const PostAttachmentUploadResult({
     required this.type,
     required this.fileName,
     required this.sizeBytes,
     required this.publicUrl,
+    required this.objectPath,
+    required this.contentType,
+    this.thumbObjectPath,
+    this.thumbPublicUrl,
+    this.thumbContentType,
   });
+
+  String? get preferredListImageUrl => thumbPublicUrl ?? publicUrl;
 
   String toMarkdown() {
     final label = _escapeMarkdown(fileName);
     if (type == PostAttachmentType.image) {
-      return '![$label]($publicUrl)';
+      final imageHref = publicUrl.trim().isNotEmpty ? publicUrl : objectPath;
+      return '![$label]($imageHref)';
     }
     return '[$label]($publicUrl)';
   }
@@ -37,16 +50,29 @@ class PostAttachmentUploadResult {
   }
 }
 
+class _UploadObject {
+  final String objectPath;
+  final String? publicUrl;
+
+  const _UploadObject({required this.objectPath, this.publicUrl});
+}
+
 class PostAttachmentService {
   static const String bucketName = 'post-attachments';
-  static const int maxImageBytes = 40 * 1024;
-  static const int maxDocumentBytes = 70 * 1024;
+  static const int maxDocumentBytes = 5 * 1024 * 1024;
   static const List<String> allowedDocumentExtensions = <String>[
     'pdf',
     'doc',
     'docx',
     'txt',
   ];
+  static const String _postImageFolder = 'post-images';
+  static const String _postThumbFolder = 'post-thumbs';
+
+  static const String _thumbCacheControl =
+      'public, max-age=31536000, immutable';
+  static const String _fullImageCacheControl = 'public, max-age=604800';
+  static const String _documentCacheControl = 'private, max-age=3600';
 
   final ImageService _imageService;
   final Uuid _uuid;
@@ -59,36 +85,62 @@ class PostAttachmentService {
     required String folder,
     required bool lowDataMode,
   }) async {
+    // Retained for backward compatibility; image uploads now use fixed folders.
+    final _ = folder;
     final imageFile = await _imageService.pickImageFromGallery(
       lowDataMode: lowDataMode,
     );
     if (imageFile == null) return null;
 
-    final compressedData = await _imageService.compressImageToTargetSize(
+    final fullPreset = lowDataMode
+        ? MediaPreset.lowDataPostFull
+        : MediaPreset.postFull;
+    final thumbPreset = lowDataMode
+        ? MediaPreset.lowDataPostThumb
+        : MediaPreset.postThumb;
+
+    final processedFull = await _imageService.processImage(
       imageFile,
-      targetSizeKb: 40,
-      minWidth: lowDataMode ? 540 : 720,
-      minHeight: lowDataMode ? 540 : 720,
-      initialQuality: lowDataMode ? 62 : 72,
-      maxIterations: 12,
+      preset: fullPreset,
     );
-    if (compressedData == null) {
-      throw Exception('Failed to compress image');
-    }
+    final processedThumb = await _imageService.processImage(
+      imageFile,
+      preset: thumbPreset,
+    );
 
-    if (compressedData.length > maxImageBytes) {
-      throw Exception(
-        'Image is ${_toKb(compressedData.length)} KB after compression. '
-        'Choose a simpler image (limit: 40 KB).',
-      );
-    }
+    final baseName = _buildObjectBaseName();
+    final fullExtension = _extensionForContentType(processedFull.contentType);
+    final thumbExtension = _extensionForContentType(processedThumb.contentType);
+    final fullFileName = '$baseName$fullExtension';
+    final thumbFileName = '${baseName}_thumb$thumbExtension';
 
-    return _uploadBytes(
-      bytes: compressedData,
+    final fullUpload = await _uploadBytes(
+      bytes: processedFull.bytes,
+      folder: _postImageFolder,
+      objectFileName: fullFileName,
+      contentType: processedFull.contentType,
+      cacheControl: _fullImageCacheControl,
+      generatePublicUrl: true,
+    );
+    final thumbUpload = await _uploadBytes(
+      bytes: processedThumb.bytes,
+      folder: _postThumbFolder,
+      objectFileName: thumbFileName,
+      contentType: processedThumb.contentType,
+      cacheControl: _thumbCacheControl,
+      generatePublicUrl: true,
+    );
+
+    return PostAttachmentUploadResult(
       type: PostAttachmentType.image,
-      folder: folder,
-      fileName: 'image_${DateTime.now().millisecondsSinceEpoch}.jpg',
-      contentType: 'image/jpeg',
+      fileName: fullFileName,
+      sizeBytes: processedFull.sizeBytes,
+      publicUrl: fullUpload.publicUrl ?? '',
+      objectPath: fullUpload.objectPath,
+      contentType: processedFull.contentType,
+      thumbObjectPath: thumbUpload.objectPath,
+      thumbPublicUrl: thumbUpload.publicUrl,
+      thumbContentType: processedThumb.contentType,
     );
   }
 
@@ -117,7 +169,7 @@ class PostAttachmentService {
     final bytes = await _readPlatformFileBytes(file);
     if (bytes.length > maxDocumentBytes) {
       throw Exception(
-        'Document is ${_toKb(bytes.length)} KB. Max allowed is 70 KB.',
+        'Document is ${_toKb(bytes.length)} KB. Max allowed is 5120 KB.',
       );
     }
 
@@ -125,21 +177,34 @@ class PostAttachmentService {
         lookupMimeType(file.name, headerBytes: bytes.take(16).toList()) ??
         _guessDocContentType(extension);
 
-    return _uploadBytes(
+    final baseName = _buildObjectBaseName();
+    final objectFileName = '$baseName.${extension.toLowerCase()}';
+    final upload = await _uploadBytes(
       bytes: bytes,
-      type: PostAttachmentType.document,
       folder: folder,
+      objectFileName: objectFileName,
+      contentType: contentType,
+      cacheControl: _documentCacheControl,
+      generatePublicUrl: true,
+    );
+
+    return PostAttachmentUploadResult(
+      type: PostAttachmentType.document,
       fileName: file.name,
+      sizeBytes: bytes.length,
+      publicUrl: upload.publicUrl ?? '',
+      objectPath: upload.objectPath,
       contentType: contentType,
     );
   }
 
-  Future<PostAttachmentUploadResult> _uploadBytes({
+  Future<_UploadObject> _uploadBytes({
     required Uint8List bytes,
-    required PostAttachmentType type,
     required String folder,
-    required String fileName,
+    required String objectFileName,
     required String contentType,
+    required String cacheControl,
+    required bool generatePublicUrl,
   }) async {
     final userId = SupabaseService.client.auth.currentUser?.id;
     if (userId == null) {
@@ -147,9 +212,8 @@ class PostAttachmentService {
     }
 
     final cleanFolder = _sanitizePathSegment(folder);
-    final ext = p.extension(fileName).toLowerCase();
-    final objectPath =
-        '$userId/$cleanFolder/${DateTime.now().millisecondsSinceEpoch}_${_uuid.v4().substring(0, 8)}$ext';
+    final fileName = _sanitizeFileName(objectFileName);
+    final objectPath = '$userId/$cleanFolder/$fileName';
 
     try {
       await SupabaseService.client.storage
@@ -157,18 +221,18 @@ class PostAttachmentService {
           .uploadBinary(
             objectPath,
             bytes,
-            fileOptions: FileOptions(contentType: contentType, upsert: false),
+            fileOptions: FileOptions(
+              contentType: contentType,
+              upsert: false,
+              cacheControl: cacheControl,
+            ),
           );
-      final publicUrl = SupabaseService.client.storage
-          .from(bucketName)
-          .getPublicUrl(objectPath);
-
-      return PostAttachmentUploadResult(
-        type: type,
-        fileName: fileName,
-        sizeBytes: bytes.length,
-        publicUrl: publicUrl,
-      );
+      final publicUrl = generatePublicUrl
+          ? SupabaseService.client.storage
+                .from(bucketName)
+                .getPublicUrl(objectPath)
+          : null;
+      return _UploadObject(objectPath: objectPath, publicUrl: publicUrl);
     } on StorageException catch (error) {
       throw Exception('Attachment upload failed: ${error.message}');
     }
@@ -198,6 +262,27 @@ class PostAttachmentService {
       default:
         return 'application/octet-stream';
     }
+  }
+
+  String _extensionForContentType(String contentType) {
+    final value = contentType.toLowerCase();
+    if (value.contains('webp')) return '.webp';
+    if (value.contains('jpeg') || value.contains('jpg')) return '.jpg';
+    if (value.contains('png')) return '.png';
+    return '.bin';
+  }
+
+  String _buildObjectBaseName() {
+    return '${DateTime.now().millisecondsSinceEpoch}_${_uuid.v4().substring(0, 8)}';
+  }
+
+  String _sanitizeFileName(String value) {
+    final extension = p.extension(value).toLowerCase();
+    final base = p
+        .basenameWithoutExtension(value)
+        .replaceAll(RegExp(r'[^a-zA-Z0-9_-]+'), '_');
+    final safeBase = base.isEmpty ? _buildObjectBaseName() : base;
+    return '$safeBase$extension';
   }
 
   String _sanitizePathSegment(String value) {

@@ -83,7 +83,8 @@ class _AnnouncementCreateScreenState
       setState(() {
         _attachments.add(result);
         if (_imageUrlController.text.trim().isEmpty) {
-          _imageUrlController.text = result.publicUrl;
+          _imageUrlController.text =
+              result.preferredListImageUrl ?? result.publicUrl;
         }
       });
 
@@ -193,7 +194,7 @@ class _AnnouncementCreateScreenState
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Image up to 40 KB, document up to 70 KB.',
+                        'Images are auto-optimized (Normal/Low Data). Documents up to 5 MB.',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       const SizedBox(height: 12),
