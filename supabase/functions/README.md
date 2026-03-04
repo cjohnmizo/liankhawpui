@@ -7,10 +7,14 @@
 
 ## Deploy
 ```bash
-supabase functions deploy powersync-token
+supabase functions deploy powersync-token --no-verify-jwt
 supabase functions deploy send-notification
 supabase functions deploy admin-users
 ```
+
+`powersync-token` performs user validation inside the function (`auth.getUser()`),
+so it should be deployed with `--no-verify-jwt` to avoid gateway JWT
+verification conflicts with modern Supabase access token formats.
 
 ## Required Secrets
 Set once per project:

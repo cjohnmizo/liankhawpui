@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:powersync/powersync.dart';
 import 'package:liankhawpui/core/config/env_config.dart';
 import 'package:liankhawpui/core/services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show Session;
 
 class SupabaseConnector extends PowerSyncBackendConnector {
   final PowerSyncDatabase db;
@@ -43,26 +45,61 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
   @override
   Future<PowerSyncCredentials?> fetchCredentials() async {
-    final session = SupabaseService.client.auth.currentSession;
+    final session = await _getFreshSession();
     if (session == null) return null;
 
-    final token = await _fetchPowerSyncToken() ?? session.accessToken;
+    final token =
+        await _fetchPowerSyncToken(session.accessToken) ?? session.accessToken;
 
     return PowerSyncCredentials(endpoint: EnvConfig.powerSyncUrl, token: token);
   }
 
-  Future<String?> _fetchPowerSyncToken() async {
+  Future<Session?> _getFreshSession() async {
+    final auth = SupabaseService.client.auth;
     try {
-      final response = await SupabaseService.client.functions.invoke(
-        EnvConfig.powerSyncTokenFunction,
+      await auth.refreshSession();
+    } catch (_) {
+      // Fall back to the active session snapshot.
+    }
+    return auth.currentSession;
+  }
+
+  Future<String?> _fetchPowerSyncToken(String accessToken) async {
+    final bearer = accessToken.startsWith('Bearer ')
+        ? accessToken
+        : 'Bearer $accessToken';
+
+    try {
+      final endpoint = Uri.parse(
+        '${EnvConfig.supabaseUrl}/functions/v1/${EnvConfig.powerSyncTokenFunction}',
       );
-      return _extractToken(response.data);
+      final response = await http.post(
+        endpoint,
+        headers: {
+          'Authorization': bearer,
+          'apikey': EnvConfig.supabaseAnonKey,
+          'Content-Type': 'application/json',
+        },
+        body: '{}',
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final token = _extractToken(response.body);
+        if (token != null && token.isNotEmpty) {
+          return token;
+        }
+      } else {
+        debugPrint(
+          'PowerSync token function HTTP call failed (${response.statusCode}), falling back to Supabase access token.',
+        );
+      }
     } catch (error) {
       debugPrint(
-        'PowerSync token function unavailable, using Supabase access token fallback: $error',
+        'PowerSync token function HTTP call unavailable, falling back to Supabase access token: $error',
       );
-      return null;
     }
+
+    return null;
   }
 
   String? _extractToken(dynamic data) {

@@ -47,6 +47,7 @@ dependencies:
   connectivity_plus: ^7.0.0
   flutter_dotenv: ^6.0.0
   shared_preferences: ^2.5.3
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:

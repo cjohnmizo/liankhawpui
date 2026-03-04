@@ -68,6 +68,8 @@ Proprietary. All rights reserved. See `LICENSE` for details.
    ```
 
    `SUPABASE_SERVICE_ROLE_KEY` and `ONESIGNAL_REST_API_KEY` must stay server-side only.
+   For Android push delivery, also configure Firebase Sender ID in OneSignal
+   Dashboard under `App Settings -> Android -> Configuration`.
 
 3. **Install Dependencies**:
    ```bash
@@ -76,7 +78,7 @@ Proprietary. All rights reserved. See `LICENSE` for details.
 
 4. **Deploy Backend Functions (Recommended for production)**:
    ```bash
-   supabase functions deploy powersync-token
+   supabase functions deploy powersync-token --no-verify-jwt
    supabase functions deploy send-notification
    supabase functions deploy admin-users
    ```
