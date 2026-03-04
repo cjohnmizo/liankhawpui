@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:liankhawpui/core/services/post_attachment_service.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
+import 'package:liankhawpui/core/utils/markdown_content_utils.dart';
 import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/news/presentation/news_providers.dart';
@@ -38,16 +39,20 @@ class NewsDetailScreen extends ConsumerWidget {
                 if (news == null) {
                   return const Center(child: Text('News article not found'));
                 }
+                final heroImageUrl = _resolveHeroImageUrl(
+                  coverImageUrl: news.imageUrl,
+                  content: news.content,
+                );
 
                 return ListView(
                   children: [
-                    if ((news.imageUrl ?? '').isNotEmpty) ...[
+                    if (heroImageUrl != null) ...[
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: SizedBox(
                           height: 220,
                           child: AdaptiveCachedImage(
-                            imageUrl: news.imageUrl!,
+                            imageUrl: heroImageUrl,
                             fit: BoxFit.cover,
                             placeholderBuilder: (_) => Container(
                               color: Theme.of(
@@ -152,5 +157,19 @@ class NewsDetailScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String? _resolveHeroImageUrl({
+    required String? coverImageUrl,
+    required String content,
+  }) {
+    final markdownImage = firstMarkdownImageUrl(content);
+    if (markdownImage != null && markdownImage.isNotEmpty) {
+      return markdownImage;
+    }
+
+    final cover = coverImageUrl?.trim();
+    if (cover == null || cover.isEmpty) return null;
+    return cover;
   }
 }

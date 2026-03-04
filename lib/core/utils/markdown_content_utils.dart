@@ -29,3 +29,10 @@ String markdownExcerpt(String value, {int maxLength = 140}) {
   if (plain.length <= maxLength) return plain;
   return '${plain.substring(0, maxLength - 3)}...';
 }
+
+String? firstMarkdownImageUrl(String value) {
+  final match = RegExp(r'!\[[^\]]*\]\(([^)\s]+)').firstMatch(value);
+  final raw = match?.group(1)?.trim();
+  if (raw == null || raw.isEmpty) return null;
+  return raw;
+}
