@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -21,22 +23,39 @@ void main() async {
 
     // Initialize Backend Services
     await SupabaseService.initialize();
-    await PowerSyncService().initialize(enableRemoteSync: !_testMode);
+    await PowerSyncService().initialize(enableRemoteSync: false);
+
+    runApp(const ProviderScope(child: LiankhawpuiApp()));
+
     if (_testMode) {
       debugPrint(
         'TEST_MODE is enabled: remote PowerSync sync and OneSignal are disabled.',
       );
-    } else {
-      await OneSignalService.initialize();
-      await OneSignalService.syncExternalUserId(
-        SupabaseService.client.auth.currentUser?.id,
-      );
+      return;
     }
 
-    runApp(const ProviderScope(child: LiankhawpuiApp()));
+    // Keep first render fast; initialize remote services after app start.
+    unawaited(_initializeDeferredServices());
   } catch (e) {
     debugPrint('CRITICAL: app initialization failed: $e');
     runApp(AppBootstrapError(error: e.toString()));
+  }
+}
+
+Future<void> _initializeDeferredServices() async {
+  try {
+    await PowerSyncService().initialize(enableRemoteSync: true);
+  } catch (e) {
+    debugPrint('WARN: PowerSync remote sync initialization failed: $e');
+  }
+
+  try {
+    await OneSignalService.initialize();
+    await OneSignalService.syncExternalUserId(
+      SupabaseService.client.auth.currentUser?.id,
+    );
+  } catch (e) {
+    debugPrint('WARN: OneSignal initialization failed: $e');
   }
 }
 
