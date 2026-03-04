@@ -121,6 +121,7 @@ Required repository secrets:
 - `TEST_EDITOR_PASSWORD` (optional, enables Editor smoke test)
 - `TEST_ADMIN_EMAIL` (optional, enables Admin smoke test)
 - `TEST_ADMIN_PASSWORD` (optional, enables Admin smoke test)
+- `TEST_ADMIN_USERS_FLOW` (optional, defaults to `true` in CI to validate admin create/update/delete user flow)
 
 ## 📂 Project Structure
 
