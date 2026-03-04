@@ -154,3 +154,27 @@ jobs:
               --dart-define=TEST_ADMIN_EMAIL="$TEST_ADMIN_EMAIL" \
               --dart-define=TEST_ADMIN_PASSWORD="$TEST_ADMIN_PASSWORD" \
               --dart-define=TEST_ADMIN_USERS_FLOW=true
+
+      - name: Run data fetching smoke tests
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          TEST_EDITOR_EMAIL: ${{ secrets.TEST_EDITOR_EMAIL }}
+          TEST_EDITOR_PASSWORD: ${{ secrets.TEST_EDITOR_PASSWORD }}
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            flutter drive \
+              --driver=test_driver/integration_test.dart \
+              --target=integration_test/data_fetching_smoke_test.dart \
+              -d emulator-5554 \
+              --profile \
+              --dart-define=TEST_MODE=true \
+              --dart-define=TEST_EDITOR_EMAIL="$TEST_EDITOR_EMAIL" \
+              --dart-define=TEST_EDITOR_PASSWORD="$TEST_EDITOR_PASSWORD" \
+              --dart-define=TEST_ADMIN_EMAIL="$TEST_ADMIN_EMAIL" \
+              --dart-define=TEST_ADMIN_PASSWORD="$TEST_ADMIN_PASSWORD"

@@ -16,8 +16,8 @@ import 'package:liankhawpui/features/announcement/presentation/announcement_list
 import 'package:liankhawpui/features/announcement/presentation/announcement_create_screen.dart';
 import 'package:liankhawpui/features/news/presentation/news_list_screen.dart';
 import 'package:liankhawpui/features/story/presentation/book_list_screen.dart';
-import 'package:liankhawpui/features/story/presentation/chapter_list_screen.dart';
 import 'package:liankhawpui/features/story/presentation/chapter_reader_screen.dart';
+import 'package:liankhawpui/features/story/presentation/story_manage_screen.dart';
 import 'package:liankhawpui/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:liankhawpui/features/dashboard/presentation/manage_users_screen.dart';
 import 'package:liankhawpui/features/auth/presentation/profile_screen.dart';
@@ -32,7 +32,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   const bool testMode = bool.fromEnvironment('TEST_MODE', defaultValue: false);
 
   return GoRouter(
-    initialLocation: '/splash',
+    initialLocation: testMode ? '/' : '/splash',
     refreshListenable: GoRouterRefreshStream(authRepository.authStateChanges),
     routes: [
       GoRoute(
@@ -78,20 +78,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const BookListScreen(),
         routes: [
           GoRoute(
-            path: ':bookId',
+            path: 'manage',
+            builder: (context, state) => const StoryManageScreen(),
+          ),
+          GoRoute(
+            path: 'chapter/:chapterId',
             builder: (context, state) {
-              final bookId = state.pathParameters['bookId']!;
-              return ChapterListScreen(bookId: bookId);
+              final chapterId = state.pathParameters['chapterId']!;
+              return ChapterReaderScreen(chapterId: chapterId);
             },
-            routes: [
-              GoRoute(
-                path: 'chapter/:chapterId',
-                builder: (context, state) {
-                  final chapterId = state.pathParameters['chapterId']!;
-                  return ChapterReaderScreen(chapterId: chapterId);
-                },
-              ),
-            ],
+          ),
+          GoRoute(path: ':bookId', redirect: (_, __) => '/book'),
+          GoRoute(
+            path: ':bookId/chapter/:chapterId',
+            redirect: (_, state) {
+              final chapterId = state.pathParameters['chapterId']!;
+              return '/book/chapter/$chapterId';
+            },
           ),
         ],
       ),
@@ -170,6 +173,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final requiresSignedIn = location.startsWith('/profile');
       final requiresEditor =
           location == '/announcement/create' ||
+          location.startsWith('/book/manage') ||
           location.startsWith('/dashboard');
       final requiresAdminOnly = location.startsWith('/dashboard/users');
 
@@ -182,6 +186,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (isLoggedIn && requiresEditor && !user.role.isEditor) {
+        if (location.startsWith('/book/manage')) {
+          return '/book';
+        }
         return '/';
       }
 

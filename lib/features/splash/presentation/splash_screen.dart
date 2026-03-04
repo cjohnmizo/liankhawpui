@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/config/app_assets.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 
+const bool _testMode = bool.fromEnvironment('TEST_MODE', defaultValue: false);
+
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -19,7 +21,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _handleStartup() async {
-    await Future.delayed(const Duration(milliseconds: 1200));
+    if (!_testMode) {
+      await Future.delayed(const Duration(milliseconds: 350));
+    }
     if (!mounted) return;
     context.go('/');
   }

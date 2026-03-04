@@ -7,12 +7,12 @@ import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/story/presentation/story_providers.dart';
 
 class ChapterListScreen extends ConsumerWidget {
-  final String bookId;
-  const ChapterListScreen({super.key, required this.bookId});
+  final String? bookId;
+  const ChapterListScreen({super.key, this.bookId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final chaptersAsync = ref.watch(bookChaptersProvider(bookId));
+    final chaptersAsync = ref.watch(bookChaptersProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -44,7 +44,7 @@ class ChapterListScreen extends ConsumerWidget {
                           vertical: 10,
                         ),
                         onTap: () {
-                          context.push('/book/$bookId/chapter/${chapter.id}');
+                          context.push('/book/chapter/${chapter.id}');
                         },
                         child: Row(
                           children: [

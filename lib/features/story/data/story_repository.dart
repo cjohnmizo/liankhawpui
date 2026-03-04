@@ -4,12 +4,72 @@ import 'package:liankhawpui/features/story/domain/chapter.dart';
 import 'package:uuid/uuid.dart';
 
 class StoryRepository {
+  static const String singletonBookId = '00000000-0000-0000-0000-000000000001';
+  static const String defaultBookTitle = 'Khawlian Chanchin';
+
   final _db = PowerSyncService().db;
   final _uuid = const Uuid();
 
-  Future<List<Book>> getAllBooks() async {
-    final results = await _db.getAll('SELECT * FROM books ORDER BY title ASC');
-    return results.map((row) => Book.fromRow(row)).toList();
+  Future<Book?> getSingleBook() async {
+    final primary = await _db.getOptional(
+      'SELECT * FROM books WHERE id = ? LIMIT 1',
+      [singletonBookId],
+    );
+    if (primary != null) {
+      return Book.fromRow(primary);
+    }
+
+    final fallback = await _db.getOptional(
+      'SELECT * FROM books ORDER BY title ASC LIMIT 1',
+    );
+    if (fallback == null) {
+      return null;
+    }
+    return Book.fromRow(fallback);
+  }
+
+  Future<Book> getOrCreateSingleBook() async {
+    final existing = await getSingleBook();
+    if (existing != null) {
+      return existing;
+    }
+
+    await _db.execute(
+      '''
+      INSERT INTO books (id, title, author, cover_url, description)
+      VALUES (?, ?, ?, ?, ?)
+      ''',
+      [
+        singletonBookId,
+        defaultBookTitle,
+        null,
+        null,
+        'History and souvenir of Khawlian Village',
+      ],
+    );
+
+    final created = await getSingleBook();
+    if (created == null) {
+      throw StateError('Failed to create singleton book');
+    }
+    return created;
+  }
+
+  Future<void> updateBook({
+    required String id,
+    required String title,
+    String? author,
+    String? coverUrl,
+    String? description,
+  }) async {
+    await _db.execute(
+      '''
+      UPDATE books
+      SET title = ?, author = ?, cover_url = ?, description = ?
+      WHERE id = ?
+      ''',
+      [title, author, coverUrl, description, id],
+    );
   }
 
   Future<List<Chapter>> getChapters(String bookId) async {
@@ -29,33 +89,43 @@ class StoryRepository {
     return Chapter.fromRow(result);
   }
 
-  Future<void> createBook({
-    required String title,
-    String? author,
-    String? coverUrl,
-    String? description,
-  }) async {
-    final id = _uuid.v4();
-    await _db.execute(
-      'INSERT INTO books (id, title, author, cover_url, description) VALUES (?, ?, ?, ?, ?)',
-      [id, title, author, coverUrl, description],
-    );
-  }
-
   Future<void> createChapter({
     required String bookId,
     required String title,
     required String content,
+    String? imageUrl,
     required int chapterNumber,
   }) async {
     final id = _uuid.v4();
     final now = DateTime.now().toIso8601String();
     await _db.execute(
       '''
-      INSERT INTO chapters (id, book_id, title, content, chapter_number, updated_at) 
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO chapters (id, book_id, title, content, image_url, chapter_number, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ''',
-      [id, bookId, title, content, chapterNumber, now],
+      [id, bookId, title, content, imageUrl, chapterNumber, now],
     );
+  }
+
+  Future<void> updateChapter({
+    required String id,
+    required String title,
+    required String content,
+    String? imageUrl,
+    required int chapterNumber,
+  }) async {
+    final now = DateTime.now().toIso8601String();
+    await _db.execute(
+      '''
+      UPDATE chapters
+      SET title = ?, content = ?, image_url = ?, chapter_number = ?, updated_at = ?
+      WHERE id = ?
+      ''',
+      [title, content, imageUrl, chapterNumber, now, id],
+    );
+  }
+
+  Future<void> deleteChapter(String chapterId) async {
+    await _db.execute('DELETE FROM chapters WHERE id = ?', [chapterId]);
   }
 }

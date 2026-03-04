@@ -1,10 +1,12 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
+import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
+import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
+import 'package:liankhawpui/features/story/domain/chapter.dart';
 import 'package:liankhawpui/features/story/presentation/story_providers.dart';
 
 class BookListScreen extends ConsumerWidget {
@@ -12,7 +14,9 @@ class BookListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final booksAsync = ref.watch(allBooksProvider);
+    final user = ref.watch(currentUserProvider);
+    final bookAsync = ref.watch(singleBookProvider);
+    final chaptersAsync = ref.watch(bookChaptersProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -21,130 +25,278 @@ class BookListScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back_rounded),
         ),
         title: const Text('Khawlian Chanchin'),
+        actions: [
+          if (user.role.isEditor)
+            TextButton.icon(
+              onPressed: () => context.push('/book/manage'),
+              icon: const Icon(Icons.edit_note_rounded),
+              label: const Text('Manage'),
+            ),
+        ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: booksAsync.when(
-              data: (books) {
-                if (books.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'No books found',
-                      style: AppTextStyles.titleSmall.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                  );
-                }
-
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    final width = constraints.maxWidth;
-                    final count = width >= 1050
-                        ? 4
-                        : width >= 800
-                        ? 3
-                        : width >= 520
-                        ? 2
-                        : 1;
-
-                    return GridView.builder(
-                      itemCount: books.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: count,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.7,
-                      ),
-                      itemBuilder: (context, index) {
-                        final book = books[index];
-                        return GlassCard(
-                          padding: EdgeInsets.zero,
-                          onTap: () => context.push('/book/${book.id}'),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(12),
-                                  ),
-                                  child: Container(
-                                    width: double.infinity,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerHighest,
-                                    child: book.coverUrl == null
-                                        ? const Icon(
-                                            Icons.menu_book_rounded,
-                                            size: 48,
-                                            color: AppColors.textTertiary,
-                                          )
-                                        : CachedNetworkImage(
-                                            imageUrl: book.coverUrl!,
-                                            fit: BoxFit.cover,
-                                            errorWidget: (_, __, ___) =>
-                                                const Icon(
-                                                  Icons.broken_image_rounded,
-                                                  color: AppColors.textTertiary,
-                                                ),
-                                          ),
-                                  ),
-                                ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(singleBookProvider);
+          ref.invalidate(bookChaptersProvider);
+        },
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+              child: bookAsync.when(
+                data: (book) => chaptersAsync.when(
+                  data: (chapters) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        _BookHeroCard(
+                          title: book.title,
+                          author: book.author,
+                          coverUrl: book.coverUrl,
+                          description: book.description,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Text(
+                              'Chapters',
+                              style: AppTextStyles.titleMedium.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontWeight: FontWeight.w700,
                               ),
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  10,
-                                  8,
-                                  10,
-                                  10,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      book.title,
-                                      style: AppTextStyles.titleSmall.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    if ((book.author ?? '').isNotEmpty) ...[
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        book.author!,
-                                        style: AppTextStyles.bodySmall.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ],
-                                ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '${chapters.length}',
+                              style: AppTextStyles.labelMedium.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
-                            ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        if (chapters.isEmpty)
+                          const GlassCard(
+                            child: Text('No chapters available yet.'),
+                          )
+                        else
+                          for (final chapter in chapters)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: _ChapterTile(
+                                chapter: chapter,
+                                onTap: () =>
+                                    context.push('/book/chapter/${chapter.id}'),
+                              ),
+                            ),
+                        if (user.role.isEditor) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'Admins and editors can manage chapters from the Manage button.',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                        );
-                      },
+                        ],
+                      ],
                     );
                   },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error loading books: $e')),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) =>
+                      Center(child: Text('Error loading chapters: $e')),
+                ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Error loading book: $e')),
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _BookHeroCard extends StatelessWidget {
+  final String title;
+  final String? author;
+  final String? coverUrl;
+  final String? description;
+
+  const _BookHeroCard({
+    required this.title,
+    this.author,
+    this.coverUrl,
+    this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(0),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 700;
+
+          final content = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyles.headlineSmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if ((author ?? '').isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'By $author',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              if ((description ?? '').isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  description!,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ],
+          );
+
+          final cover = ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: isNarrow ? double.infinity : 180,
+              height: isNarrow ? 180 : 250,
+              child: coverUrl == null
+                  ? Container(
+                      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                      child: const Icon(
+                        Icons.menu_book_rounded,
+                        size: 56,
+                        color: AppColors.textTertiary,
+                      ),
+                    )
+                  : AdaptiveCachedImage(
+                      imageUrl: coverUrl!,
+                      fit: BoxFit.cover,
+                      placeholderBuilder: (_) => Container(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHigh,
+                      ),
+                      errorBuilder: (_) => Container(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHigh,
+                        child: const Icon(
+                          Icons.broken_image_rounded,
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+                    ),
+            ),
+          );
+
+          if (isNarrow) {
+            return Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [cover, const SizedBox(height: 12), content],
+              ),
+            );
+          }
+
+          return Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                cover,
+                const SizedBox(width: 14),
+                Expanded(child: content),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ChapterTile extends StatelessWidget {
+  final Chapter chapter;
+  final VoidCallback onTap;
+
+  const _ChapterTile({required this.chapter, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(0),
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.accentGold.withValues(alpha: 0.14),
+              borderRadius: const BorderRadius.horizontal(
+                left: Radius.circular(12),
+              ),
+            ),
+            child: Text(
+              '${chapter.chapterNumber}',
+              style: AppTextStyles.labelMedium.copyWith(
+                color: AppColors.accentGold,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    chapter.title,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if ((chapter.imageUrl ?? '').isNotEmpty)
+                    Text(
+                      'Includes image',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: Icon(Icons.chevron_right_rounded),
+          ),
+        ],
       ),
     );
   }

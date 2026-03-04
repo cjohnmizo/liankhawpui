@@ -7,17 +7,15 @@ final storyRepositoryProvider = Provider<StoryRepository>((ref) {
   return StoryRepository();
 });
 
-final allBooksProvider = FutureProvider<List<Book>>((ref) {
+final singleBookProvider = FutureProvider<Book>((ref) {
   final repo = ref.watch(storyRepositoryProvider);
-  return repo.getAllBooks();
+  return repo.getOrCreateSingleBook();
 });
 
-final bookChaptersProvider = FutureProvider.family<List<Chapter>, String>((
-  ref,
-  bookId,
-) {
+final bookChaptersProvider = FutureProvider<List<Chapter>>((ref) async {
   final repo = ref.watch(storyRepositoryProvider);
-  return repo.getChapters(bookId);
+  final book = await ref.watch(singleBookProvider.future);
+  return repo.getChapters(book.id);
 });
 
 final chapterDetailsProvider = FutureProvider.family<Chapter?, String>((

@@ -40,15 +40,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       body: Column(
         children: [
           Expanded(
-            child: IndexedStack(
-              index: currentIndex,
-              children: [
-                _buildHomeDashboard(context, ref),
-                const NewsListScreen(),
-                const AnnouncementListScreen(),
-                const OrganizationScreen(),
-              ],
-            ),
+            child: _buildActiveTab(currentIndex, ref),
           ),
           const Opacity(
             opacity: 0,
@@ -65,6 +57,21 @@ class _HomePageState extends ConsumerState<HomePage> {
             )
           : null,
     );
+  }
+
+  Widget _buildActiveTab(int currentIndex, WidgetRef ref) {
+    switch (currentIndex) {
+      case 0:
+        return _buildHomeDashboard(context, ref);
+      case 1:
+        return const NewsListScreen();
+      case 2:
+        return const AnnouncementListScreen();
+      case 3:
+        return const OrganizationScreen();
+      default:
+        return _buildHomeDashboard(context, ref);
+    }
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context, AppUser user) {

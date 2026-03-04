@@ -103,6 +103,12 @@ Role dashboard smoke tests (Editor/Admin):
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/role_dashboard_smoke_test.dart -d emulator-5554 --profile --dart-define=TEST_MODE=true --dart-define=TEST_EDITOR_EMAIL=editor@example.com --dart-define=TEST_EDITOR_PASSWORD=... --dart-define=TEST_ADMIN_EMAIL=admin@example.com --dart-define=TEST_ADMIN_PASSWORD=...
 ```
 
+Data fetching smoke tests (posting + history + books/chapters):
+
+```bash
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/data_fetching_smoke_test.dart -d emulator-5554 --profile --dart-define=TEST_MODE=true --dart-define=TEST_EDITOR_EMAIL=editor@example.com --dart-define=TEST_EDITOR_PASSWORD=... --dart-define=TEST_ADMIN_EMAIL=admin@example.com --dart-define=TEST_ADMIN_PASSWORD=...
+```
+
 If role credentials are not provided, role tests are skipped.
 
 ### GitHub Actions CI

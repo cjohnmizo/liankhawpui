@@ -3,6 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
+import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/story/presentation/story_providers.dart';
 
@@ -41,6 +42,31 @@ class ChapterReaderScreen extends ConsumerWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                    if ((chapter.imageUrl ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: SizedBox(
+                          height: 220,
+                          child: AdaptiveCachedImage(
+                            imageUrl: chapter.imageUrl!,
+                            fit: BoxFit.cover,
+                            placeholderBuilder: (_) => Container(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHigh,
+                            ),
+                            errorBuilder: (_) => Container(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHigh,
+                              alignment: Alignment.center,
+                              child: const Icon(Icons.broken_image_rounded),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     GlassCard(
                       child: MarkdownBody(

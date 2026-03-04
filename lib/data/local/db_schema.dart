@@ -57,6 +57,7 @@ const schema = Schema([
     Column.text('book_id'),
     Column.text('title'),
     Column.text('content'), // HTML or Markdown
+    Column.text('image_url'), // Optional chapter image
     Column.integer('chapter_number'),
     Column.text('updated_at'),
   ]),

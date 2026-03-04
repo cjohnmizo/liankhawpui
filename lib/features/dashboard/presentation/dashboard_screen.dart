@@ -71,6 +71,11 @@ class DashboardScreen extends ConsumerWidget {
                         label: 'New Announcement',
                         onTap: () => context.push('/announcement/create'),
                       ),
+                      _ActionPill(
+                        icon: Icons.auto_stories_rounded,
+                        label: 'Manage Khawlian Chanchin',
+                        onTap: () => context.push('/book/manage'),
+                      ),
                       if (currentUser.role.isAdmin || kTestMode)
                         _ActionPill(
                           icon: Icons.person_add_alt_rounded,

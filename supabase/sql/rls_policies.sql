@@ -203,3 +203,41 @@ create policy office_bearers_delete_staff
 on public.office_bearers
 for delete
 using (public.current_app_role() in ('editor', 'admin'));
+
+drop policy if exists books_insert_staff on public.books;
+create policy books_insert_staff
+on public.books
+for insert
+with check (public.current_app_role() in ('editor', 'admin'));
+
+drop policy if exists books_update_staff on public.books;
+create policy books_update_staff
+on public.books
+for update
+using (public.current_app_role() in ('editor', 'admin'))
+with check (public.current_app_role() in ('editor', 'admin'));
+
+drop policy if exists books_delete_staff on public.books;
+create policy books_delete_staff
+on public.books
+for delete
+using (public.current_app_role() in ('editor', 'admin'));
+
+drop policy if exists chapters_insert_staff on public.chapters;
+create policy chapters_insert_staff
+on public.chapters
+for insert
+with check (public.current_app_role() in ('editor', 'admin'));
+
+drop policy if exists chapters_update_staff on public.chapters;
+create policy chapters_update_staff
+on public.chapters
+for update
+using (public.current_app_role() in ('editor', 'admin'))
+with check (public.current_app_role() in ('editor', 'admin'));
+
+drop policy if exists chapters_delete_staff on public.chapters;
+create policy chapters_delete_staff
+on public.chapters
+for delete
+using (public.current_app_role() in ('editor', 'admin'));
