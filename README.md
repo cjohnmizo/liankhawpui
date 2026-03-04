@@ -175,6 +175,7 @@ We take security seriously. If you discover a vulnerability, please check our [S
 Backend setup notes:
 - RLS baseline: [`supabase/sql/rls_policies.sql`](supabase/sql/rls_policies.sql)
 - Edge function guidance: [`supabase/README.md`](supabase/README.md)
+- Storage media paths and access rules: [`docs/storage.md`](docs/storage.md)
 
 ## 🔒 License
 
