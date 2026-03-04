@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
+import 'package:liankhawpui/core/services/post_attachment_service.dart';
+import 'package:liankhawpui/core/widgets/rich_markdown_editor.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_providers.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
@@ -18,7 +21,11 @@ class _AnnouncementCreateScreenState
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   final _imageUrlController = TextEditingController();
+  final _attachmentService = PostAttachmentService();
+  final List<PostAttachmentUploadResult> _attachments =
+      <PostAttachmentUploadResult>[];
   bool _isLoading = false;
+  bool _isUploadingAttachment = false;
 
   @override
   void dispose() {
@@ -61,6 +68,84 @@ class _AnnouncementCreateScreenState
     }
   }
 
+  Future<void> _attachImage() async {
+    if (_isUploadingAttachment || _isLoading) return;
+    setState(() => _isUploadingAttachment = true);
+    final lowDataMode = ref.read(lowDataModeEnabledProvider);
+
+    try {
+      final result = await _attachmentService.pickCompressAndUploadImage(
+        folder: 'announcements',
+        lowDataMode: lowDataMode,
+      );
+      if (result == null || !mounted) return;
+
+      setState(() {
+        _attachments.add(result);
+        if (_imageUrlController.text.trim().isEmpty) {
+          _imageUrlController.text = result.publicUrl;
+        }
+      });
+
+      MarkdownEditing.insertText(
+        _contentController,
+        result.toMarkdown(),
+        addLeadingBreak: true,
+        addTrailingBreak: true,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Image attached (${(result.sizeBytes / 1024).toStringAsFixed(1)} KB)',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Image upload failed: $e')));
+    } finally {
+      if (mounted) setState(() => _isUploadingAttachment = false);
+    }
+  }
+
+  Future<void> _attachDocument() async {
+    if (_isUploadingAttachment || _isLoading) return;
+    setState(() => _isUploadingAttachment = true);
+
+    try {
+      final result = await _attachmentService.pickAndUploadDocument(
+        folder: 'announcements',
+      );
+      if (result == null || !mounted) return;
+
+      setState(() => _attachments.add(result));
+      MarkdownEditing.insertText(
+        _contentController,
+        result.toMarkdown(),
+        addLeadingBreak: true,
+        addTrailingBreak: true,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Document attached (${(result.sizeBytes / 1024).toStringAsFixed(1)} KB)',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Document upload failed: $e')));
+    } finally {
+      if (mounted) setState(() => _isUploadingAttachment = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,14 +167,80 @@ class _AnnouncementCreateScreenState
                   ),
                 ),
                 const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Content (Markdown formatter)',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                RichMarkdownEditor(
+                  controller: _contentController,
+                  hintText:
+                      'Write announcement content. Use toolbar for bold, list, links, and preview.',
+                  minLines: 8,
+                  maxLines: 18,
+                ),
+                const SizedBox(height: 12),
                 GlassCard(
-                  child: TextField(
-                    controller: _contentController,
-                    maxLines: 6,
-                    decoration: const InputDecoration(
-                      labelText: 'Content',
-                      border: InputBorder.none,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Attachments',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Image up to 40 KB, document up to 70 KB.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: _isUploadingAttachment
+                                ? null
+                                : _attachImage,
+                            icon: const Icon(Icons.image_rounded),
+                            label: const Text('Add Image'),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: _isUploadingAttachment
+                                ? null
+                                : _attachDocument,
+                            icon: const Icon(Icons.attach_file_rounded),
+                            label: const Text('Add Document'),
+                          ),
+                        ],
+                      ),
+                      if (_isUploadingAttachment) ...[
+                        const SizedBox(height: 12),
+                        const LinearProgressIndicator(),
+                      ],
+                      if (_attachments.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            for (final item in _attachments)
+                              Chip(
+                                avatar: Icon(
+                                  item.type == PostAttachmentType.image
+                                      ? Icons.image_rounded
+                                      : Icons.description_rounded,
+                                  size: 16,
+                                ),
+                                label: Text(item.fileName),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -97,7 +248,7 @@ class _AnnouncementCreateScreenState
                   child: TextField(
                     controller: _imageUrlController,
                     decoration: const InputDecoration(
-                      labelText: 'Image URL (Optional)',
+                      labelText: 'Cover Image URL (Optional)',
                       border: InputBorder.none,
                     ),
                   ),
@@ -106,8 +257,10 @@ class _AnnouncementCreateScreenState
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: _isLoading ? null : _submit,
-                    child: _isLoading
+                    onPressed: _isLoading || _isUploadingAttachment
+                        ? null
+                        : _submit,
+                    child: _isLoading || _isUploadingAttachment
                         ? const SizedBox(
                             width: 16,
                             height: 16,

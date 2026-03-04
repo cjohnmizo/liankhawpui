@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:powersync/powersync.dart';
 import 'package:liankhawpui/core/config/env_config.dart';
 import 'package:liankhawpui/core/services/supabase_service.dart';
+import 'package:liankhawpui/core/utils/markdown_content_utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show Session;
 
 class SupabaseConnector extends PowerSyncBackendConnector {
@@ -116,7 +117,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     required String content,
   }) {
     final normalizedTitle = title.replaceAll(RegExp(r'\s+'), ' ').trim();
-    final normalizedContent = content.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final normalizedContent = markdownToPlainText(content);
 
     if (normalizedContent.isEmpty) return normalizedTitle;
 

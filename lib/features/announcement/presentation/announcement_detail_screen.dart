@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +8,7 @@ import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_providers.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AnnouncementDetailScreen extends ConsumerWidget {
   final String announcementId;
@@ -128,12 +130,24 @@ class AnnouncementDetailScreen extends ConsumerWidget {
                             ],
                           ),
                           const SizedBox(height: 14),
-                          Text(
-                            announcement.content,
-                            style: AppTextStyles.bodyLarge.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface,
-                              height: 1.7,
+                          MarkdownBody(
+                            data: announcement.content,
+                            selectable: true,
+                            styleSheet: MarkdownStyleSheet(
+                              p: AppTextStyles.bodyLarge.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                height: 1.7,
+                              ),
                             ),
+                            onTapLink: (_, href, __) async {
+                              if (href == null || href.isEmpty) return;
+                              final uri = Uri.tryParse(href);
+                              if (uri == null) return;
+                              await launchUrl(
+                                uri,
+                                mode: LaunchMode.externalApplication,
+                              );
+                            },
                           ),
                         ],
                       ),

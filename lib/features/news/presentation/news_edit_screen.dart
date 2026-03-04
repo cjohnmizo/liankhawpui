@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
+import 'package:liankhawpui/core/services/post_attachment_service.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
+import 'package:liankhawpui/core/widgets/rich_markdown_editor.dart';
 import 'package:liankhawpui/features/news/domain/news.dart';
 import 'package:liankhawpui/features/news/presentation/news_providers.dart';
 
@@ -24,6 +27,10 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
   late String _selectedCategory;
   late bool _isPublished;
   bool _isLoading = false;
+  bool _isUploadingAttachment = false;
+  final _attachmentService = PostAttachmentService();
+  final List<PostAttachmentUploadResult> _attachments =
+      <PostAttachmentUploadResult>[];
 
   final List<String> _categories = [
     'General',
@@ -57,6 +64,12 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
 
   Future<void> _saveNews() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_contentController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Content is required')));
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -104,6 +117,90 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
     }
   }
 
+  Future<void> _attachImage() async {
+    if (_isUploadingAttachment || _isLoading) return;
+    setState(() => _isUploadingAttachment = true);
+    final lowDataMode = ref.read(lowDataModeEnabledProvider);
+
+    try {
+      final result = await _attachmentService.pickCompressAndUploadImage(
+        folder: 'news',
+        lowDataMode: lowDataMode,
+      );
+      if (result == null || !mounted) return;
+
+      setState(() {
+        _attachments.add(result);
+        if (_imageUrlController.text.trim().isEmpty) {
+          _imageUrlController.text = result.publicUrl;
+        }
+      });
+
+      MarkdownEditing.insertText(
+        _contentController,
+        result.toMarkdown(),
+        addLeadingBreak: true,
+        addTrailingBreak: true,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Image attached (${(result.sizeBytes / 1024).toStringAsFixed(1)} KB)',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Image upload failed: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isUploadingAttachment = false);
+    }
+  }
+
+  Future<void> _attachDocument() async {
+    if (_isUploadingAttachment || _isLoading) return;
+    setState(() => _isUploadingAttachment = true);
+
+    try {
+      final result = await _attachmentService.pickAndUploadDocument(
+        folder: 'news',
+      );
+      if (result == null || !mounted) return;
+
+      setState(() => _attachments.add(result));
+      MarkdownEditing.insertText(
+        _contentController,
+        result.toMarkdown(),
+        addLeadingBreak: true,
+        addTrailingBreak: true,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Document attached (${(result.sizeBytes / 1024).toStringAsFixed(1)} KB)',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Document upload failed: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isUploadingAttachment = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = widget.news != null ? 'Edit News' : 'New Article';
@@ -117,7 +214,7 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
         title: Text(title),
         actions: [
           TextButton(
-            onPressed: _isLoading ? null : _saveNews,
+            onPressed: _isLoading || _isUploadingAttachment ? null : _saveNews,
             child: const Text('Save'),
           ),
         ],
@@ -180,21 +277,76 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _fieldLabel(context, 'Content'),
-                  _fieldCard(
-                    child: TextFormField(
-                      controller: _contentController,
-                      maxLines: 14,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        hintText: 'Write your article here...',
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty
-                          ? 'Content is required'
-                          : null,
+                  _fieldLabel(context, 'Attachments'),
+                  GlassCard(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Image up to 40 KB, document up to 70 KB.',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: _isUploadingAttachment
+                                  ? null
+                                  : _attachImage,
+                              icon: const Icon(Icons.image_rounded),
+                              label: const Text('Add Image'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: _isUploadingAttachment
+                                  ? null
+                                  : _attachDocument,
+                              icon: const Icon(Icons.attach_file_rounded),
+                              label: const Text('Add Document'),
+                            ),
+                          ],
+                        ),
+                        if (_isUploadingAttachment) ...[
+                          const SizedBox(height: 10),
+                          const LinearProgressIndicator(),
+                        ],
+                        if (_attachments.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              for (final item in _attachments)
+                                Chip(
+                                  avatar: Icon(
+                                    item.type == PostAttachmentType.image
+                                        ? Icons.image_rounded
+                                        : Icons.description_rounded,
+                                    size: 16,
+                                  ),
+                                  label: Text(item.fileName),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  if (_isLoading) ...[
+                  const SizedBox(height: 16),
+                  _fieldLabel(context, 'Content'),
+                  RichMarkdownEditor(
+                    controller: _contentController,
+                    hintText: 'Write your article with formatting and links...',
+                    minLines: 10,
+                    maxLines: 22,
+                  ),
+                  if (_isLoading || _isUploadingAttachment) ...[
                     const SizedBox(height: 18),
                     const Center(child: CircularProgressIndicator()),
                   ],

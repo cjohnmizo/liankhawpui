@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
+import 'package:liankhawpui/core/utils/markdown_content_utils.dart';
 import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:liankhawpui/core/widgets/app_drawer.dart';
 import 'package:liankhawpui/core/widgets/app_logo.dart';
@@ -493,7 +494,7 @@ class _CompactAnnouncementCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  announcement.content,
+                  markdownExcerpt(announcement.content, maxLength: 120),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.bodySmall.copyWith(

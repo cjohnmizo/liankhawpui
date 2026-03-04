@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:liankhawpui/core/utils/markdown_content_utils.dart';
 import 'package:liankhawpui/features/announcement/domain/announcement.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
@@ -100,7 +101,7 @@ class AnnouncementCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  announcement.content,
+                  markdownExcerpt(announcement.content, maxLength: 180),
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                     height: 1.5,
