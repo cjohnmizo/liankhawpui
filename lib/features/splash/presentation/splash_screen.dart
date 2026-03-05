@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/config/app_assets.dart';
+import 'package:liankhawpui/core/providers/sync_providers.dart';
+import 'package:liankhawpui/core/services/powersync_service.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
+import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 import 'dart:async';
+import 'package:powersync/powersync.dart' show SyncStatus;
 
 const bool _testMode = bool.fromEnvironment('TEST_MODE', defaultValue: false);
 
@@ -15,8 +19,9 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
-  Timer? _retryTimer;
+  Timer? _continueTimer;
   bool _showContinueAction = false;
+  bool _didNavigate = false;
 
   @override
   void initState() {
@@ -26,46 +31,46 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   Future<void> _handleStartup() async {
     if (!_testMode) {
-      await Future.delayed(const Duration(milliseconds: 350));
+      await Future.delayed(const Duration(milliseconds: 450));
     }
     _goHome();
 
-    // Retry navigation for a few seconds in case router state is still settling.
-    var attempts = 0;
-    _retryTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      attempts += 1;
-      _goHome();
-
-      if (attempts >= 4 && mounted && !_showContinueAction) {
+    _continueTimer = Timer(const Duration(seconds: 6), () {
+      if (mounted && !_didNavigate && !_showContinueAction) {
         setState(() => _showContinueAction = true);
-      }
-      if (attempts >= 10) {
-        timer.cancel();
       }
     });
   }
 
   void _goHome() {
-    if (!mounted) return;
+    if (!mounted || _didNavigate) return;
     try {
+      _didNavigate = true;
       context.go('/');
     } catch (_) {
-      // Best effort: periodic retry + manual continue button handle transient router timing.
+      _didNavigate = false;
+      if (mounted) setState(() => _showContinueAction = true);
     }
   }
 
   @override
   void dispose() {
-    _retryTimer?.cancel();
+    _continueTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final service = ref.watch(powerSyncServiceProvider);
+    final user = ref.watch(currentUserProvider);
+    final statusAsync = ref.watch(powerSyncStatusProvider);
+    final statusText = _buildStatusMessage(
+      service: service,
+      status: statusAsync.valueOrNull,
+      statusIsLoading: statusAsync.isLoading,
+      isGuest: user.isGuest,
+    );
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Center(
@@ -87,6 +92,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 fontWeight: FontWeight.w700,
               ),
             ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: 220,
+              child: Text(
+                statusText,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
+            ),
             if (_showContinueAction) ...[
               const SizedBox(height: 14),
               TextButton(
@@ -101,5 +119,38 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         ),
       ),
     );
+  }
+
+  String _buildStatusMessage({
+    required bool statusIsLoading,
+    required bool isGuest,
+    required SyncStatus? status,
+    required PowerSyncService service,
+  }) {
+    if (statusIsLoading) {
+      return 'Starting local services...';
+    }
+    if (service.isRemoteSyncEnabled == false) {
+      return 'Offline cache ready.';
+    }
+    if (isGuest) {
+      return 'Opening app...';
+    }
+    if (status == null) {
+      return 'Preparing sync...';
+    }
+    if (status.connecting) {
+      return 'Connecting sync service...';
+    }
+    if (status.downloading || status.uploading) {
+      return 'Syncing latest data...';
+    }
+    if (status.connected) {
+      return 'Opening app...';
+    }
+    if (status.anyError != null) {
+      return 'Network issue detected. Opening cached data.';
+    }
+    return 'Opening app...';
   }
 }

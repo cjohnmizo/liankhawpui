@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
 import 'package:liankhawpui/core/providers/sync_providers.dart';
+import 'package:liankhawpui/core/services/onesignal_service.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/theme/theme_provider.dart';
@@ -109,6 +110,39 @@ class SettingsScreen extends ConsumerWidget {
                     const Divider(height: 1),
                     _SyncStatusSection(isDark: isDark),
                   ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              _buildSectionHeader(context, 'Notifications'),
+              const SizedBox(height: 10),
+              GlassCard(
+                isPremium: false,
+                padding: EdgeInsets.zero,
+                child: ListTile(
+                  leading: const Icon(Icons.notifications_active_outlined),
+                  title: Text(
+                    'Enable Push Notifications',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Allow announcement and news alerts on this device',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () async {
+                    await OneSignalService.requestNotificationPermission();
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Notification permission request sent.'),
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 18),
