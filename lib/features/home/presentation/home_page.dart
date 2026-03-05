@@ -182,11 +182,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     final announcementsAsync = ref.watch(announcementsProvider);
     final organizationsAsync = ref.watch(organizationTreeProvider);
     final isOnline = ref.watch(networkOnlineProvider).valueOrNull ?? true;
-    final announcementCount = announcementsAsync.valueOrNull?.length;
-    final newsCount = newsAsync.valueOrNull?.length;
-    final organizationCount = organizationsAsync.valueOrNull == null
-        ? null
-        : _flattenOrganizations(organizationsAsync.valueOrNull!).length;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -213,13 +208,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _HeaderBanner(user: user, isOnline: isOnline),
-                      const SizedBox(height: 12),
-                      _CommunityIndexPanel(
-                        announcementCount: announcementCount,
-                        newsCount: newsCount,
-                        organizationCount: organizationCount,
-                        isOnline: isOnline,
-                      ),
                       const SizedBox(height: 18),
                       _SectionHeader(
                         title: 'Recent News',
@@ -500,102 +488,6 @@ class _HeaderBanner extends StatelessWidget {
                   ),
                 ],
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CommunityIndexPanel extends StatelessWidget {
-  final int? announcementCount;
-  final int? newsCount;
-  final int? organizationCount;
-  final bool isOnline;
-
-  const _CommunityIndexPanel({
-    required this.announcementCount,
-    required this.newsCount,
-    required this.organizationCount,
-    required this.isOnline,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      padding: const EdgeInsets.all(10),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          _IndexChip(
-            icon: Icons.campaign_rounded,
-            label: 'Announcements',
-            value: _formatCount(announcementCount),
-          ),
-          _IndexChip(
-            icon: Icons.newspaper_rounded,
-            label: 'News',
-            value: _formatCount(newsCount),
-          ),
-          _IndexChip(
-            icon: Icons.account_tree_rounded,
-            label: 'Organizations',
-            value: _formatCount(organizationCount),
-          ),
-          _IndexChip(
-            icon: isOnline ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
-            label: 'Sync',
-            value: isOnline ? 'Online' : 'Cached',
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatCount(int? value) {
-    if (value == null) return '--';
-    return '$value';
-  }
-}
-
-class _IndexChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _IndexChip({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: AppColors.accentGold),
-          const SizedBox(width: 6),
-          Text(
-            '$label: ',
-            style: AppTextStyles.labelSmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          Text(
-            value,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontWeight: FontWeight.w700,
             ),
           ),
         ],
