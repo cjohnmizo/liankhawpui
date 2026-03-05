@@ -16,6 +16,8 @@ Uploads are picker-only.
 ## Documents and Images
 
 - Documents are private-by-default and opened using signed URLs.
+- Documents accepted for upload: `PDF` (preferred), `DOCX`, `XLSX`, maximum `5 MB`.
+- Images above `15 MB` input are rejected before optimization.
 - Feed/list cards should prefer thumbnails.
 - Detail screens should prefer full-size images.
 
