@@ -159,8 +159,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   ? 2
                                   : 1;
                               final childAspectRatio = crossAxisCount == 1
-                                  ? 2.1
-                                  : 1.0;
+                                  ? 1.45
+                                  : 0.92;
 
                               return GridView.builder(
                                 shrinkWrap: true,
@@ -214,8 +214,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   ? 2
                                   : 1;
                               final childAspectRatio = crossAxisCount == 1
-                                  ? 2.6
-                                  : 1.6;
+                                  ? 2.2
+                                  : 1.45;
 
                               return GridView.builder(
                                 shrinkWrap: true,
@@ -282,7 +282,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                       crossAxisCount: crossAxisCount,
                                       crossAxisSpacing: 10,
                                       mainAxisSpacing: 10,
-                                      childAspectRatio: 1.08,
+                                      childAspectRatio: 1.0,
                                     ),
                                 itemBuilder: (context, index) =>
                                     _OrganizationGridCard(
@@ -369,29 +369,95 @@ class _HeaderBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassCard(
       padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: SizedBox(
-              height: 170,
-              width: double.infinity,
-              child: Image.asset(AppAssets.landscape, fit: BoxFit.cover),
-            ),
-          ),
-          if (!isOnline)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-              child: Text(
-                'Viewing cached data',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.error,
-                  fontWeight: FontWeight.w700,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          height: 190,
+          width: double.infinity,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset(AppAssets.landscape, fit: BoxFit.cover),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.20),
+                      Colors.black.withValues(alpha: 0.42),
+                    ],
+                  ),
                 ),
               ),
-            ),
-        ],
+              Positioned(
+                left: 10,
+                top: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Khawlian Village',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 12,
+                bottom: 12,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Community Updates',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      'News, announcements, and organizations',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isOnline)
+                Positioned(
+                  right: 10,
+                  bottom: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Offline cache',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -440,7 +506,11 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
         if (actionLabel != null && onActionTap != null)
-          TextButton(onPressed: onActionTap, child: Text(actionLabel!)),
+          TextButton.icon(
+            onPressed: onActionTap,
+            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+            label: Text(actionLabel!),
+          ),
       ],
     );
   }
@@ -453,7 +523,7 @@ class _AnnouncementGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final preview = markdownExcerpt(announcement.content, maxLength: 110);
+    final preview = markdownExcerpt(announcement.content, maxLength: 120);
     return GlassCard(
       onTap: () => context.push('/announcement/${announcement.id}'),
       child: Column(
@@ -480,6 +550,24 @@ class _AnnouncementGridCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (announcement.isPinned)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentGold.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Pinned',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.accentGold,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 8),
@@ -493,11 +581,21 @@ class _AnnouncementGridCard extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          Text(
-            timeago.format(announcement.createdAt),
-            style: AppTextStyles.labelSmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+          Row(
+            children: [
+              const Icon(
+                Icons.access_time_rounded,
+                size: 12,
+                color: AppColors.textTertiary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                timeago.format(announcement.createdAt),
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -517,6 +615,7 @@ class _NewsGridCard extends StatelessWidget {
       coverUrl: news.coverUrl ?? firstMarkdownImageUrl(news.content),
       legacyImageUrl: news.legacyImageUrl,
     );
+    final preview = markdownExcerpt(news.content, maxLength: 80);
 
     return GlassCard(
       onTap: () => context.push('/news/${news.id}'),
@@ -555,6 +654,26 @@ class _NewsGridCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  margin: const EdgeInsets.only(bottom: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentGold.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    news.category,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.accentGold,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
                 Text(
                   news.title,
                   maxLines: 2,
@@ -562,6 +681,15 @@ class _NewsGridCard extends StatelessWidget {
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  preview,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -645,6 +773,12 @@ class _OrganizationGridCard extends StatelessWidget {
             style: AppTextStyles.labelSmall.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
+          ),
+          const SizedBox(height: 6),
+          Icon(
+            Icons.arrow_forward_rounded,
+            size: 14,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ],
       ),
