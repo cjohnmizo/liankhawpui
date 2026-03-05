@@ -20,7 +20,7 @@ class _AnnouncementCreateScreenState
     extends ConsumerState<AnnouncementCreateScreen> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
-  final _imageUrlController = TextEditingController();
+  String? _selectedCoverImageUrl;
   final _attachmentService = PostAttachmentService();
   final List<PostAttachmentUploadResult> _attachments =
       <PostAttachmentUploadResult>[];
@@ -31,7 +31,6 @@ class _AnnouncementCreateScreenState
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
-    _imageUrlController.dispose();
     super.dispose();
   }
 
@@ -52,9 +51,7 @@ class _AnnouncementCreateScreenState
           .createAnnouncement(
             title: _titleController.text.trim(),
             content: _contentController.text.trim(),
-            imageUrl: _imageUrlController.text.trim().isEmpty
-                ? null
-                : _imageUrlController.text.trim(),
+            imageUrl: _normalizeImageValue(_selectedCoverImageUrl),
             userId: user.id,
           );
       if (mounted) context.pop();
@@ -82,9 +79,10 @@ class _AnnouncementCreateScreenState
 
       setState(() {
         _attachments.add(result);
-        if (_imageUrlController.text.trim().isEmpty) {
-          _imageUrlController.text =
-              result.preferredListImageUrl ?? result.publicUrl;
+        if (_selectedCoverImageUrl == null) {
+          _selectedCoverImageUrl = _normalizeImageValue(
+            result.preferredListImageUrl ?? result.publicUrl,
+          );
         }
       });
 
@@ -197,7 +195,7 @@ class _AnnouncementCreateScreenState
                         'Images are auto-optimized (Normal/Low Data). Documents up to 5 MB.',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                      if (_imageUrlController.text.trim().isNotEmpty) ...[
+                      if (_selectedCoverImageUrl != null) ...[
                         const SizedBox(height: 10),
                         Row(
                           children: [
@@ -211,9 +209,9 @@ class _AnnouncementCreateScreenState
                             ),
                             TextButton(
                               onPressed: () {
-                                setState(() => _imageUrlController.clear());
+                                setState(() => _selectedCoverImageUrl = null);
                               },
-                              child: const Text('Remove cover'),
+                              child: const Text('Remove image'),
                             ),
                           ],
                         ),
@@ -228,7 +226,7 @@ class _AnnouncementCreateScreenState
                                 ? null
                                 : _attachImage,
                             icon: const Icon(Icons.image_rounded),
-                            label: const Text('Add Image'),
+                            label: const Text('Pick image'),
                           ),
                           OutlinedButton.icon(
                             onPressed: _isUploadingAttachment
@@ -288,5 +286,11 @@ class _AnnouncementCreateScreenState
         ),
       ),
     );
+  }
+
+  String? _normalizeImageValue(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
   }
 }

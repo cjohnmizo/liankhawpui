@@ -23,7 +23,7 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
   late TextEditingController _contentController;
-  late TextEditingController _imageUrlController;
+  String? _selectedCoverImageUrl;
   late String _selectedCategory;
   late bool _isPublished;
   bool _isLoading = false;
@@ -47,9 +47,7 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
     _contentController = TextEditingController(
       text: widget.news?.content ?? '',
     );
-    _imageUrlController = TextEditingController(
-      text: widget.news?.imageUrl ?? '',
-    );
+    _selectedCoverImageUrl = _normalizeImageValue(widget.news?.imageUrl);
     _selectedCategory = widget.news?.category ?? 'General';
     _isPublished = widget.news?.isPublished ?? true;
   }
@@ -58,7 +56,6 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
-    _imageUrlController.dispose();
     super.dispose();
   }
 
@@ -74,9 +71,7 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
     setState(() => _isLoading = true);
     try {
       final repo = ref.read(newsRepositoryProvider);
-      final imageUrl = _imageUrlController.text.trim().isEmpty
-          ? null
-          : _imageUrlController.text.trim();
+      final imageUrl = _normalizeImageValue(_selectedCoverImageUrl);
 
       if (widget.news != null) {
         await repo.updateNews(
@@ -131,9 +126,10 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
 
       setState(() {
         _attachments.add(result);
-        if (_imageUrlController.text.trim().isEmpty) {
-          _imageUrlController.text =
-              result.preferredListImageUrl ?? result.publicUrl;
+        if (_selectedCoverImageUrl == null) {
+          _selectedCoverImageUrl = _normalizeImageValue(
+            result.preferredListImageUrl ?? result.publicUrl,
+          );
         }
       });
 
@@ -281,7 +277,7 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
                             ).colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        if (_imageUrlController.text.trim().isNotEmpty) ...[
+                        if (_selectedCoverImageUrl != null) ...[
                           const SizedBox(height: 10),
                           Row(
                             children: [
@@ -299,9 +295,9 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
                               ),
                               TextButton(
                                 onPressed: () {
-                                  setState(() => _imageUrlController.clear());
+                                  setState(() => _selectedCoverImageUrl = null);
                                 },
-                                child: const Text('Remove cover'),
+                                child: const Text('Remove image'),
                               ),
                             ],
                           ),
@@ -316,7 +312,7 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
                                   ? null
                                   : _attachImage,
                               icon: const Icon(Icons.image_rounded),
-                              label: const Text('Add Image'),
+                              label: const Text('Pick image'),
                             ),
                             OutlinedButton.icon(
                               onPressed: _isUploadingAttachment
@@ -436,5 +432,11 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
         ),
       ),
     );
+  }
+
+  String? _normalizeImageValue(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
   }
 }
