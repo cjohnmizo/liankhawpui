@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:liankhawpui/core/config/app_assets.dart';
 import 'package:liankhawpui/core/providers/network_status_provider.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
@@ -103,7 +102,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildHomeDashboard(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
     final newsAsync = ref.watch(newsStreamProvider);
     final announcementsAsync = ref.watch(announcementsProvider);
     final organizationsAsync = ref.watch(organizationTreeProvider);
@@ -133,7 +131,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _HeaderBanner(user: user, isOnline: isOnline),
+                      _HeaderBanner(isOnline: isOnline),
                       const SizedBox(height: 18),
                       _SectionHeader(
                         title: 'Recent News',
@@ -363,15 +361,12 @@ class _HomePageState extends ConsumerState<HomePage> {
 }
 
 class _HeaderBanner extends StatelessWidget {
-  final AppUser user;
   final bool isOnline;
 
-  const _HeaderBanner({required this.user, required this.isOnline});
+  const _HeaderBanner({required this.isOnline});
 
   @override
   Widget build(BuildContext context) {
-    final today = DateFormat('EEE, d MMM').format(DateTime.now());
-
     return GlassCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -385,48 +380,17 @@ class _HeaderBanner extends StatelessWidget {
               child: Image.asset(AppAssets.landscape, fit: BoxFit.cover),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-            child: Row(
-              children: [
-                const CircularAppLogo(size: 36, padding: 1.2),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Liankhawpui Community Index - $today',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (!user.isGuest)
-                        Text(
-                          user.fullName ?? '',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      if (!isOnline)
-                        Text(
-                          'Viewing cached data',
-                          style: AppTextStyles.labelSmall.copyWith(
-                            color: AppColors.error,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                    ],
-                  ),
+          if (!isOnline)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              child: Text(
+                'Viewing cached data',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w700,
                 ),
-              ],
+              ),
             ),
-          ),
         ],
       ),
     );
