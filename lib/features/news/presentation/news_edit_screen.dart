@@ -84,7 +84,7 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
           title: _titleController.text.trim(),
           content: _contentController.text.trim(),
           category: _selectedCategory,
-          imageUrl: imageUrl,
+          coverImageUrl: imageUrl,
           isPublished: _isPublished,
         );
       } else {
@@ -92,7 +92,7 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
           title: _titleController.text.trim(),
           content: _contentController.text.trim(),
           category: _selectedCategory,
-          imageUrl: imageUrl,
+          coverImageUrl: imageUrl,
           isPublished: _isPublished,
         );
       }

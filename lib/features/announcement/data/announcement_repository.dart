@@ -31,7 +31,7 @@ class AnnouncementRepository {
   Future<void> createAnnouncement({
     required String title,
     required String content,
-    String? imageUrl,
+    String? coverImageUrl,
     String? userId,
   }) async {
     final id = _uuid.v4();
@@ -42,7 +42,7 @@ class AnnouncementRepository {
       INSERT INTO announcements (id, title, content, image_url, created_by, created_at, updated_at, is_pinned)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ''',
-      [id, title, content, imageUrl, userId, now, now, 0],
+      [id, title, content, coverImageUrl, userId, now, now, 0],
     );
   }
 

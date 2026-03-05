@@ -47,7 +47,7 @@ class NewsRepository {
     required String title,
     required String content,
     required String category,
-    String? imageUrl,
+    String? coverImageUrl,
     String? userId,
     bool isPublished = true,
   }) async {
@@ -63,7 +63,7 @@ class NewsRepository {
         id,
         title,
         content,
-        imageUrl,
+        coverImageUrl,
         category,
         userId,
         now,
@@ -77,7 +77,7 @@ class NewsRepository {
     String? title,
     String? content,
     String? category,
-    String? imageUrl,
+    String? coverImageUrl,
     bool? isPublished,
   }) async {
     final updates = <String>[];
@@ -95,9 +95,9 @@ class NewsRepository {
       updates.add('category = ?');
       args.add(category);
     }
-    if (imageUrl != null) {
+    if (coverImageUrl != null) {
       updates.add('image_url = ?');
-      args.add(imageUrl);
+      args.add(coverImageUrl);
     }
     if (isPublished != null) {
       updates.add('is_published = ?');
