@@ -76,11 +76,36 @@ class AboutAppScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '• Community announcements\n'
-                      '• Local news publishing\n'
-                      '• Organization directory\n'
-                      '• Khawlian Chanchin digital stories\n'
-                      '• Offline-first synchronization',
+                      '- Community announcements\n'
+                      '- Local news publishing\n'
+                      '- Organization directory\n'
+                      '- Khawlian Chanchin digital stories\n'
+                      '- Offline-first synchronization',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        height: 1.55,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              GlassCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'About Me',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Hi, I am C. John, the creator and maintainer of Liankhawpui. '
+                      'My goal is to serve Khawlian Village through a practical, reliable, '
+                      'and easy-to-use digital platform for all residents.',
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         height: 1.55,
