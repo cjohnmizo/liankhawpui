@@ -55,3 +55,27 @@ String? resolveDisplayImageUrl({
   }
   return null;
 }
+
+class MarkdownAttachmentLink {
+  final String label;
+  final String href;
+
+  const MarkdownAttachmentLink({required this.label, required this.href});
+}
+
+List<MarkdownAttachmentLink> extractMarkdownAttachmentLinks(String value) {
+  final matches = RegExp(
+    r'(?<!!)\[([^\]]+)\]\(([^)\s]+)\)',
+    multiLine: true,
+  ).allMatches(value);
+
+  return matches
+      .map(
+        (match) => MarkdownAttachmentLink(
+          label: (match.group(1) ?? '').trim(),
+          href: (match.group(2) ?? '').trim(),
+        ),
+      )
+      .where((item) => item.label.isNotEmpty && item.href.isNotEmpty)
+      .toList(growable: false);
+}

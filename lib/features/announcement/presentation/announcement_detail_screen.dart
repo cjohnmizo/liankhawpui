@@ -41,6 +41,9 @@ class AnnouncementDetailScreen extends ConsumerWidget {
                   return const Center(child: Text('Announcement not found'));
                 }
                 final heroImageUrl = _resolveHeroImageUrl(announcement);
+                final attachmentLinks = extractMarkdownAttachmentLinks(
+                  announcement.content,
+                );
 
                 return ListView(
                   children: [
@@ -107,7 +110,7 @@ class AnnouncementDetailScreen extends ConsumerWidget {
                             ),
                           Text(
                             announcement.title,
-                            style: AppTextStyles.headlineSmall.copyWith(
+                            style: AppTextStyles.headlineMedium.copyWith(
                               color: Theme.of(context).colorScheme.onSurface,
                               fontWeight: FontWeight.w700,
                             ),
@@ -115,6 +118,26 @@ class AnnouncementDetailScreen extends ConsumerWidget {
                           const SizedBox(height: 8),
                           Row(
                             children: [
+                              const Icon(
+                                Icons.person_outline_rounded,
+                                size: 14,
+                                color: AppColors.accentGold,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  (announcement.createdBy ?? '').trim().isEmpty
+                                      ? 'Village Council'
+                                      : announcement.createdBy!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
                               const Icon(
                                 Icons.access_time_rounded,
                                 size: 14,
@@ -134,13 +157,59 @@ class AnnouncementDetailScreen extends ConsumerWidget {
                             ],
                           ),
                           const SizedBox(height: 14),
+                          if (attachmentLinks.isNotEmpty) ...[
+                            Text(
+                              'Attachments',
+                              style: AppTextStyles.titleSmall.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            for (final item in attachmentLinks)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    side: BorderSide(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.outlineVariant,
+                                    ),
+                                  ),
+                                  leading: const Icon(
+                                    Icons.attach_file_rounded,
+                                  ),
+                                  title: Text(
+                                    item.label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  onTap: () async {
+                                    final uri = await PostAttachmentService()
+                                        .resolveLaunchUri(item.href);
+                                    if (uri == null) return;
+                                    await launchUrl(
+                                      uri,
+                                      mode: LaunchMode.externalApplication,
+                                    );
+                                  },
+                                ),
+                              ),
+                            const SizedBox(height: 10),
+                          ],
                           MarkdownBody(
                             data: announcement.content,
                             selectable: true,
                             styleSheet: MarkdownStyleSheet(
                               p: AppTextStyles.bodyLarge.copyWith(
+                                fontSize: 17,
                                 color: Theme.of(context).colorScheme.onSurface,
-                                height: 1.7,
+                                height: 1.62,
                               ),
                             ),
                             onTapLink: (_, href, __) async {
