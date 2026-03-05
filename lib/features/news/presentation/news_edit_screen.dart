@@ -5,6 +5,7 @@ import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
 import 'package:liankhawpui/core/services/post_attachment_service.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
+import 'package:liankhawpui/core/utils/markdown_content_utils.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/core/widgets/rich_markdown_editor.dart';
 import 'package:liankhawpui/features/news/domain/news.dart';
@@ -48,7 +49,15 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
     _contentController = TextEditingController(
       text: widget.news?.content ?? '',
     );
-    _selectedCoverPublicUrl = _normalizeImageValue(widget.news?.imageUrl);
+    _selectedCoverPublicUrl = _normalizeImageValue(
+      resolveDisplayImageUrl(
+        thumbUrl: widget.news?.thumbUrl,
+        coverUrl:
+            widget.news?.coverUrl ??
+            firstMarkdownImageUrl(widget.news?.content ?? ''),
+        legacyImageUrl: widget.news?.legacyImageUrl,
+      ),
+    );
     _selectedCategory = widget.news?.category ?? 'General';
     _isPublished = widget.news?.isPublished ?? true;
   }
@@ -76,15 +85,12 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
         _selectedCoverObjectPath == null ||
             _selectedCoverObjectPath!.isNotEmpty,
       );
-      final imageUrl = _normalizeImageValue(_selectedCoverPublicUrl);
-
       if (widget.news != null) {
         await repo.updateNews(
           id: widget.news!.id,
           title: _titleController.text.trim(),
           content: _contentController.text.trim(),
           category: _selectedCategory,
-          coverImageUrl: imageUrl,
           isPublished: _isPublished,
         );
       } else {
@@ -92,7 +98,6 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
           title: _titleController.text.trim(),
           content: _contentController.text.trim(),
           category: _selectedCategory,
-          coverImageUrl: imageUrl,
           isPublished: _isPublished,
         );
       }

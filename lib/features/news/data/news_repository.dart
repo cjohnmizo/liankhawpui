@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:liankhawpui/core/services/powersync_service.dart';
 import 'package:liankhawpui/features/news/domain/news.dart';
 import 'package:uuid/uuid.dart';
@@ -47,28 +48,20 @@ class NewsRepository {
     required String title,
     required String content,
     required String category,
-    String? coverImageUrl,
+    String? legacyImageUrl,
     String? userId,
     bool isPublished = true,
   }) async {
+    _logIgnoredLegacyImageUrl(legacyImageUrl);
     final id = _uuid.v4();
     final now = DateTime.now().toIso8601String();
 
     await _db.execute(
       '''
-      INSERT INTO news (id, title, content, image_url, category, created_by, created_at, is_published)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO news (id, title, content, category, created_by, created_at, is_published)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ''',
-      [
-        id,
-        title,
-        content,
-        coverImageUrl,
-        category,
-        userId,
-        now,
-        isPublished ? 1 : 0,
-      ],
+      [id, title, content, category, userId, now, isPublished ? 1 : 0],
     );
   }
 
@@ -77,9 +70,10 @@ class NewsRepository {
     String? title,
     String? content,
     String? category,
-    String? coverImageUrl,
+    String? legacyImageUrl,
     bool? isPublished,
   }) async {
+    _logIgnoredLegacyImageUrl(legacyImageUrl);
     final updates = <String>[];
     final args = <dynamic>[];
 
@@ -94,10 +88,6 @@ class NewsRepository {
     if (category != null) {
       updates.add('category = ?');
       args.add(category);
-    }
-    if (coverImageUrl != null) {
-      updates.add('image_url = ?');
-      args.add(coverImageUrl);
     }
     if (isPublished != null) {
       updates.add('is_published = ?');
@@ -116,5 +106,11 @@ class NewsRepository {
 
   Future<void> deleteNews(String id) async {
     await _db.execute('DELETE FROM news WHERE id = ?', [id]);
+  }
+
+  void _logIgnoredLegacyImageUrl(String? imageUrl) {
+    if (imageUrl != null && imageUrl.trim().isNotEmpty) {
+      debugPrint('Ignoring legacy imageUrl: URL uploads disabled');
+    }
   }
 }

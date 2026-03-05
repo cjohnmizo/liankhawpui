@@ -384,6 +384,12 @@ class _FeaturedNewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayImageUrl = resolveDisplayImageUrl(
+      thumbUrl: news.thumbUrl,
+      coverUrl: news.coverUrl ?? firstMarkdownImageUrl(news.content),
+      legacyImageUrl: news.legacyImageUrl,
+    );
+
     return SizedBox(
       width: 290,
       child: GlassCard(
@@ -397,7 +403,7 @@ class _FeaturedNewsCard extends StatelessWidget {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(12),
                 ),
-                child: news.imageUrl == null
+                child: displayImageUrl == null
                     ? Container(
                         color: AppColors.surfaceVariantLight,
                         child: const Center(
@@ -408,7 +414,7 @@ class _FeaturedNewsCard extends StatelessWidget {
                         ),
                       )
                     : AdaptiveCachedImage(
-                        imageUrl: news.imageUrl!,
+                        imageUrl: displayImageUrl,
                         fit: BoxFit.cover,
                         placeholderBuilder: (_) =>
                             Container(color: AppColors.surfaceVariantLight),

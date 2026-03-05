@@ -9,6 +9,7 @@ import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/utils/markdown_content_utils.dart';
 import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
+import 'package:liankhawpui/features/news/domain/news.dart';
 import 'package:liankhawpui/features/news/presentation/news_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -39,10 +40,7 @@ class NewsDetailScreen extends ConsumerWidget {
                 if (news == null) {
                   return const Center(child: Text('News article not found'));
                 }
-                final heroImageUrl = _resolveHeroImageUrl(
-                  coverImageUrl: news.imageUrl,
-                  content: news.content,
-                );
+                final heroImageUrl = _resolveHeroImageUrl(news);
 
                 return ListView(
                   children: [
@@ -159,19 +157,12 @@ class NewsDetailScreen extends ConsumerWidget {
     );
   }
 
-  String? _resolveHeroImageUrl({
-    required String? coverImageUrl,
-    required String content,
-  }) {
-    final markdownImage = firstMarkdownImageUrl(content);
-    if (markdownImage != null &&
-        markdownImage.isNotEmpty &&
-        isRenderableImageUrl(markdownImage)) {
-      return markdownImage;
-    }
-
-    final cover = coverImageUrl?.trim();
-    if (cover == null || cover.isEmpty) return null;
-    return cover;
+  String? _resolveHeroImageUrl(News news) {
+    final markdownImage = firstMarkdownImageUrl(news.content);
+    return resolveDisplayImageUrl(
+      thumbUrl: news.thumbUrl,
+      coverUrl: markdownImage ?? news.coverUrl,
+      legacyImageUrl: news.legacyImageUrl,
+    );
   }
 }

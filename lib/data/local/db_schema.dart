@@ -6,7 +6,7 @@ const schema = Schema([
   Table('announcements', [
     Column.text('title'),
     Column.text('content'),
-    Column.text('image_url'), // Optional thumbnail
+    Column.text('image_url'), // Legacy read-only fallback image URL
     Column.text('created_by'), // UUID of creator
     Column.text('created_at'),
     Column.text('updated_at'),
@@ -17,7 +17,7 @@ const schema = Schema([
   Table('news', [
     Column.text('title'),
     Column.text('content'),
-    Column.text('image_url'),
+    Column.text('image_url'), // Legacy read-only fallback image URL
     Column.text('category'), // e.g., 'sports', 'local'
     Column.text('created_by'),
     Column.text('created_at'),

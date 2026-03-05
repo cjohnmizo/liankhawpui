@@ -56,7 +56,6 @@ class _AnnouncementCreateScreenState
           .createAnnouncement(
             title: _titleController.text.trim(),
             content: _contentController.text.trim(),
-            coverImageUrl: _normalizeImageValue(_selectedCoverPublicUrl),
             userId: user.id,
           );
       if (mounted) context.pop();

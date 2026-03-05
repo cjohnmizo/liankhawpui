@@ -176,6 +176,7 @@ Backend setup notes:
 - RLS baseline: [`supabase/sql/rls_policies.sql`](supabase/sql/rls_policies.sql)
 - Edge function guidance: [`supabase/README.md`](supabase/README.md)
 - Storage media paths and access rules: [`docs/storage.md`](docs/storage.md)
+- Media upload policy for contributors: [`docs/media-policy.md`](docs/media-policy.md)
 
 ## 🔒 License
 

@@ -41,3 +41,17 @@ bool isRenderableImageUrl(String value) {
   final normalized = value.trim().toLowerCase();
   return normalized.startsWith('http://') || normalized.startsWith('https://');
 }
+
+String? resolveDisplayImageUrl({
+  String? thumbUrl,
+  String? coverUrl,
+  String? legacyImageUrl,
+}) {
+  for (final candidate in [thumbUrl, coverUrl, legacyImageUrl]) {
+    final normalized = candidate?.trim();
+    if (normalized != null && normalized.isNotEmpty) {
+      return normalized;
+    }
+  }
+  return null;
+}

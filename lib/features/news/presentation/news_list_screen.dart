@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
+import 'package:liankhawpui/core/utils/markdown_content_utils.dart';
 import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/news/presentation/news_providers.dart';
@@ -53,6 +54,13 @@ class NewsListScreen extends ConsumerWidget {
                       ),
                       itemBuilder: (context, index) {
                         final news = newsList[index];
+                        final displayImageUrl = resolveDisplayImageUrl(
+                          thumbUrl: news.thumbUrl,
+                          coverUrl:
+                              news.coverUrl ??
+                              firstMarkdownImageUrl(news.content),
+                          legacyImageUrl: news.legacyImageUrl,
+                        );
                         return GlassCard(
                           onTap: () => context.push('/news/${news.id}'),
                           padding: EdgeInsets.zero,
@@ -64,7 +72,7 @@ class NewsListScreen extends ConsumerWidget {
                                   borderRadius: const BorderRadius.vertical(
                                     top: Radius.circular(12),
                                   ),
-                                  child: news.imageUrl == null
+                                  child: displayImageUrl == null
                                       ? Container(
                                           color: Theme.of(
                                             context,
@@ -77,7 +85,7 @@ class NewsListScreen extends ConsumerWidget {
                                           ),
                                         )
                                       : AdaptiveCachedImage(
-                                          imageUrl: news.imageUrl!,
+                                          imageUrl: displayImageUrl,
                                           fit: BoxFit.cover,
                                           placeholderBuilder: (_) => Container(
                                             color: Theme.of(context)

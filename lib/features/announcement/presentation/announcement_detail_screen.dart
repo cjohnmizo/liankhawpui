@@ -9,6 +9,7 @@ import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/utils/markdown_content_utils.dart';
 import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
+import 'package:liankhawpui/features/announcement/domain/announcement.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -39,10 +40,7 @@ class AnnouncementDetailScreen extends ConsumerWidget {
                 if (announcement == null) {
                   return const Center(child: Text('Announcement not found'));
                 }
-                final heroImageUrl = _resolveHeroImageUrl(
-                  coverImageUrl: announcement.imageUrl,
-                  content: announcement.content,
-                );
+                final heroImageUrl = _resolveHeroImageUrl(announcement);
 
                 return ListView(
                   children: [
@@ -171,19 +169,12 @@ class AnnouncementDetailScreen extends ConsumerWidget {
     );
   }
 
-  String? _resolveHeroImageUrl({
-    required String? coverImageUrl,
-    required String content,
-  }) {
-    final markdownImage = firstMarkdownImageUrl(content);
-    if (markdownImage != null &&
-        markdownImage.isNotEmpty &&
-        isRenderableImageUrl(markdownImage)) {
-      return markdownImage;
-    }
-
-    final cover = coverImageUrl?.trim();
-    if (cover == null || cover.isEmpty) return null;
-    return cover;
+  String? _resolveHeroImageUrl(Announcement announcement) {
+    final markdownImage = firstMarkdownImageUrl(announcement.content);
+    return resolveDisplayImageUrl(
+      thumbUrl: announcement.thumbUrl,
+      coverUrl: markdownImage ?? announcement.coverUrl,
+      legacyImageUrl: announcement.legacyImageUrl,
+    );
   }
 }

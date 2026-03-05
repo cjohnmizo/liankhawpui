@@ -16,6 +16,12 @@ class AnnouncementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final displayImageUrl = resolveDisplayImageUrl(
+      thumbUrl: announcement.thumbUrl,
+      coverUrl:
+          announcement.coverUrl ?? firstMarkdownImageUrl(announcement.content),
+      legacyImageUrl: announcement.legacyImageUrl,
+    );
 
     return GlassCard(
       onTap: onTap,
@@ -25,13 +31,12 @@ class AnnouncementCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (announcement.imageUrl != null &&
-              announcement.imageUrl!.isNotEmpty)
+          if (displayImageUrl != null)
             SizedBox(
               height: 140,
               width: double.infinity,
               child: AdaptiveCachedImage(
-                imageUrl: announcement.imageUrl!,
+                imageUrl: displayImageUrl,
                 fit: BoxFit.cover,
                 placeholderBuilder: (_) => Container(
                   color: isDark

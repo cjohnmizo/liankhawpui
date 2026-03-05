@@ -1,8 +1,12 @@
+import 'package:liankhawpui/core/utils/markdown_content_utils.dart';
+
 class News {
   final String id;
   final String title;
   final String content;
-  final String? imageUrl;
+  final String? legacyImageUrl;
+  final String? coverUrl;
+  final String? thumbUrl;
   final String category; // 'sports', 'local', etc.
   final String? createdBy;
   final DateTime createdAt;
@@ -12,19 +16,29 @@ class News {
     required this.id,
     required this.title,
     required this.content,
-    this.imageUrl,
+    this.legacyImageUrl,
+    this.coverUrl,
+    this.thumbUrl,
     required this.category,
     this.createdBy,
     required this.createdAt,
     this.isPublished = false,
   });
 
+  String? get displayImageUrl => resolveDisplayImageUrl(
+    thumbUrl: thumbUrl,
+    coverUrl: coverUrl,
+    legacyImageUrl: legacyImageUrl,
+  );
+
   factory News.fromRow(Map<String, dynamic> row) {
     return News(
       id: row['id'] as String,
       title: row['title'] as String,
       content: row['content'] as String,
-      imageUrl: row['image_url'] as String?,
+      legacyImageUrl: row['image_url'] as String?,
+      coverUrl: row['cover_url'] as String?,
+      thumbUrl: row['thumb_url'] as String?,
       category: row['category'] as String,
       createdBy: row['created_by'] as String?,
       createdAt: DateTime.parse(row['created_at'] as String),
