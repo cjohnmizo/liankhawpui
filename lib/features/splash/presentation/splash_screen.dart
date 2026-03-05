@@ -92,10 +92,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'LIANKHAWPUI',
+                  const _LogoPaletteText(
+                    text: 'LIANKHAWPUI',
                     style: TextStyle(
-                      color: AppColors.accentGold,
                       fontSize: 22,
                       letterSpacing: 2,
                       fontWeight: FontWeight.w800,
@@ -142,10 +141,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    'C. John',
+                  _LogoPaletteText(
+                    text: 'C. John',
                     style: GoogleFonts.greatVibes(
-                      color: AppColors.accentGold,
                       fontSize: 26,
                       fontWeight: FontWeight.w500,
                     ),
@@ -190,5 +188,45 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       return 'Network issue detected. Opening cached data.';
     }
     return 'Opening app...';
+  }
+}
+
+class _LogoPaletteText extends StatelessWidget {
+  final String text;
+  final TextStyle style;
+
+  const _LogoPaletteText({required this.text, required this.style});
+
+  @override
+  Widget build(BuildContext context) {
+    const gradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        AppColors.accentGoldLight,
+        AppColors.accentGold,
+        AppColors.accentGoldDark,
+      ],
+    );
+
+    return ShaderMask(
+      shaderCallback: (bounds) => gradient.createShader(
+        Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+      ),
+      blendMode: BlendMode.srcIn,
+      child: Text(
+        text,
+        style: style.copyWith(
+          color: Colors.white,
+          shadows: const [
+            Shadow(
+              color: Color(0x33000000),
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
