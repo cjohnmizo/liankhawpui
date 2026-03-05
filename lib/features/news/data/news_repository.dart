@@ -2,53 +2,100 @@ import 'package:flutter/foundation.dart';
 import 'package:liankhawpui/core/services/powersync_service.dart';
 import 'package:liankhawpui/features/news/domain/news.dart';
 import 'package:liankhawpui/features/news/domain/news_comment.dart';
+import 'package:powersync/powersync.dart';
 import 'package:uuid/uuid.dart';
 
 class NewsRepository {
-  final _db = PowerSyncService().db;
+  final _powerSync = PowerSyncService();
   final _uuid = const Uuid();
 
-  Stream<List<News>> watchNews() {
-    return _db
+  Future<PowerSyncDatabase> _ensureDb() async {
+    await _powerSync.ensureLocalDatabaseReady();
+    return _powerSync.db;
+  }
+
+  Stream<List<News>> watchNews() async* {
+    late final PowerSyncDatabase db;
+    try {
+      db = await _ensureDb();
+    } catch (error) {
+      debugPrint('watchNews failed to initialize local DB: $error');
+      yield const <News>[];
+      return;
+    }
+    yield* db
         .watch(
           'SELECT * FROM news WHERE is_published = 1 ORDER BY created_at DESC',
         )
-        .map((results) {
-          return results.map((row) => News.fromRow(row)).toList();
+        .map((results) => results.map((row) => News.fromRow(row)).toList())
+        .handleError((error) {
+          debugPrint('watchNews stream error: $error');
         });
   }
 
   // Admin/Editor view (sees all)
-  Stream<List<News>> watchAllNews() {
-    return _db.watch('SELECT * FROM news ORDER BY created_at DESC').map((
-      results,
-    ) {
-      return results.map((row) => News.fromRow(row)).toList();
-    });
+  Stream<List<News>> watchAllNews() async* {
+    late final PowerSyncDatabase db;
+    try {
+      db = await _ensureDb();
+    } catch (error) {
+      debugPrint('watchAllNews failed to initialize local DB: $error');
+      yield const <News>[];
+      return;
+    }
+    yield* db
+        .watch('SELECT * FROM news ORDER BY created_at DESC')
+        .map((results) => results.map((row) => News.fromRow(row)).toList())
+        .handleError((error) {
+          debugPrint('watchAllNews stream error: $error');
+        });
   }
 
-  Stream<News?> watchNewsById(String id) {
-    return _db
+  Stream<News?> watchNewsById(String id) async* {
+    late final PowerSyncDatabase db;
+    try {
+      db = await _ensureDb();
+    } catch (error) {
+      debugPrint('watchNewsById failed to initialize local DB: $error');
+      yield null;
+      return;
+    }
+    yield* db
         .watch('SELECT * FROM news WHERE id = ? LIMIT 1', parameters: [id])
         .map((results) {
           if (results.isEmpty) return null;
           return News.fromRow(results.first);
+        })
+        .handleError((error) {
+          debugPrint('watchNewsById stream error: $error');
         });
   }
 
-  Stream<List<NewsComment>> watchCommentsByNewsId(String newsId) {
-    return _db
+  Stream<List<NewsComment>> watchCommentsByNewsId(String newsId) async* {
+    late final PowerSyncDatabase db;
+    try {
+      db = await _ensureDb();
+    } catch (error) {
+      debugPrint('watchCommentsByNewsId failed to initialize local DB: $error');
+      yield const <NewsComment>[];
+      return;
+    }
+    yield* db
         .watch(
           'SELECT * FROM news_comments WHERE news_id = ? ORDER BY created_at DESC',
           parameters: [newsId],
         )
-        .map((results) {
-          return results.map((row) => NewsComment.fromRow(row)).toList();
+        .map(
+          (results) => results.map((row) => NewsComment.fromRow(row)).toList(),
+        )
+        .handleError((error) {
+          debugPrint('watchCommentsByNewsId stream error: $error');
         });
   }
 
   Future<News?> getNewsById(String id) async {
-    final row = await _db.getOptional(
+    final db = await _ensureDb();
+    final row = await db.getOptional(
       'SELECT * FROM news WHERE id = ? LIMIT 1',
       [id],
     );
@@ -65,10 +112,11 @@ class NewsRepository {
     bool isPublished = true,
   }) async {
     _logIgnoredLegacyImageUrl(legacyImageUrl);
+    final db = await _ensureDb();
     final id = _uuid.v4();
     final now = DateTime.now().toIso8601String();
 
-    await _db.execute(
+    await db.execute(
       '''
       INSERT INTO news (id, title, content, category, created_by, created_at, is_published)
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -110,14 +158,16 @@ class NewsRepository {
 
     args.add(id); // ID for WHERE clause
 
-    await _db.execute(
+    final db = await _ensureDb();
+    await db.execute(
       'UPDATE news SET ${updates.join(', ')} WHERE id = ?',
       args,
     );
   }
 
   Future<void> deleteNews(String id) async {
-    await _db.execute('DELETE FROM news WHERE id = ?', [id]);
+    final db = await _ensureDb();
+    await db.execute('DELETE FROM news WHERE id = ?', [id]);
   }
 
   Future<void> addComment({
@@ -138,7 +188,8 @@ class NewsRepository {
     final now = DateTime.now().toIso8601String();
     final normalizedAuthor = authorName?.trim();
 
-    await _db.execute(
+    final db = await _ensureDb();
+    await db.execute(
       '''
       INSERT INTO news_comments (id, news_id, user_id, author_name, content, created_at)
       VALUES (?, ?, ?, ?, ?, ?)

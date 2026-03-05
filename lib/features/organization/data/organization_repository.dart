@@ -1,12 +1,24 @@
 import 'package:liankhawpui/core/services/powersync_service.dart';
 import 'package:liankhawpui/features/organization/domain/office_bearer.dart';
 import 'package:liankhawpui/features/organization/domain/organization.dart';
+import 'package:powersync/powersync.dart';
 
 class OrganizationRepository {
-  final _db = PowerSyncService().db;
+  final _powerSync = PowerSyncService();
+
+  Future<PowerSyncDatabase> _ensureDb() async {
+    await _powerSync.ensureLocalDatabaseReady();
+    return _powerSync.db;
+  }
 
   Future<List<Organization>> getAllOrganizations() async {
-    final result = await _db.getAll(
+    late final PowerSyncDatabase db;
+    try {
+      db = await _ensureDb();
+    } catch (_) {
+      return const <Organization>[];
+    }
+    final result = await db.getAll(
       'SELECT * FROM organizations ORDER BY name ASC',
     );
     return result.map((row) => Organization.fromRow(row)).toList();
@@ -44,7 +56,13 @@ class OrganizationRepository {
   }
 
   Future<List<OfficeBearer>> getOfficeBearers(String orgId) async {
-    final result = await _db.getAll(
+    late final PowerSyncDatabase db;
+    try {
+      db = await _ensureDb();
+    } catch (_) {
+      return const <OfficeBearer>[];
+    }
+    final result = await db.getAll(
       'SELECT * FROM office_bearers WHERE org_id = ? ORDER BY rank_order ASC',
       [orgId],
     );
