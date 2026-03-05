@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:liankhawpui/core/services/powersync_service.dart';
 import 'package:liankhawpui/features/news/domain/news.dart';
+import 'package:liankhawpui/features/news/domain/news_comment.dart';
 import 'package:uuid/uuid.dart';
 
 class NewsRepository {
@@ -32,6 +33,17 @@ class NewsRepository {
         .map((results) {
           if (results.isEmpty) return null;
           return News.fromRow(results.first);
+        });
+  }
+
+  Stream<List<NewsComment>> watchCommentsByNewsId(String newsId) {
+    return _db
+        .watch(
+          'SELECT * FROM news_comments WHERE news_id = ? ORDER BY created_at DESC',
+          parameters: [newsId],
+        )
+        .map((results) {
+          return results.map((row) => NewsComment.fromRow(row)).toList();
         });
   }
 
@@ -106,6 +118,42 @@ class NewsRepository {
 
   Future<void> deleteNews(String id) async {
     await _db.execute('DELETE FROM news WHERE id = ?', [id]);
+  }
+
+  Future<void> addComment({
+    required String newsId,
+    required String userId,
+    required String content,
+    String? authorName,
+  }) async {
+    final normalized = content.trim();
+    if (normalized.isEmpty) {
+      throw ArgumentError('Comment cannot be empty.');
+    }
+    if (normalized.length > 800) {
+      throw ArgumentError('Comment is too long. Keep it under 800 characters.');
+    }
+
+    final id = _uuid.v4();
+    final now = DateTime.now().toIso8601String();
+    final normalizedAuthor = authorName?.trim();
+
+    await _db.execute(
+      '''
+      INSERT INTO news_comments (id, news_id, user_id, author_name, content, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ''',
+      [
+        id,
+        newsId,
+        userId,
+        (normalizedAuthor == null || normalizedAuthor.isEmpty)
+            ? null
+            : normalizedAuthor,
+        normalized,
+        now,
+      ],
+    );
   }
 
   void _logIgnoredLegacyImageUrl(String? imageUrl) {

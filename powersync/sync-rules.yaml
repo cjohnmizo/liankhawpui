@@ -8,6 +8,7 @@ bucket_definitions:
       - SELECT * FROM chapters
       - SELECT * FROM news
         WHERE is_published = true
+      - SELECT * FROM news_comments
 
   self_profile:
     parameters: |

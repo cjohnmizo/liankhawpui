@@ -24,6 +24,15 @@ const schema = Schema([
     Column.integer('is_published'),
   ]),
 
+  // NEWS COMMENTS
+  Table('news_comments', [
+    Column.text('news_id'),
+    Column.text('user_id'),
+    Column.text('author_name'),
+    Column.text('content'),
+    Column.text('created_at'),
+  ]),
+
   // ORGANIZATIONS
   Table('organizations', [
     Column.text('name'),
