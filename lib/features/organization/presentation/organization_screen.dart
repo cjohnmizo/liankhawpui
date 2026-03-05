@@ -55,9 +55,11 @@ class _OrganizationScreenState extends ConsumerState<OrganizationScreen> {
                     final allOrganizations = _flattenOrganizations(roots);
                     final filtered = _filterOrganizations(allOrganizations);
                     if (filtered.isEmpty) {
-                      return const AppEmptyState(
-                        message: 'No organizations available',
-                        icon: Icons.business_rounded,
+                      return AppEmptyState(
+                        message: allOrganizations.isEmpty
+                            ? 'No organizations available'
+                            : 'No organizations found for this search',
+                        icon: Icons.search_off_rounded,
                       );
                     }
                     return ListView.builder(
@@ -74,13 +76,9 @@ class _OrganizationScreenState extends ConsumerState<OrganizationScreen> {
                   loading: () => const AppLoadingState(
                     message: 'Loading organizations...',
                   ),
-                  error: (_, __) => Center(
-                    child: Text(
-                      'Failed to load organizations',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.error,
-                      ),
-                    ),
+                  error: (_, __) => const AppEmptyState(
+                    message: 'Could not load organizations',
+                    icon: Icons.error_outline_rounded,
                   ),
                 ),
               ),

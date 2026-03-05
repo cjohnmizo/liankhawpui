@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
-import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/widgets/app_states.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_providers.dart';
 import 'package:liankhawpui/features/announcement/presentation/widgets/announcement_card.dart';
@@ -47,13 +46,14 @@ class AnnouncementListScreen extends ConsumerWidget {
                         : width >= 680
                         ? 2
                         : 1;
+                    final childAspectRatio = crossAxisCount == 1 ? 1.1 : 1.25;
                     return GridView.builder(
                       itemCount: list.length,
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: crossAxisCount,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
-                        childAspectRatio: 1.25,
+                        childAspectRatio: childAspectRatio,
                       ),
                       itemBuilder: (context, index) {
                         final item = list[index];
@@ -149,13 +149,9 @@ class AnnouncementListScreen extends ConsumerWidget {
               },
               loading: () =>
                   const AppLoadingState(message: 'Loading announcements...'),
-              error: (_, __) => Center(
-                child: Text(
-                  'Failed to load announcements',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.error,
-                  ),
-                ),
+              error: (_, __) => const AppEmptyState(
+                message: 'Could not load announcements',
+                icon: Icons.error_outline_rounded,
               ),
             ),
           ),

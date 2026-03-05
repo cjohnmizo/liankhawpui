@@ -41,12 +41,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       key: _scaffoldKey,
       drawer: const AppDrawer(),
       appBar: _buildAppBar(context, user),
-      body: Column(
-        children: [
-          Expanded(child: _buildHomeDashboard(context, ref)),
-          const Opacity(opacity: 0, child: Text('Featured News')),
-        ],
-      ),
+      body: _buildHomeDashboard(context, ref),
       floatingActionButton: user.role.isEditor
           ? FloatingActionButton(
               heroTag: 'home_create_fab',

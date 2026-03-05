@@ -62,6 +62,10 @@ class NewsListScreen extends ConsumerWidget {
                         legacyImageUrl: news.legacyImageUrl,
                       );
                       final relativeTime = timeago.format(news.createdAt);
+                      final preview = markdownExcerpt(
+                        news.content,
+                        maxLength: 100,
+                      );
 
                       return GlassCard(
                         onTap: () => context.push('/news/${news.id}'),
@@ -135,6 +139,18 @@ class NewsListScreen extends ConsumerWidget {
                                     ),
                                   ),
                                   const SizedBox(height: 6),
+                                  Text(
+                                    preview,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
                                   Row(
                                     children: [
                                       const Icon(
@@ -143,12 +159,17 @@ class NewsListScreen extends ConsumerWidget {
                                         color: AppColors.textTertiary,
                                       ),
                                       const SizedBox(width: 4),
-                                      Text(
-                                        '$relativeTime • ${DateFormat.yMMMd().format(news.createdAt)}',
-                                        style: AppTextStyles.bodySmall.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
+                                      Expanded(
+                                        child: Text(
+                                          '$relativeTime • ${DateFormat.yMMMd().format(news.createdAt)}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: AppTextStyles.bodySmall
+                                              .copyWith(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                              ),
                                         ),
                                       ),
                                     ],
@@ -165,13 +186,9 @@ class NewsListScreen extends ConsumerWidget {
               );
             },
             loading: () => const AppLoadingState(message: 'Loading news...'),
-            error: (_, __) => Center(
-              child: Text(
-                'Failed to load news',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.error,
-                ),
-              ),
+            error: (_, __) => const AppEmptyState(
+              message: 'Could not load news',
+              icon: Icons.error_outline_rounded,
             ),
           ),
         ),
