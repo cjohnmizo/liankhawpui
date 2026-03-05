@@ -164,33 +164,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                               icon: Icons.article_outlined,
                             );
                           }
-                          return LayoutBuilder(
-                            builder: (context, constraints) {
-                              final width = constraints.maxWidth;
-                              final crossAxisCount = width >= 960
-                                  ? 3
-                                  : width >= 620
-                                  ? 2
-                                  : 1;
-                              final childAspectRatio = crossAxisCount == 1
-                                  ? 1.45
-                                  : 0.92;
-
-                              return GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: top.length,
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: crossAxisCount,
-                                      crossAxisSpacing: 10,
-                                      mainAxisSpacing: 10,
-                                      childAspectRatio: childAspectRatio,
-                                    ),
-                                itemBuilder: (context, index) =>
-                                    _NewsGridCard(news: top[index]),
-                              );
-                            },
+                          return ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: top.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) =>
+                                _NewsListCard(news: top[index]),
                           );
                         },
                         loading: () => const AppLoadingState(
@@ -219,35 +200,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                               icon: Icons.campaign_outlined,
                             );
                           }
-                          return LayoutBuilder(
-                            builder: (context, constraints) {
-                              final width = constraints.maxWidth;
-                              final crossAxisCount = width >= 960
-                                  ? 3
-                                  : width >= 620
-                                  ? 2
-                                  : 1;
-                              final childAspectRatio = crossAxisCount == 1
-                                  ? 2.2
-                                  : 1.45;
-
-                              return GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: top.length,
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: crossAxisCount,
-                                      crossAxisSpacing: 10,
-                                      mainAxisSpacing: 10,
-                                      childAspectRatio: childAspectRatio,
-                                    ),
-                                itemBuilder: (context, index) =>
-                                    _AnnouncementGridCard(
-                                      announcement: top[index],
-                                    ),
-                              );
-                            },
+                          return ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: top.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) =>
+                                _AnnouncementListCard(announcement: top[index]),
                           );
                         },
                         loading: () => const AppLoadingState(
@@ -530,10 +490,10 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _AnnouncementGridCard extends StatelessWidget {
+class _AnnouncementListCard extends StatelessWidget {
   final Announcement announcement;
 
-  const _AnnouncementGridCard({required this.announcement});
+  const _AnnouncementListCard({required this.announcement});
 
   @override
   Widget build(BuildContext context) {
@@ -587,14 +547,14 @@ class _AnnouncementGridCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             preview,
-            maxLines: 3,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.bodySmall.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.4,
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: 8),
           Row(
             children: [
               const Icon(
@@ -617,10 +577,10 @@ class _AnnouncementGridCard extends StatelessWidget {
   }
 }
 
-class _NewsGridCard extends StatelessWidget {
+class _NewsListCard extends StatelessWidget {
   final News news;
 
-  const _NewsGridCard({required this.news});
+  const _NewsListCard({required this.news});
 
   @override
   Widget build(BuildContext context) {
@@ -633,15 +593,14 @@ class _NewsGridCard extends StatelessWidget {
 
     return GlassCard(
       onTap: () => context.push('/news/${news.id}'),
-      padding: EdgeInsets.zero,
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
-              ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              width: 104,
+              height: 86,
               child: displayImageUrl == null
                   ? Container(
                       color: Theme.of(
@@ -663,8 +622,8 @@ class _NewsGridCard extends StatelessWidget {
                     ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+          const SizedBox(width: 10),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
