@@ -5,12 +5,19 @@ Uploads are picker-only.
 - Allowed: local file selection (gallery, camera, file picker), then upload to storage.
 - Not allowed: pasting/importing image or file URLs for upload.
 - Do not add URL upload fields such as `imageUrl`, `coverUrl`, `remoteUrl`, or similar in create/update request models.
+- Viewing Supabase public URLs or signed URLs is allowed for rendering/opening content.
 
 ## Legacy Data Compatibility
 
 - Some existing rows may still contain legacy URL fields from older versions.
 - These values are read-only fallback for display and must not be written by create/update flows.
 - Display precedence for posts: `thumbUrl ?? coverUrl ?? legacyImageUrl`.
+
+## Documents and Images
+
+- Documents are private-by-default and opened using signed URLs.
+- Feed/list cards should prefer thumbnails.
+- Detail screens should prefer full-size images.
 
 ## Contributor Note
 
