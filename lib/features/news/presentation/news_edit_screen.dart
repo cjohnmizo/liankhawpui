@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
 import 'package:liankhawpui/core/providers/network_status_provider.dart';
 import 'package:liankhawpui/core/services/post_attachment_service.dart';
+import 'package:liankhawpui/core/services/storage_budget_service.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/utils/markdown_content_utils.dart';
@@ -125,6 +126,19 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
 
   Future<void> _attachImage() async {
     if (_isUploadingAttachment || _isLoading) return;
+    final budget = ref.read(storageBudgetProvider).valueOrNull;
+    if ((budget?.percentOf1GB ?? 0) >= 95) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Storage is almost full. Delete old attachments or reduce uploads.',
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
     setState(() => _isUploadingAttachment = true);
     final lowDataMode = ref.read(lowDataModeEnabledProvider);
 
@@ -160,6 +174,7 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
           ),
         ),
       );
+      ref.invalidate(storageBudgetProvider);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -226,6 +241,19 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
 
   Future<void> _attachDocument() async {
     if (_isUploadingAttachment || _isLoading) return;
+    final budget = ref.read(storageBudgetProvider).valueOrNull;
+    if ((budget?.percentOf1GB ?? 0) >= 95) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Storage is almost full. Delete old attachments or reduce uploads.',
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
     setState(() => _isUploadingAttachment = true);
 
     try {
@@ -249,6 +277,7 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
           ),
         ),
       );
+      ref.invalidate(storageBudgetProvider);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -266,6 +295,11 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
   Widget build(BuildContext context) {
     final title = widget.news != null ? 'Edit News' : 'New Article';
     final isOnline = ref.watch(networkOnlineProvider).valueOrNull ?? true;
+    final storageBudgetAsync = ref.watch(storageBudgetProvider);
+    final storageBudget = storageBudgetAsync.valueOrNull;
+    final storagePercent = storageBudget?.percentOf1GB ?? 0;
+    final isStorageNearLimit = storagePercent >= 80;
+    final isStorageBlocked = storagePercent >= 95;
 
     return Scaffold(
       appBar: AppBar(
@@ -352,6 +386,33 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
                             ),
                           ),
                         ],
+                        if (isStorageNearLimit) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isStorageBlocked
+                                  ? AppColors.error.withValues(alpha: 0.14)
+                                  : AppColors.accentGold.withValues(
+                                      alpha: 0.14,
+                                    ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              isStorageBlocked
+                                  ? 'Storage is almost full (${storagePercent.toStringAsFixed(1)}% of 1GB). Uploads are blocked.'
+                                  : 'Storage nearing limit (${storagePercent.toStringAsFixed(1)}% of 1GB used).',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                         if (_selectedCoverPublicUrl != null) ...[
                           const SizedBox(height: 10),
                           Row(
@@ -386,14 +447,20 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
                           runSpacing: 8,
                           children: [
                             OutlinedButton.icon(
-                              onPressed: _isUploadingAttachment || !isOnline
+                              onPressed:
+                                  _isUploadingAttachment ||
+                                      !isOnline ||
+                                      isStorageBlocked
                                   ? null
                                   : _attachImage,
                               icon: const Icon(Icons.image_rounded),
                               label: const Text('Pick image'),
                             ),
                             OutlinedButton.icon(
-                              onPressed: _isUploadingAttachment || !isOnline
+                              onPressed:
+                                  _isUploadingAttachment ||
+                                      !isOnline ||
+                                      isStorageBlocked
                                   ? null
                                   : _attachDocument,
                               icon: const Icon(Icons.attach_file_rounded),

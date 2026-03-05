@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:liankhawpui/core/services/image_service.dart';
+import 'package:liankhawpui/core/services/storage_budget_service.dart';
 import 'package:liankhawpui/core/services/supabase_service.dart';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart' as p;
@@ -121,11 +122,16 @@ class PostAttachmentService {
   static const String _documentCacheControl = 'private, max-age=3600';
 
   final ImageService _imageService;
+  final StorageBudgetService _storageBudgetService;
   final Uuid _uuid;
 
-  PostAttachmentService({ImageService? imageService, Uuid? uuid})
-    : _imageService = imageService ?? ImageService(),
-      _uuid = uuid ?? const Uuid();
+  PostAttachmentService({
+    ImageService? imageService,
+    StorageBudgetService? storageBudgetService,
+    Uuid? uuid,
+  }) : _imageService = imageService ?? ImageService(),
+       _storageBudgetService = storageBudgetService ?? StorageBudgetService(),
+       _uuid = uuid ?? const Uuid();
 
   Future<PostAttachmentUploadResult?> pickCompressAndUploadImage({
     required String folder,
@@ -197,6 +203,26 @@ class PostAttachmentService {
       cacheControl: _thumbCacheControl,
       generatePublicUrl: true,
     );
+    await _storageBudgetService.recordEntries([
+      MediaBudgetEntry(
+        objectPath: fullUpload.objectPath,
+        mimeType: processedFull.contentType,
+        sizeBytes: processedFull.sizeBytes,
+        kind: MediaBudgetKind.image,
+        width: processedFull.width,
+        height: processedFull.height,
+        originalFileName: preview.originalFileName,
+      ),
+      MediaBudgetEntry(
+        objectPath: thumbUpload.objectPath,
+        mimeType: processedThumb.contentType,
+        sizeBytes: processedThumb.sizeBytes,
+        kind: MediaBudgetKind.thumb,
+        width: processedThumb.width,
+        height: processedThumb.height,
+        originalFileName: preview.originalFileName,
+      ),
+    ]);
 
     return PostAttachmentUploadResult(
       type: PostAttachmentType.image,
@@ -269,6 +295,15 @@ class PostAttachmentService {
       cacheControl: _documentCacheControl,
       generatePublicUrl: false,
     );
+    await _storageBudgetService.recordEntries([
+      MediaBudgetEntry(
+        objectPath: upload.objectPath,
+        mimeType: contentType,
+        sizeBytes: bytes.length,
+        kind: MediaBudgetKind.document,
+        originalFileName: file.name,
+      ),
+    ]);
 
     return PostAttachmentUploadResult(
       type: PostAttachmentType.document,

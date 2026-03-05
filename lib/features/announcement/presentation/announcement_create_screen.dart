@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
 import 'package:liankhawpui/core/providers/network_status_provider.dart';
 import 'package:liankhawpui/core/services/post_attachment_service.dart';
+import 'package:liankhawpui/core/services/storage_budget_service.dart';
 import 'package:liankhawpui/core/widgets/rich_markdown_editor.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_providers.dart';
@@ -138,6 +139,18 @@ class _AnnouncementCreateScreenState
 
   Future<void> _attachImage() async {
     if (_isUploadingAttachment || _isLoading) return;
+    final budget = ref.read(storageBudgetProvider).valueOrNull;
+    if ((budget?.percentOf1GB ?? 0) >= 95) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Storage is almost full. Delete old attachments or reduce uploads.',
+          ),
+        ),
+      );
+      return;
+    }
     setState(() => _isUploadingAttachment = true);
     final lowDataMode = ref.read(lowDataModeEnabledProvider);
 
@@ -173,6 +186,7 @@ class _AnnouncementCreateScreenState
           ),
         ),
       );
+      ref.invalidate(storageBudgetProvider);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -236,6 +250,18 @@ class _AnnouncementCreateScreenState
 
   Future<void> _attachDocument() async {
     if (_isUploadingAttachment || _isLoading) return;
+    final budget = ref.read(storageBudgetProvider).valueOrNull;
+    if ((budget?.percentOf1GB ?? 0) >= 95) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Storage is almost full. Delete old attachments or reduce uploads.',
+          ),
+        ),
+      );
+      return;
+    }
     setState(() => _isUploadingAttachment = true);
 
     try {
@@ -259,6 +285,7 @@ class _AnnouncementCreateScreenState
           ),
         ),
       );
+      ref.invalidate(storageBudgetProvider);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -272,6 +299,11 @@ class _AnnouncementCreateScreenState
   @override
   Widget build(BuildContext context) {
     final isOnline = ref.watch(networkOnlineProvider).valueOrNull ?? true;
+    final storageBudgetAsync = ref.watch(storageBudgetProvider);
+    final storageBudget = storageBudgetAsync.valueOrNull;
+    final storagePercent = storageBudget?.percentOf1GB ?? 0;
+    final isStorageNearLimit = storagePercent >= 80;
+    final isStorageBlocked = storagePercent >= 95;
     final pageTitle = _isEditMode ? 'Edit Announcement' : 'New Announcement';
     return Scaffold(
       appBar: AppBar(title: Text(pageTitle)),
@@ -350,6 +382,29 @@ class _AnnouncementCreateScreenState
                                     ),
                               ),
                             ],
+                            if (isStorageNearLimit) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isStorageBlocked
+                                      ? Colors.redAccent.withValues(alpha: 0.14)
+                                      : Colors.amber.withValues(alpha: 0.14),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  isStorageBlocked
+                                      ? 'Storage is almost full (${storagePercent.toStringAsFixed(1)}% of 1GB). Uploads are blocked.'
+                                      : 'Storage nearing limit (${storagePercent.toStringAsFixed(1)}% of 1GB used).',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ],
                             if (_selectedCoverPublicUrl != null) ...[
                               const SizedBox(height: 10),
                               Row(
@@ -382,14 +437,20 @@ class _AnnouncementCreateScreenState
                               runSpacing: 8,
                               children: [
                                 OutlinedButton.icon(
-                                  onPressed: _isUploadingAttachment || !isOnline
+                                  onPressed:
+                                      _isUploadingAttachment ||
+                                          !isOnline ||
+                                          isStorageBlocked
                                       ? null
                                       : _attachImage,
                                   icon: const Icon(Icons.image_rounded),
                                   label: const Text('Pick image'),
                                 ),
                                 OutlinedButton.icon(
-                                  onPressed: _isUploadingAttachment || !isOnline
+                                  onPressed:
+                                      _isUploadingAttachment ||
+                                          !isOnline ||
+                                          isStorageBlocked
                                       ? null
                                       : _attachDocument,
                                   icon: const Icon(Icons.attach_file_rounded),
