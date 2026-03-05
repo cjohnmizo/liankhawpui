@@ -27,6 +27,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Block URL upload regressions
+        run: bash scripts/no_url_uploads_check.sh
+
       - name: Analyze
         run: flutter analyze
 
