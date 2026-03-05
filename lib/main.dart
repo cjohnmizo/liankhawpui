@@ -52,6 +52,12 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
         timeout: const Duration(seconds: 12),
       );
 
+      await _runWithTimeout(
+        'PowerSync local DB',
+        PowerSyncService().ensureLocalDatabaseReady(),
+        timeout: const Duration(seconds: 12),
+      );
+
       if (!mounted) return;
       setState(() => _ready = true);
 
