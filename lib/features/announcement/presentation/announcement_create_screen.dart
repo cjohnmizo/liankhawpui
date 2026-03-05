@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
+import 'package:liankhawpui/core/providers/network_status_provider.dart';
 import 'package:liankhawpui/core/services/post_attachment_service.dart';
 import 'package:liankhawpui/core/widgets/rich_markdown_editor.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
@@ -152,6 +153,7 @@ class _AnnouncementCreateScreenState
 
   @override
   Widget build(BuildContext context) {
+    final isOnline = ref.watch(networkOnlineProvider).valueOrNull ?? true;
     return Scaffold(
       appBar: AppBar(title: const Text('New Announcement')),
       body: Center(
@@ -200,6 +202,17 @@ class _AnnouncementCreateScreenState
                         'Images are auto-optimized (Normal/Low Data). Documents up to 5 MB.',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
+                      if (!isOnline) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'You are offline. Uploading attachments is disabled.',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ],
                       if (_selectedCoverPublicUrl != null) ...[
                         const SizedBox(height: 10),
                         Row(
@@ -230,14 +243,14 @@ class _AnnouncementCreateScreenState
                         runSpacing: 8,
                         children: [
                           OutlinedButton.icon(
-                            onPressed: _isUploadingAttachment
+                            onPressed: _isUploadingAttachment || !isOnline
                                 ? null
                                 : _attachImage,
                             icon: const Icon(Icons.image_rounded),
                             label: const Text('Pick image'),
                           ),
                           OutlinedButton.icon(
-                            onPressed: _isUploadingAttachment
+                            onPressed: _isUploadingAttachment || !isOnline
                                 ? null
                                 : _attachDocument,
                             icon: const Icon(Icons.attach_file_rounded),
