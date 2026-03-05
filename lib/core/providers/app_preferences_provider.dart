@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _lowDataModeKey = 'low_data_mode_enabled';
+const _textScaleFactorKey = 'text_scale_factor';
 const _lastReadChapterIdKey = 'last_read_chapter_id';
 const _lastReadChapterTitleKey = 'last_read_chapter_title';
 const _lastReadChapterUpdatedAtKey = 'last_read_chapter_updated_at';
@@ -13,6 +14,15 @@ final lowDataModeProvider = AsyncNotifierProvider<LowDataModeNotifier, bool>(
 final lowDataModeEnabledProvider = Provider<bool>((ref) {
   final asyncValue = ref.watch(lowDataModeProvider);
   return asyncValue.valueOrNull ?? true;
+});
+
+final textScaleProvider = AsyncNotifierProvider<TextScaleNotifier, double>(
+  TextScaleNotifier.new,
+);
+
+final textScaleFactorProvider = Provider<double>((ref) {
+  final asyncValue = ref.watch(textScaleProvider);
+  return asyncValue.valueOrNull ?? 1.0;
 });
 
 final lastReadChapterProvider =
@@ -33,6 +43,40 @@ class LowDataModeNotifier extends AsyncNotifier<bool> {
     state = AsyncData(enabled);
     final prefs = await _ensurePrefs();
     await prefs.setBool(_lowDataModeKey, enabled);
+  }
+
+  Future<SharedPreferences> _ensurePrefs() async {
+    if (_prefs != null) return _prefs!;
+    _prefs = await SharedPreferences.getInstance();
+    return _prefs!;
+  }
+}
+
+class TextScaleNotifier extends AsyncNotifier<double> {
+  SharedPreferences? _prefs;
+
+  @override
+  Future<double> build() async {
+    final prefs = await _ensurePrefs();
+    final stored = prefs.getDouble(_textScaleFactorKey) ?? 1.0;
+    return _normalize(stored);
+  }
+
+  Future<void> setScale(double scale) async {
+    final normalized = _normalize(scale);
+    state = AsyncData(normalized);
+    final prefs = await _ensurePrefs();
+    await prefs.setDouble(_textScaleFactorKey, normalized);
+  }
+
+  Future<void> reset() async {
+    state = const AsyncData(1.0);
+    final prefs = await _ensurePrefs();
+    await prefs.setDouble(_textScaleFactorKey, 1.0);
+  }
+
+  double _normalize(double value) {
+    return value.clamp(0.85, 1.35).toDouble();
   }
 
   Future<SharedPreferences> _ensurePrefs() async {

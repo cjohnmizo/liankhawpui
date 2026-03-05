@@ -20,6 +20,8 @@ class SettingsScreen extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     final lowDataMode = ref.watch(lowDataModeEnabledProvider);
     final lowDataModeAsync = ref.watch(lowDataModeProvider);
+    final textScaleFactor = ref.watch(textScaleFactorProvider);
+    final textScaleAsync = ref.watch(textScaleProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -50,29 +52,106 @@ class SettingsScreen extends ConsumerWidget {
               GlassCard(
                 isPremium: false,
                 padding: EdgeInsets.zero,
-                child: SwitchListTile(
-                  value:
-                      themeMode == ThemeMode.dark ||
-                      (themeMode == ThemeMode.system && isDark),
-                  onChanged: (value) {
-                    ref.read(themeModeProvider.notifier).state = value
-                        ? ThemeMode.dark
-                        : ThemeMode.light;
-                  },
-                  title: Text(
-                    'Dark Mode',
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      value:
+                          themeMode == ThemeMode.dark ||
+                          (themeMode == ThemeMode.system && isDark),
+                      onChanged: (value) {
+                        ref.read(themeModeProvider.notifier).state = value
+                            ? ThemeMode.dark
+                            : ThemeMode.light;
+                      },
+                      title: Text(
+                        'Dark Mode',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Enable dark theme for the app',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      secondary: const Icon(Icons.dark_mode_rounded),
                     ),
-                  ),
-                  subtitle: Text(
-                    'Enable dark theme for the app',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.format_size_rounded),
+                      title: Text(
+                        'Font Size',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Adjust text size across the app',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      trailing: Text(
+                        '${(textScaleFactor * 100).round()}%',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ),
-                  secondary: const Icon(Icons.dark_mode_rounded),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Row(
+                        children: [
+                          Text(
+                            'A',
+                            style: AppTextStyles.labelSmall.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          Expanded(
+                            child: Slider(
+                              value: textScaleFactor,
+                              min: 0.85,
+                              max: 1.35,
+                              divisions: 10,
+                              label: '${(textScaleFactor * 100).round()}%',
+                              onChanged: textScaleAsync.isLoading
+                                  ? null
+                                  : (value) {
+                                      ref
+                                          .read(textScaleProvider.notifier)
+                                          .setScale(value);
+                                    },
+                            ),
+                          ),
+                          Text(
+                            'A',
+                            style: AppTextStyles.titleLarge.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: textScaleAsync.isLoading
+                                ? null
+                                : () {
+                                    ref
+                                        .read(textScaleProvider.notifier)
+                                        .reset();
+                                  },
+                            child: const Text('Reset'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 18),

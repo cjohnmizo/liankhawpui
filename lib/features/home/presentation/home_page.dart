@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/config/app_assets.dart';
 import 'package:liankhawpui/core/providers/network_status_provider.dart';
@@ -93,11 +94,24 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         IconButton(
           tooltip: user.isGuest ? 'Sign in' : 'Profile',
-          icon: const Icon(Icons.person_rounded),
+          icon: _buildProfileActionIcon(user),
           onPressed: () =>
               user.isGuest ? context.push('/login') : context.push('/profile'),
         ),
       ],
+    );
+  }
+
+  Widget _buildProfileActionIcon(AppUser user) {
+    final photoUrl = user.photoUrl?.trim();
+    if (user.isGuest || photoUrl == null || photoUrl.isEmpty) {
+      return const Icon(Icons.person_rounded);
+    }
+
+    return CircleAvatar(
+      radius: 14,
+      backgroundColor: AppColors.surfaceVariant,
+      backgroundImage: CachedNetworkImageProvider(photoUrl),
     );
   }
 

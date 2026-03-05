@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
@@ -43,7 +44,7 @@ class AppDrawer extends ConsumerWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.glassBorder),
                   ),
-                  child: const CircularAppLogo(size: 56),
+                  child: _DrawerAvatar(photoUrl: user.photoUrl),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -265,6 +266,27 @@ class _DrawerItem extends StatelessWidget {
         onTap: onTap,
         hoverColor: AppColors.accentGold.withValues(alpha: 0.08),
       ),
+    );
+  }
+}
+
+class _DrawerAvatar extends StatelessWidget {
+  final String? photoUrl;
+
+  const _DrawerAvatar({required this.photoUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = photoUrl?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return const CircularAppLogo(size: 56);
+    }
+
+    return CircleAvatar(
+      radius: 28,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      backgroundImage: CachedNetworkImageProvider(normalized),
+      child: null,
     );
   }
 }

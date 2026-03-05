@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:liankhawpui/core/config/env_config.dart';
+import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
 import 'package:liankhawpui/core/theme/app_theme.dart';
 import 'package:liankhawpui/core/theme/theme_provider.dart';
 import 'package:liankhawpui/core/services/supabase_service.dart';
@@ -91,6 +92,7 @@ class LiankhawpuiApp extends ConsumerWidget {
 
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final textScaleFactor = ref.watch(textScaleFactorProvider);
 
     return MaterialApp.router(
       title: 'Liankhawpui',
@@ -100,7 +102,14 @@ class LiankhawpuiApp extends ConsumerWidget {
       routerConfig: router,
       builder: (context, child) {
         if (child == null) return const SizedBox.shrink();
-        return NetworkStatusOverlay(child: child);
+        final mediaQuery = MediaQuery.of(context);
+        final scaledChild = MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: TextScaler.linear(textScaleFactor),
+          ),
+          child: child,
+        );
+        return NetworkStatusOverlay(child: scaledChild);
       },
       debugShowCheckedModeBanner: false,
     );
