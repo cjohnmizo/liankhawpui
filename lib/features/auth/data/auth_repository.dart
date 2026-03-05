@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:liankhawpui/core/config/env_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:liankhawpui/core/services/onesignal_service.dart';
 import 'package:liankhawpui/core/services/supabase_service.dart';
@@ -20,6 +21,10 @@ class AuthRepository {
         return AppUser.guest;
       }
 
+      await _ensureProfileExists(
+        session.user,
+        fallbackEmail: session.user.email ?? '${session.user.id}@oauth.local',
+      );
       await OneSignalService.syncExternalUserId(session.user.id);
       return _mapUserWithProfile(session.user);
     });
@@ -39,6 +44,10 @@ class AuthRepository {
       return AppUser.guest;
     }
 
+    await _ensureProfileExists(
+      user,
+      fallbackEmail: user.email ?? '${user.id}@oauth.local',
+    );
     await OneSignalService.syncExternalUserId(user.id);
     return _mapUserWithProfile(user);
   }
@@ -57,6 +66,25 @@ class AuthRepository {
     if (user != null) {
       await _ensureProfileExists(user, fallbackEmail: email);
       await OneSignalService.syncExternalUserId(user.id);
+    }
+  }
+
+  Future<void> signInWithGoogle() async {
+    final redirectTo = EnvConfig.googleOAuthRedirectUrl;
+    final launched = await _client.auth
+        .signInWithOAuth(
+          OAuthProvider.google,
+          redirectTo: redirectTo.isEmpty ? null : redirectTo,
+          authScreenLaunchMode: LaunchMode.externalApplication,
+        )
+        .timeout(
+          const Duration(seconds: 25),
+          onTimeout: () =>
+              throw TimeoutException('Google authentication timed out'),
+        );
+
+    if (!launched) {
+      throw StateError('Could not start Google sign-in flow.');
     }
   }
 
@@ -111,7 +139,9 @@ class AuthRepository {
       email: user.email ?? _asString(profile?['email']),
       role: UserRole.fromString(roleStr),
       fullName:
-          _asString(profile?['full_name']) ?? _asString(meta['full_name']),
+          _asString(profile?['full_name']) ??
+          _asString(meta['full_name']) ??
+          _asString(meta['name']),
       phoneNumber:
           _asString(profile?['phone_number']) ??
           _asString(meta['phone_number']),
@@ -120,7 +150,9 @@ class AuthRepository {
       photoUrl:
           _asString(profile?['photo_url']) ??
           _asString(profile?['avatar_url']) ??
-          _asString(meta['photo_url']),
+          _asString(meta['photo_url']) ??
+          _asString(meta['avatar_url']) ??
+          _asString(meta['picture']),
     );
   }
 
@@ -252,10 +284,16 @@ class AuthRepository {
       await _client.from('profiles').insert({
         'id': user.id,
         'email': user.email ?? fallbackEmail,
-        'full_name': _asString(meta['full_name']),
+        'full_name': _asString(meta['full_name']) ?? _asString(meta['name']),
         'phone_number': _asString(meta['phone_number']),
         'dob': _asString(meta['dob'])?.split('T').first,
         'address': _asString(meta['address']),
+        'photo_url':
+            _asString(meta['photo_url']) ??
+            _asString(meta['avatar_url']) ??
+            _asString(meta['picture']),
+        'avatar_url':
+            _asString(meta['avatar_url']) ?? _asString(meta['picture']),
         'role': 'guest',
       });
     } catch (_) {

@@ -12,6 +12,9 @@ class SupabaseService {
     await Supabase.initialize(
       url: EnvConfig.supabaseUrl,
       anonKey: EnvConfig.supabaseAnonKey,
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
+      ),
     );
   }
 }

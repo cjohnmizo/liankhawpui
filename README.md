@@ -65,11 +65,14 @@ Proprietary. All rights reserved. See `LICENSE` for details.
    POWERSYNC_URL=...
    POWERSYNC_TOKEN_FUNCTION=powersync-token
    ONESIGNAL_APP_ID=...
+   GOOGLE_OAUTH_REDIRECT_URL=liankhawpui://login-callback
    ```
 
    `SUPABASE_SERVICE_ROLE_KEY` and `ONESIGNAL_REST_API_KEY` must stay server-side only.
    For Android push delivery, also configure Firebase Sender ID in OneSignal
    Dashboard under `App Settings -> Android -> Configuration`.
+   For Google login, set Supabase Auth redirect URLs to include
+   `liankhawpui://login-callback` and enable the Google provider.
 
 3. **Install Dependencies**:
    ```bash
@@ -93,6 +96,15 @@ Proprietary. All rights reserved. See `LICENSE` for details.
    ```bash
    flutter run
    ```
+
+### Google Login Setup
+
+1. Supabase Dashboard -> `Authentication -> Providers -> Google`: enable Google.
+2. Add `liankhawpui://login-callback` to:
+   - Supabase `Authentication -> URL Configuration -> Redirect URLs`
+   - Google Cloud OAuth consent/application redirect list used by Supabase
+3. Keep `GOOGLE_OAUTH_REDIRECT_URL=liankhawpui://login-callback` in your local `.env`.
+4. Rebuild the app and test the `Continue with Google` button on a real device.
 
 ## Android Release Signing
 

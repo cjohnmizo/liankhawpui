@@ -13,6 +13,9 @@ class EnvConfig {
 
   static String get oneSignalAppId => _getOptional('ONESIGNAL_APP_ID');
 
+  static String get googleOAuthRedirectUrl =>
+      _getOptional('GOOGLE_OAUTH_REDIRECT_URL');
+
   static String get powerSyncTokenFunction {
     final value = _getOptional('POWERSYNC_TOKEN_FUNCTION');
     return value.isNotEmpty ? value : 'powersync-token';
