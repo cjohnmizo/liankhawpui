@@ -10,23 +10,16 @@ import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:liankhawpui/core/widgets/app_drawer.dart';
 import 'package:liankhawpui/core/widgets/app_logo.dart';
 import 'package:liankhawpui/core/widgets/app_states.dart';
-import 'package:liankhawpui/core/widgets/glass_bottom_nav.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/announcement/domain/announcement.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_providers.dart';
 import 'package:liankhawpui/features/auth/domain/app_user.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
-import 'package:liankhawpui/features/auth/presentation/profile_screen.dart';
 import 'package:liankhawpui/features/news/domain/news.dart';
-import 'package:liankhawpui/features/news/presentation/news_list_screen.dart';
 import 'package:liankhawpui/features/news/presentation/news_providers.dart';
 import 'package:liankhawpui/features/organization/domain/organization.dart';
 import 'package:liankhawpui/features/organization/presentation/organization_providers.dart';
-import 'package:liankhawpui/features/organization/presentation/organization_screen.dart';
-import 'package:liankhawpui/features/story/presentation/book_list_screen.dart';
 import 'package:timeago/timeago.dart' as timeago;
-
-final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -41,21 +34,19 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
-    final currentIndex = ref.watch(bottomNavIndexProvider);
     final isOnline = ref.watch(networkOnlineProvider).valueOrNull ?? true;
 
     return Scaffold(
       key: _scaffoldKey,
       drawer: const AppDrawer(),
-      appBar: _buildAppBar(context, user, currentIndex),
+      appBar: _buildAppBar(context, user),
       body: Column(
         children: [
-          Expanded(child: _buildActiveTab(currentIndex)),
+          Expanded(child: _buildHomeDashboard(context, ref)),
           const Opacity(opacity: 0, child: Text('Featured News')),
         ],
       ),
-      bottomNavigationBar: _buildBottomNav(currentIndex),
-      floatingActionButton: user.role.isEditor && currentIndex == 0
+      floatingActionButton: user.role.isEditor
           ? FloatingActionButton(
               heroTag: 'home_create_fab',
               onPressed: isOnline ? () => _showCreateMenu(context) : null,
@@ -70,36 +61,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildActiveTab(int currentIndex) {
-    switch (currentIndex) {
-      case 0:
-        return _buildHomeDashboard(context, ref);
-      case 1:
-        return const NewsListScreen(embedded: true);
-      case 2:
-        return const OrganizationScreen(embedded: true);
-      case 3:
-        return const BookListScreen(embedded: true);
-      case 4:
-        return const ProfileScreen(embedded: true);
-      default:
-        return _buildHomeDashboard(context, ref);
-    }
-  }
-
-  PreferredSizeWidget _buildAppBar(
-    BuildContext context,
-    AppUser user,
-    int currentIndex,
-  ) {
-    final title = switch (currentIndex) {
-      0 => 'Liankhawpui',
-      1 => 'News',
-      2 => 'Organizations',
-      3 => 'Stories',
-      4 => 'Profile',
-      _ => 'Liankhawpui',
-    };
+  PreferredSizeWidget _buildAppBar(BuildContext context, AppUser user) {
+    const title = 'Liankhawpui';
 
     return AppBar(
       titleSpacing: 12,
@@ -128,51 +91,13 @@ class _HomePageState extends ConsumerState<HomePage> {
             icon: const Icon(Icons.dashboard_rounded),
             onPressed: () => context.push('/dashboard'),
           ),
-        if (currentIndex != 4)
-          IconButton(
-            tooltip: user.isGuest ? 'Sign in' : 'Profile',
-            icon: const Icon(Icons.person_rounded),
-            onPressed: () {
-              ref.read(bottomNavIndexProvider.notifier).state = 4;
-            },
-          ),
-      ],
-    );
-  }
-
-  Widget _buildBottomNav(int currentIndex) {
-    return GlassBottomNav(
-      currentIndex: currentIndex,
-      items: const [
-        BottomNavItem(
-          icon: Icons.home_outlined,
-          activeIcon: Icons.home_rounded,
-          label: 'Home',
-        ),
-        BottomNavItem(
-          icon: Icons.newspaper_outlined,
-          activeIcon: Icons.newspaper_rounded,
-          label: 'News',
-        ),
-        BottomNavItem(
-          icon: Icons.account_tree_outlined,
-          activeIcon: Icons.account_tree_rounded,
-          label: 'Organizations',
-        ),
-        BottomNavItem(
-          icon: Icons.auto_stories_outlined,
-          activeIcon: Icons.auto_stories_rounded,
-          label: 'Stories',
-        ),
-        BottomNavItem(
-          icon: Icons.person_outline_rounded,
-          activeIcon: Icons.person_rounded,
-          label: 'Profile',
+        IconButton(
+          tooltip: user.isGuest ? 'Sign in' : 'Profile',
+          icon: const Icon(Icons.person_rounded),
+          onPressed: () =>
+              user.isGuest ? context.push('/login') : context.push('/profile'),
         ),
       ],
-      onTap: (index) {
-        ref.read(bottomNavIndexProvider.notifier).state = index;
-      },
     );
   }
 
@@ -214,13 +139,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                         subtitle: 'Latest stories from the village',
                         icon: Icons.newspaper_rounded,
                         actionLabel: 'Open news',
-                        onActionTap: () =>
-                            ref.read(bottomNavIndexProvider.notifier).state = 1,
+                        onActionTap: () => context.push('/news'),
                       ),
                       const SizedBox(height: 10),
                       newsAsync.when(
                         data: (items) {
-                          final top = items.take(6).toList();
+                          final top = items.take(5).toList();
                           if (top.isEmpty) {
                             return const AppEmptyState(
                               message: 'No news published yet',
@@ -327,8 +251,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         subtitle: 'Village groups in grid view',
                         icon: Icons.account_tree_rounded,
                         actionLabel: 'Browse',
-                        onActionTap: () =>
-                            ref.read(bottomNavIndexProvider.notifier).state = 2,
+                        onActionTap: () => context.push('/organization'),
                       ),
                       const SizedBox(height: 10),
                       organizationsAsync.when(
