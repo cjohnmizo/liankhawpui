@@ -11,6 +11,7 @@ import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/announcement/domain/announcement.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_providers.dart';
+import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AnnouncementDetailScreen extends ConsumerWidget {
@@ -21,6 +22,7 @@ class AnnouncementDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailAsync = ref.watch(announcementDetailsProvider(announcementId));
+    final user = ref.watch(currentUserProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -29,6 +31,54 @@ class AnnouncementDetailScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back_rounded),
         ),
         title: const Text('Announcement'),
+        actions: [
+          if (user.role.isEditor)
+            IconButton(
+              tooltip: 'Edit',
+              onPressed: () =>
+                  context.push('/announcement/edit/$announcementId'),
+              icon: const Icon(Icons.edit_rounded),
+            ),
+          if (user.role.isEditor)
+            IconButton(
+              tooltip: 'Delete',
+              onPressed: () async {
+                final shouldDelete = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Delete Announcement?'),
+                    content: const Text('This action cannot be undone.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(color: AppColors.error),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+                if (shouldDelete != true) return;
+                await ref
+                    .read(announcementRepositoryProvider)
+                    .deleteAnnouncement(announcementId);
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Announcement deleted')),
+                );
+                context.go('/announcement');
+              },
+              icon: const Icon(
+                Icons.delete_outline_rounded,
+                color: AppColors.error,
+              ),
+            ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(

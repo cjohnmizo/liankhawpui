@@ -32,6 +32,7 @@ class AnnouncementRepository {
   Future<void> createAnnouncement({
     required String title,
     required String content,
+    bool isPinned = false,
     String? legacyImageUrl,
     String? userId,
   }) async {
@@ -44,7 +45,26 @@ class AnnouncementRepository {
       INSERT INTO announcements (id, title, content, created_by, created_at, updated_at, is_pinned)
       VALUES (?, ?, ?, ?, ?, ?, ?)
       ''',
-      [id, title, content, userId, now, now, 0],
+      [id, title, content, userId, now, now, isPinned ? 1 : 0],
+    );
+  }
+
+  Future<void> updateAnnouncement({
+    required String id,
+    required String title,
+    required String content,
+    bool isPinned = false,
+    String? legacyImageUrl,
+  }) async {
+    _logIgnoredLegacyImageUrl(legacyImageUrl);
+    final now = DateTime.now().toIso8601String();
+    await _db.execute(
+      '''
+      UPDATE announcements
+      SET title = ?, content = ?, is_pinned = ?, updated_at = ?
+      WHERE id = ?
+      ''',
+      [title, content, isPinned ? 1 : 0, now, id],
     );
   }
 

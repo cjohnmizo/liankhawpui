@@ -10,7 +10,9 @@ import 'package:liankhawpui/features/announcement/presentation/announcement_prov
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 
 class AnnouncementCreateScreen extends ConsumerStatefulWidget {
-  const AnnouncementCreateScreen({super.key});
+  final String? announcementId;
+
+  const AnnouncementCreateScreen({super.key, this.announcementId});
 
   @override
   ConsumerState<AnnouncementCreateScreen> createState() =>
@@ -28,6 +30,23 @@ class _AnnouncementCreateScreenState
       <PostAttachmentUploadResult>[];
   bool _isLoading = false;
   bool _isUploadingAttachment = false;
+  bool _isPinned = false;
+  bool _hasLoadedInitial = false;
+  bool _isLoadingInitial = false;
+
+  bool get _isEditMode => widget.announcementId != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isEditMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadInitialAnnouncement();
+      });
+    } else {
+      _hasLoadedInitial = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -52,13 +71,25 @@ class _AnnouncementCreateScreenState
         _selectedCoverObjectPath == null ||
             _selectedCoverObjectPath!.isNotEmpty,
       );
-      await ref
-          .read(announcementRepositoryProvider)
-          .createAnnouncement(
-            title: _titleController.text.trim(),
-            content: _contentController.text.trim(),
-            userId: user.id,
-          );
+      if (!_isEditMode) {
+        await ref
+            .read(announcementRepositoryProvider)
+            .createAnnouncement(
+              title: _titleController.text.trim(),
+              content: _contentController.text.trim(),
+              isPinned: _isPinned,
+              userId: user.id,
+            );
+      } else {
+        await ref
+            .read(announcementRepositoryProvider)
+            .updateAnnouncement(
+              id: widget.announcementId!,
+              title: _titleController.text.trim(),
+              content: _contentController.text.trim(),
+              isPinned: _isPinned,
+            );
+      }
       if (mounted) context.pop();
     } catch (e) {
       if (!mounted) return;
@@ -67,6 +98,41 @@ class _AnnouncementCreateScreenState
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadInitialAnnouncement() async {
+    if (!_isEditMode || _hasLoadedInitial || _isLoadingInitial) return;
+    setState(() => _isLoadingInitial = true);
+
+    try {
+      final existing = await ref
+          .read(announcementRepositoryProvider)
+          .getAnnouncementById(widget.announcementId!);
+      if (!mounted) return;
+      if (existing == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Announcement not found')));
+        context.pop();
+        return;
+      }
+      setState(() {
+        _titleController.text = existing.title;
+        _contentController.text = existing.content;
+        _isPinned = existing.isPinned;
+        _hasLoadedInitial = true;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load announcement: $e')),
+      );
+      context.pop();
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingInitial = false);
+      }
     }
   }
 
@@ -154,156 +220,179 @@ class _AnnouncementCreateScreenState
   @override
   Widget build(BuildContext context) {
     final isOnline = ref.watch(networkOnlineProvider).valueOrNull ?? true;
+    final pageTitle = _isEditMode ? 'Edit Announcement' : 'New Announcement';
     return Scaffold(
-      appBar: AppBar(title: const Text('New Announcement')),
+      appBar: AppBar(title: Text(pageTitle)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 900),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-            child: Column(
-              children: [
-                GlassCard(
-                  child: TextField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(
-                      labelText: 'Title',
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Content (Markdown formatter)',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                RichMarkdownEditor(
-                  controller: _contentController,
-                  hintText:
-                      'Write announcement content. Use toolbar for bold, list, links, and preview.',
-                  minLines: 8,
-                  maxLines: 18,
-                ),
-                const SizedBox(height: 12),
-                GlassCard(
+          child: !_hasLoadedInitial
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Attachments',
-                        style: Theme.of(context).textTheme.titleSmall,
+                      GlassCard(
+                        child: TextField(
+                          controller: _titleController,
+                          decoration: const InputDecoration(
+                            labelText: 'Title',
+                            border: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Content (Markdown formatter)',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        'Images are auto-optimized (Normal/Low Data). Documents up to 5 MB.',
-                        style: Theme.of(context).textTheme.bodySmall,
+                      RichMarkdownEditor(
+                        controller: _contentController,
+                        hintText:
+                            'Write announcement content. Use toolbar for bold, list, links, and preview.',
+                        minLines: 8,
+                        maxLines: 18,
                       ),
-                      if (!isOnline) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          'You are offline. Uploading attachments is disabled.',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Colors.redAccent,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                      ],
-                      if (_selectedCoverPublicUrl != null) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            const Icon(Icons.image_rounded, size: 16),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                'Cover image selected from device',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _selectedCoverPublicUrl = null;
-                                  _selectedCoverObjectPath = null;
-                                });
-                              },
-                              child: const Text('Remove image'),
-                            ),
-                          ],
-                        ),
-                      ],
                       const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          OutlinedButton.icon(
-                            onPressed: _isUploadingAttachment || !isOnline
-                                ? null
-                                : _attachImage,
-                            icon: const Icon(Icons.image_rounded),
-                            label: const Text('Pick image'),
+                      GlassCard(
+                        padding: EdgeInsets.zero,
+                        child: SwitchListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
                           ),
-                          OutlinedButton.icon(
-                            onPressed: _isUploadingAttachment || !isOnline
-                                ? null
-                                : _attachDocument,
-                            icon: const Icon(Icons.attach_file_rounded),
-                            label: const Text('Add Document'),
+                          title: const Text('Pin this announcement'),
+                          subtitle: const Text(
+                            'Pinned posts appear first in list',
                           ),
-                        ],
+                          value: _isPinned,
+                          onChanged: (value) =>
+                              setState(() => _isPinned = value),
+                        ),
                       ),
-                      if (_isUploadingAttachment) ...[
-                        const SizedBox(height: 12),
-                        const LinearProgressIndicator(),
-                      ],
-                      if (_attachments.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
+                      const SizedBox(height: 12),
+                      GlassCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            for (final item in _attachments)
-                              Chip(
-                                avatar: Icon(
-                                  item.type == PostAttachmentType.image
-                                      ? Icons.image_rounded
-                                      : Icons.description_rounded,
-                                  size: 16,
-                                ),
-                                label: Text(item.fileName),
+                            Text(
+                              'Attachments',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Images are auto-optimized (Normal/Low Data). Documents up to 5 MB.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            if (!isOnline) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'You are offline. Uploading attachments is disabled.',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Colors.redAccent,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                               ),
+                            ],
+                            if (_selectedCoverPublicUrl != null) ...[
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  const Icon(Icons.image_rounded, size: 16),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Cover image selected from device',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedCoverPublicUrl = null;
+                                        _selectedCoverObjectPath = null;
+                                      });
+                                    },
+                                    child: const Text('Remove image'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: _isUploadingAttachment || !isOnline
+                                      ? null
+                                      : _attachImage,
+                                  icon: const Icon(Icons.image_rounded),
+                                  label: const Text('Pick image'),
+                                ),
+                                OutlinedButton.icon(
+                                  onPressed: _isUploadingAttachment || !isOnline
+                                      ? null
+                                      : _attachDocument,
+                                  icon: const Icon(Icons.attach_file_rounded),
+                                  label: const Text('Add Document'),
+                                ),
+                              ],
+                            ),
+                            if (_isUploadingAttachment) ...[
+                              const SizedBox(height: 12),
+                              const LinearProgressIndicator(),
+                            ],
+                            if (_attachments.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [
+                                  for (final item in _attachments)
+                                    Chip(
+                                      avatar: Icon(
+                                        item.type == PostAttachmentType.image
+                                            ? Icons.image_rounded
+                                            : Icons.description_rounded,
+                                        size: 16,
+                                      ),
+                                      label: Text(item.fileName),
+                                    ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
-                      ],
+                      ),
+                      const SizedBox(height: 12),
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: _isLoading || _isUploadingAttachment
+                              ? null
+                              : _submit,
+                          child: _isLoading || _isUploadingAttachment
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(_isEditMode ? 'Update' : 'Publish'),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                const SizedBox(height: 4),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _isLoading || _isUploadingAttachment
-                        ? null
-                        : _submit,
-                    child: _isLoading || _isUploadingAttachment
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Publish'),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

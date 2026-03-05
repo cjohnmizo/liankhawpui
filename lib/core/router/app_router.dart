@@ -73,6 +73,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const AnnouncementCreateScreen(),
           ),
           GoRoute(
+            path: 'edit/:announcementId',
+            builder: (context, state) {
+              final announcementId = state.pathParameters['announcementId']!;
+              return AnnouncementCreateScreen(announcementId: announcementId);
+            },
+          ),
+          GoRoute(
             path: ':announcementId',
             builder: (context, state) {
               final announcementId = state.pathParameters['announcementId']!;
@@ -194,6 +201,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final requiresSignedIn = location.startsWith('/profile');
       final requiresEditor =
           location == '/announcement/create' ||
+          location.startsWith('/announcement/edit') ||
           location.startsWith('/book/manage') ||
           location.startsWith('/dashboard');
       final requiresAdminOnly = location.startsWith('/dashboard/users');

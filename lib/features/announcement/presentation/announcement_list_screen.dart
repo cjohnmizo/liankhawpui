@@ -57,9 +57,90 @@ class AnnouncementListScreen extends ConsumerWidget {
                       ),
                       itemBuilder: (context, index) {
                         final item = list[index];
-                        return AnnouncementCard(
+                        final card = AnnouncementCard(
                           announcement: item,
                           onTap: () => context.push('/announcement/${item.id}'),
+                        );
+                        if (!user.role.isEditor) return card;
+
+                        return Stack(
+                          children: [
+                            card,
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: PopupMenuButton<String>(
+                                tooltip: 'Manage announcement',
+                                icon: const Icon(Icons.more_vert_rounded),
+                                onSelected: (value) async {
+                                  if (value == 'edit') {
+                                    context.push(
+                                      '/announcement/edit/${item.id}',
+                                    );
+                                    return;
+                                  }
+                                  if (value == 'delete') {
+                                    final shouldDelete = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text(
+                                          'Delete Announcement?',
+                                        ),
+                                        content: const Text(
+                                          'This action cannot be undone.',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(
+                                              context,
+                                            ).pop(false),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.of(context).pop(true),
+                                            child: const Text(
+                                              'Delete',
+                                              style: TextStyle(
+                                                color: AppColors.error,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (shouldDelete != true) return;
+                                    await ref
+                                        .read(announcementRepositoryProvider)
+                                        .deleteAnnouncement(item.id);
+                                  }
+                                },
+                                itemBuilder: (context) => const [
+                                  PopupMenuItem<String>(
+                                    value: 'edit',
+                                    child: ListTile(
+                                      leading: Icon(Icons.edit_rounded),
+                                      title: Text('Edit'),
+                                      contentPadding: EdgeInsets.zero,
+                                      minLeadingWidth: 18,
+                                    ),
+                                  ),
+                                  PopupMenuItem<String>(
+                                    value: 'delete',
+                                    child: ListTile(
+                                      leading: Icon(
+                                        Icons.delete_outline_rounded,
+                                        color: AppColors.error,
+                                      ),
+                                      title: Text('Delete'),
+                                      contentPadding: EdgeInsets.zero,
+                                      minLeadingWidth: 18,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         );
                       },
                     );
