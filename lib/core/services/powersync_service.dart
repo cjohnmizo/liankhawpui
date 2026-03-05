@@ -28,6 +28,7 @@ class PowerSyncService {
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   StreamSubscription<SyncStatus>? _statusSubscription;
   Timer? _retryTimer;
+  Future<void>? _databaseInitInFlight;
 
   static const Duration _retryDelay = Duration(seconds: 8);
 
@@ -35,7 +36,8 @@ class PowerSyncService {
   bool get isConnected => _isConnected;
   bool get isRemoteSyncEnabled => _remoteSyncEnabled;
 
-  Stream<SyncStatus> get statusStream => db.statusStream;
+  Stream<SyncStatus> get statusStream =>
+      _isInitialized ? db.statusStream : const Stream<SyncStatus>.empty();
   SyncStatus get currentStatus => db.currentStatus;
 
   Future<void> initialize({bool enableRemoteSync = true}) async {
@@ -48,6 +50,10 @@ class PowerSyncService {
     }
 
     await _connectIfNeeded();
+  }
+
+  Future<void> ensureLocalDatabaseReady() async {
+    await _ensureDatabaseInitialized();
   }
 
   Future<void> startAutoSyncLifecycle() async {
@@ -131,15 +137,27 @@ class PowerSyncService {
 
   Future<void> _ensureDatabaseInitialized() async {
     if (_isInitialized) return;
+    if (_databaseInitInFlight != null) {
+      await _databaseInitInFlight;
+      return;
+    }
 
-    final dir = await getApplicationSupportDirectory();
-    final path = join(dir.path, 'liankhawpui.db');
+    _databaseInitInFlight = () async {
+      final dir = await getApplicationSupportDirectory();
+      final path = join(dir.path, 'liankhawpui.db');
 
-    db = PowerSyncDatabase(schema: schema, path: path);
-    await db.initialize();
-    await _statusSubscription?.cancel();
-    _statusSubscription = db.statusStream.listen(_onSyncStatusChanged);
-    _isInitialized = true;
+      db = PowerSyncDatabase(schema: schema, path: path);
+      await db.initialize();
+      await _statusSubscription?.cancel();
+      _statusSubscription = db.statusStream.listen(_onSyncStatusChanged);
+      _isInitialized = true;
+    }();
+
+    try {
+      await _databaseInitInFlight;
+    } finally {
+      _databaseInitInFlight = null;
+    }
   }
 
   Future<void> _connectIfNeeded() async {

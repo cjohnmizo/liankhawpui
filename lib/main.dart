@@ -27,13 +27,11 @@ void main() async {
       SupabaseService.initialize(),
       timeout: const Duration(seconds: 12),
     );
-    // Local DB setup can take longer on first launch/low-end devices.
-    // Do not hard-timeout here or app may fail before splash is shown.
-    await PowerSyncService().initialize(enableRemoteSync: false);
 
     runApp(const ProviderScope(child: LiankhawpuiApp()));
 
     if (_testMode) {
+      unawaited(_initializeLocalPowerSyncOnly());
       debugPrint(
         'TEST_MODE is enabled: remote PowerSync sync and OneSignal are disabled.',
       );
@@ -71,6 +69,14 @@ Future<void> _initializeDeferredServices() async {
     );
   } catch (e) {
     debugPrint('WARN: OneSignal initialization failed: $e');
+  }
+}
+
+Future<void> _initializeLocalPowerSyncOnly() async {
+  try {
+    await PowerSyncService().initialize(enableRemoteSync: false);
+  } catch (e) {
+    debugPrint('WARN: local PowerSync initialization failed: $e');
   }
 }
 

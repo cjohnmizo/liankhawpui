@@ -33,6 +33,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     if (!_testMode) {
       await Future.delayed(const Duration(milliseconds: 450));
     }
+    try {
+      await ref.read(powerSyncServiceProvider).ensureLocalDatabaseReady();
+    } catch (e) {
+      debugPrint('WARN: splash could not verify local DB readiness: $e');
+    }
     _goHome();
 
     _continueTimer = Timer(const Duration(seconds: 6), () {
