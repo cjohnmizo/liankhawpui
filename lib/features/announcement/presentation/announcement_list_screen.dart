@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
+import 'package:liankhawpui/core/widgets/app_states.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_providers.dart';
 import 'package:liankhawpui/features/announcement/presentation/widgets/announcement_card.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
@@ -31,13 +32,10 @@ class AnnouncementListScreen extends ConsumerWidget {
             child: announcementsAsync.when(
               data: (list) {
                 if (list.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'No announcements yet',
-                      style: AppTextStyles.titleSmall.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  return const Center(
+                    child: AppEmptyState(
+                      message: 'No announcements published yet',
+                      icon: Icons.campaign_outlined,
                     ),
                   );
                 }
@@ -68,7 +66,8 @@ class AnnouncementListScreen extends ConsumerWidget {
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () =>
+                  const AppLoadingState(message: 'Loading announcements...'),
               error: (_, __) => Center(
                 child: Text(
                   'Failed to load announcements',

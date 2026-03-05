@@ -4,19 +4,112 @@ import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
+import 'package:liankhawpui/core/widgets/app_states.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 import 'package:liankhawpui/features/story/domain/chapter.dart';
 import 'package:liankhawpui/features/story/presentation/story_providers.dart';
 
 class BookListScreen extends ConsumerWidget {
-  const BookListScreen({super.key});
+  final bool embedded;
+
+  const BookListScreen({super.key, this.embedded = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final bookAsync = ref.watch(singleBookProvider);
     final chaptersAsync = ref.watch(bookChaptersProvider);
+
+    final content = RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(singleBookProvider);
+        ref.invalidate(bookChaptersProvider);
+      },
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+            child: bookAsync.when(
+              data: (book) => chaptersAsync.when(
+                data: (chapters) {
+                  return ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      _BookHeroCard(
+                        title: book.title,
+                        author: book.author,
+                        coverUrl: book.coverUrl,
+                        description: book.description,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Text(
+                            'Chapters',
+                            style: AppTextStyles.titleMedium.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${chapters.length}',
+                            style: AppTextStyles.labelMedium.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      if (chapters.isEmpty)
+                        const AppEmptyState(
+                          message: 'No chapters available yet',
+                          icon: Icons.menu_book_rounded,
+                        )
+                      else
+                        for (final chapter in chapters)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _ChapterTile(
+                              chapter: chapter,
+                              onTap: () =>
+                                  context.push('/book/chapter/${chapter.id}'),
+                            ),
+                          ),
+                      if (user.role.isEditor) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'Admins and editors can manage chapters from the Manage button.',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+                loading: () =>
+                    const AppLoadingState(message: 'Loading chapters...'),
+                error: (e, _) =>
+                    Center(child: Text('Error loading chapters: $e')),
+              ),
+              loading: () => const AppLoadingState(message: 'Loading book...'),
+              error: (e, _) => Center(child: Text('Error loading book: $e')),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (embedded) {
+      return content;
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -34,90 +127,7 @@ class BookListScreen extends ConsumerWidget {
             ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(singleBookProvider);
-          ref.invalidate(bookChaptersProvider);
-        },
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-              child: bookAsync.when(
-                data: (book) => chaptersAsync.when(
-                  data: (chapters) {
-                    return ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        _BookHeroCard(
-                          title: book.title,
-                          author: book.author,
-                          coverUrl: book.coverUrl,
-                          description: book.description,
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Text(
-                              'Chapters',
-                              style: AppTextStyles.titleMedium.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              '${chapters.length}',
-                              style: AppTextStyles.labelMedium.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        if (chapters.isEmpty)
-                          const GlassCard(
-                            child: Text('No chapters available yet.'),
-                          )
-                        else
-                          for (final chapter in chapters)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: _ChapterTile(
-                                chapter: chapter,
-                                onTap: () =>
-                                    context.push('/book/chapter/${chapter.id}'),
-                              ),
-                            ),
-                        if (user.role.isEditor) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            'Admins and editors can manage chapters from the Manage button.',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ],
-                    );
-                  },
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (e, _) =>
-                      Center(child: Text('Error loading chapters: $e')),
-                ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error loading book: $e')),
-              ),
-            ),
-          ),
-        ),
-      ),
+      body: content,
     );
   }
 }
