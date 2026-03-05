@@ -376,7 +376,7 @@ class PostAttachmentService {
     final normalized = value.trim().toLowerCase();
     if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
       throw Exception(
-        'URL uploads are disabled. Please pick a file from your device.',
+        'URL image uploads are disabled. Please pick an image from your device.',
       );
     }
   }
