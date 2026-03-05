@@ -98,6 +98,7 @@ class AboutAppScreen extends StatelessWidget {
                       'About Me',
                       style: AppTextStyles.titleSmall.copyWith(
                         fontWeight: FontWeight.w700,
+                        fontStyle: FontStyle.italic,
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
@@ -109,6 +110,7 @@ class AboutAppScreen extends StatelessWidget {
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         height: 1.55,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ],
