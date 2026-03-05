@@ -126,6 +126,9 @@ Deno.serve(async (req) => {
       headings: { en: title },
       contents: { en: message },
       data: body.data ?? {},
+      // Use app-branded Android icons instead of OneSignal default bell.
+      small_icon: "ic_stat_onesignal_default",
+      large_icon: "ic_onesignal_large_icon_default",
     };
 
     if (body.url && body.url.trim().length > 0) {
