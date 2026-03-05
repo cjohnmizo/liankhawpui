@@ -38,6 +38,12 @@ class OneSignalService {
       }
 
       _isInitialized = true;
+      if (kDebugMode) {
+        debugPrint(
+          'OneSignal initialized: permission=${OneSignal.Notifications.permission}, '
+          'subscriptionId=${OneSignal.User.pushSubscription.id}',
+        );
+      }
       flushPendingNavigation();
     } catch (error) {
       _isDisabled = true;
@@ -53,6 +59,17 @@ class OneSignalService {
       }
       if (OneSignal.Notifications.permission) {
         await OneSignal.User.pushSubscription.optIn();
+      } else {
+        debugPrint(
+          'Push permission not granted. User must enable notifications in system settings.',
+        );
+      }
+      if (kDebugMode) {
+        debugPrint(
+          'OneSignal permission=${OneSignal.Notifications.permission}, '
+          'optedIn=${OneSignal.User.pushSubscription.optedIn}, '
+          'subscriptionId=${OneSignal.User.pushSubscription.id}',
+        );
       }
     } catch (error) {
       debugPrint('OneSignal permission request failed: $error');

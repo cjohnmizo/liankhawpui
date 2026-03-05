@@ -62,8 +62,12 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     final createdAt = _readNonEmptyString(payload['created_at']);
     final updatedAt = _readNonEmptyString(payload['updated_at']);
 
-    // Treat only first-write rows as publish events. Edits should not push.
-    if (createdAt == null || updatedAt == null || createdAt != updatedAt) {
+    // Treat only likely first-write rows as publish events.
+    // Some backends/triggers may set updated_at with slight drift from created_at.
+    if (!_isLikelyAnnouncementCreate(
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    )) {
       return;
     }
 
@@ -133,6 +137,24 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     final parsed = value?.toString().trim();
     if (parsed == null || parsed.isEmpty) return null;
     return parsed;
+  }
+
+  bool _isLikelyAnnouncementCreate({
+    required String? createdAt,
+    required String? updatedAt,
+  }) {
+    if (createdAt == null) return false;
+    if (updatedAt == null) return true;
+    if (createdAt == updatedAt) return true;
+
+    final created = DateTime.tryParse(createdAt);
+    final updated = DateTime.tryParse(updatedAt);
+    if (created == null || updated == null) {
+      return false;
+    }
+
+    final drift = updated.difference(created).abs();
+    return drift <= const Duration(seconds: 30);
   }
 
   @override
