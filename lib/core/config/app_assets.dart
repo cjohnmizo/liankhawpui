@@ -43,7 +43,7 @@ class AppAssets {
   // ============================================================================
 
   /// Landscape/Banner image
-  static const String landscape = 'assets/landscape.png';
+  static const String landscape = 'assets/landscape.jpg';
 
   // ============================================================================
   // Helper Methods

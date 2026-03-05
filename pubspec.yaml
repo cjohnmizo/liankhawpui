@@ -68,7 +68,7 @@ flutter:
   
   assets:
     - assets/images/
-    - assets/landscape.png
+    - assets/landscape.jpg
     - assets/icon/t_logo.png
     - .env
 
