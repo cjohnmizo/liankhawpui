@@ -39,7 +39,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: appNavigatorKey,
-    initialLocation: testMode ? '/' : '/splash',
+    initialLocation: '/',
     refreshListenable: GoRouterRefreshStream(authRepository.authStateChanges),
     routes: [
       GoRoute(
