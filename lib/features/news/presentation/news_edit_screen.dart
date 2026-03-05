@@ -23,7 +23,8 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
   late TextEditingController _contentController;
-  String? _selectedCoverImageUrl;
+  String? _selectedCoverPublicUrl;
+  String? _selectedCoverObjectPath;
   late String _selectedCategory;
   late bool _isPublished;
   bool _isLoading = false;
@@ -47,7 +48,7 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
     _contentController = TextEditingController(
       text: widget.news?.content ?? '',
     );
-    _selectedCoverImageUrl = _normalizeImageValue(widget.news?.imageUrl);
+    _selectedCoverPublicUrl = _normalizeImageValue(widget.news?.imageUrl);
     _selectedCategory = widget.news?.category ?? 'General';
     _isPublished = widget.news?.isPublished ?? true;
   }
@@ -71,7 +72,11 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
     setState(() => _isLoading = true);
     try {
       final repo = ref.read(newsRepositoryProvider);
-      final imageUrl = _normalizeImageValue(_selectedCoverImageUrl);
+      assert(
+        _selectedCoverObjectPath == null ||
+            _selectedCoverObjectPath!.isNotEmpty,
+      );
+      final imageUrl = _normalizeImageValue(_selectedCoverPublicUrl);
 
       if (widget.news != null) {
         await repo.updateNews(
@@ -126,10 +131,11 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
 
       setState(() {
         _attachments.add(result);
-        if (_selectedCoverImageUrl == null) {
-          _selectedCoverImageUrl = _normalizeImageValue(
+        if (_selectedCoverPublicUrl == null) {
+          _selectedCoverPublicUrl = _normalizeImageValue(
             result.preferredListImageUrl ?? result.publicUrl,
           );
+          _selectedCoverObjectPath = _normalizeImageValue(result.objectPath);
         }
       });
 
@@ -277,7 +283,7 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
                             ).colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        if (_selectedCoverImageUrl != null) ...[
+                        if (_selectedCoverPublicUrl != null) ...[
                           const SizedBox(height: 10),
                           Row(
                             children: [
@@ -295,7 +301,10 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
                               ),
                               TextButton(
                                 onPressed: () {
-                                  setState(() => _selectedCoverImageUrl = null);
+                                  setState(() {
+                                    _selectedCoverPublicUrl = null;
+                                    _selectedCoverObjectPath = null;
+                                  });
                                 },
                                 child: const Text('Remove image'),
                               ),

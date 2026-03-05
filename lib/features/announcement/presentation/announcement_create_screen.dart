@@ -20,7 +20,8 @@ class _AnnouncementCreateScreenState
     extends ConsumerState<AnnouncementCreateScreen> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
-  String? _selectedCoverImageUrl;
+  String? _selectedCoverPublicUrl;
+  String? _selectedCoverObjectPath;
   final _attachmentService = PostAttachmentService();
   final List<PostAttachmentUploadResult> _attachments =
       <PostAttachmentUploadResult>[];
@@ -46,12 +47,16 @@ class _AnnouncementCreateScreenState
     setState(() => _isLoading = true);
     try {
       final user = ref.read(currentUserProvider);
+      assert(
+        _selectedCoverObjectPath == null ||
+            _selectedCoverObjectPath!.isNotEmpty,
+      );
       await ref
           .read(announcementRepositoryProvider)
           .createAnnouncement(
             title: _titleController.text.trim(),
             content: _contentController.text.trim(),
-            imageUrl: _normalizeImageValue(_selectedCoverImageUrl),
+            imageUrl: _normalizeImageValue(_selectedCoverPublicUrl),
             userId: user.id,
           );
       if (mounted) context.pop();
@@ -79,10 +84,11 @@ class _AnnouncementCreateScreenState
 
       setState(() {
         _attachments.add(result);
-        if (_selectedCoverImageUrl == null) {
-          _selectedCoverImageUrl = _normalizeImageValue(
+        if (_selectedCoverPublicUrl == null) {
+          _selectedCoverPublicUrl = _normalizeImageValue(
             result.preferredListImageUrl ?? result.publicUrl,
           );
+          _selectedCoverObjectPath = _normalizeImageValue(result.objectPath);
         }
       });
 
@@ -195,7 +201,7 @@ class _AnnouncementCreateScreenState
                         'Images are auto-optimized (Normal/Low Data). Documents up to 5 MB.',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                      if (_selectedCoverImageUrl != null) ...[
+                      if (_selectedCoverPublicUrl != null) ...[
                         const SizedBox(height: 10),
                         Row(
                           children: [
@@ -209,7 +215,10 @@ class _AnnouncementCreateScreenState
                             ),
                             TextButton(
                               onPressed: () {
-                                setState(() => _selectedCoverImageUrl = null);
+                                setState(() {
+                                  _selectedCoverPublicUrl = null;
+                                  _selectedCoverObjectPath = null;
+                                });
                               },
                               child: const Text('Remove image'),
                             ),
