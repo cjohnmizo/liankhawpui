@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
+import 'package:intl/intl.dart';
 import 'package:liankhawpui/core/providers/network_status_provider.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
@@ -12,6 +12,7 @@ import 'package:liankhawpui/core/widgets/app_logo.dart';
 import 'package:liankhawpui/core/widgets/app_states.dart';
 import 'package:liankhawpui/core/widgets/glass_bottom_nav.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
+import 'package:liankhawpui/features/announcement/domain/announcement.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_providers.dart';
 import 'package:liankhawpui/features/auth/domain/app_user.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
@@ -19,11 +20,10 @@ import 'package:liankhawpui/features/auth/presentation/profile_screen.dart';
 import 'package:liankhawpui/features/news/domain/news.dart';
 import 'package:liankhawpui/features/news/presentation/news_list_screen.dart';
 import 'package:liankhawpui/features/news/presentation/news_providers.dart';
+import 'package:liankhawpui/features/organization/domain/organization.dart';
 import 'package:liankhawpui/features/organization/presentation/organization_providers.dart';
 import 'package:liankhawpui/features/organization/presentation/organization_screen.dart';
-import 'package:liankhawpui/features/organization/domain/organization.dart';
 import 'package:liankhawpui/features/story/presentation/book_list_screen.dart';
-import 'package:liankhawpui/features/story/presentation/story_providers.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
@@ -50,11 +50,11 @@ class _HomePageState extends ConsumerState<HomePage> {
       appBar: _buildAppBar(context, user, currentIndex),
       body: Column(
         children: [
-          Expanded(child: _buildActiveTab(currentIndex, ref)),
+          Expanded(child: _buildActiveTab(currentIndex)),
           const Opacity(opacity: 0, child: Text('Featured News')),
         ],
       ),
-      bottomNavigationBar: _buildBottomNav(currentIndex, ref),
+      bottomNavigationBar: _buildBottomNav(currentIndex),
       floatingActionButton: user.role.isEditor && currentIndex == 0
           ? FloatingActionButton(
               heroTag: 'home_create_fab',
@@ -70,7 +70,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildActiveTab(int currentIndex, WidgetRef ref) {
+  Widget _buildActiveTab(int currentIndex) {
     switch (currentIndex) {
       case 0:
         return _buildHomeDashboard(context, ref);
@@ -140,7 +140,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildBottomNav(int currentIndex, WidgetRef ref) {
+  Widget _buildBottomNav(int currentIndex) {
     return GlassBottomNav(
       currentIndex: currentIndex,
       items: const [
@@ -181,17 +181,18 @@ class _HomePageState extends ConsumerState<HomePage> {
     final newsAsync = ref.watch(newsStreamProvider);
     final announcementsAsync = ref.watch(announcementsProvider);
     final organizationsAsync = ref.watch(organizationTreeProvider);
-    final bookAsync = ref.watch(singleBookProvider);
-    final continueReadingAsync = ref.watch(lastReadChapterProvider);
     final isOnline = ref.watch(networkOnlineProvider).valueOrNull ?? true;
+    final announcementCount = announcementsAsync.valueOrNull?.length;
+    final newsCount = newsAsync.valueOrNull?.length;
+    final organizationCount = organizationsAsync.valueOrNull == null
+        ? null
+        : _flattenOrganizations(organizationsAsync.valueOrNull!).length;
 
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(newsStreamProvider);
         ref.invalidate(announcementsProvider);
         ref.invalidate(organizationTreeProvider);
-        ref.invalidate(singleBookProvider);
-        ref.invalidate(bookChaptersProvider);
       },
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -212,48 +213,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _HeaderBanner(user: user, isOnline: isOnline),
+                      const SizedBox(height: 12),
+                      _CommunityIndexPanel(
+                        announcementCount: announcementCount,
+                        newsCount: newsCount,
+                        organizationCount: organizationCount,
+                        isOnline: isOnline,
+                      ),
                       const SizedBox(height: 18),
                       _SectionHeader(
-                        title: 'Announcements',
-                        subtitle: 'Priority community updates',
-                        icon: Icons.campaign_rounded,
-                        actionLabel: 'View all',
-                        onActionTap: () => context.push('/announcement'),
-                      ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        height: 156,
-                        child: announcementsAsync.when(
-                          data: (items) {
-                            if (items.isEmpty) {
-                              return const AppEmptyState(
-                                message: 'No announcements yet',
-                                icon: Icons.campaign_outlined,
-                              );
-                            }
-                            final top = items.take(6).toList();
-                            return ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: top.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(width: 10),
-                              itemBuilder: (context, index) =>
-                                  _AnnouncementStripCard(item: top[index]),
-                            );
-                          },
-                          loading: () => const AppLoadingState(
-                            message: 'Loading announcements...',
-                          ),
-                          error: (_, __) => const AppEmptyState(
-                            message: 'Could not load announcements',
-                            icon: Icons.error_outline_rounded,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      _SectionHeader(
-                        title: 'Latest News',
-                        subtitle: 'Fresh stories from the village',
+                        title: 'Recent News',
+                        subtitle: 'Latest stories from the village',
                         icon: Icons.newspaper_rounded,
                         actionLabel: 'Open news',
                         onActionTap: () =>
@@ -262,34 +232,111 @@ class _HomePageState extends ConsumerState<HomePage> {
                       const SizedBox(height: 10),
                       newsAsync.when(
                         data: (items) {
-                          if (items.isEmpty) {
+                          final top = items.take(6).toList();
+                          if (top.isEmpty) {
                             return const AppEmptyState(
                               message: 'No news published yet',
                               icon: Icons.article_outlined,
                             );
                           }
-                          return Column(
-                            children: [
-                              for (final item in items.take(4))
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: _NewsListTile(news: item),
-                                ),
-                            ],
+                          return LayoutBuilder(
+                            builder: (context, constraints) {
+                              final width = constraints.maxWidth;
+                              final crossAxisCount = width >= 960
+                                  ? 3
+                                  : width >= 620
+                                  ? 2
+                                  : 1;
+                              final childAspectRatio = crossAxisCount == 1
+                                  ? 2.1
+                                  : 1.0;
+
+                              return GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: top.length,
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: crossAxisCount,
+                                      crossAxisSpacing: 10,
+                                      mainAxisSpacing: 10,
+                                      childAspectRatio: childAspectRatio,
+                                    ),
+                                itemBuilder: (context, index) =>
+                                    _NewsGridCard(news: top[index]),
+                              );
+                            },
                           );
                         },
                         loading: () => const AppLoadingState(
-                          message: 'Loading latest news...',
+                          message: 'Loading recent news...',
                         ),
                         error: (_, __) => const AppEmptyState(
-                          message: 'Could not load latest news',
+                          message: 'Could not load recent news',
                           icon: Icons.error_outline_rounded,
                         ),
                       ),
                       const SizedBox(height: 20),
                       _SectionHeader(
-                        title: 'Organizations',
-                        subtitle: 'Quick access by group',
+                        title: 'Announcements',
+                        subtitle: 'Village updates and notices',
+                        icon: Icons.campaign_rounded,
+                        actionLabel: 'View all',
+                        onActionTap: () => context.push('/announcement'),
+                      ),
+                      const SizedBox(height: 10),
+                      announcementsAsync.when(
+                        data: (items) {
+                          final top = items.take(6).toList();
+                          if (top.isEmpty) {
+                            return const AppEmptyState(
+                              message: 'No announcements yet',
+                              icon: Icons.campaign_outlined,
+                            );
+                          }
+                          return LayoutBuilder(
+                            builder: (context, constraints) {
+                              final width = constraints.maxWidth;
+                              final crossAxisCount = width >= 960
+                                  ? 3
+                                  : width >= 620
+                                  ? 2
+                                  : 1;
+                              final childAspectRatio = crossAxisCount == 1
+                                  ? 2.6
+                                  : 1.6;
+
+                              return GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: top.length,
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: crossAxisCount,
+                                      crossAxisSpacing: 10,
+                                      mainAxisSpacing: 10,
+                                      childAspectRatio: childAspectRatio,
+                                    ),
+                                itemBuilder: (context, index) =>
+                                    _AnnouncementGridCard(
+                                      announcement: top[index],
+                                    ),
+                              );
+                            },
+                          );
+                        },
+                        loading: () => const AppLoadingState(
+                          message: 'Loading announcements...',
+                        ),
+                        error: (_, __) => const AppEmptyState(
+                          message: 'Could not load announcements',
+                          icon: Icons.error_outline_rounded,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      _SectionHeader(
+                        title: 'Organization List',
+                        subtitle: 'Village groups in grid view',
                         icon: Icons.account_tree_rounded,
                         actionLabel: 'Browse',
                         onActionTap: () =>
@@ -307,18 +354,32 @@ class _HomePageState extends ConsumerState<HomePage> {
                               icon: Icons.business_rounded,
                             );
                           }
-                          return Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: organizations
-                                .map(
-                                  (org) => _OrgQuickChip(
-                                    name: org.name,
-                                    onTap: () =>
-                                        context.push('/organization/${org.id}'),
-                                  ),
-                                )
-                                .toList(),
+
+                          return LayoutBuilder(
+                            builder: (context, constraints) {
+                              final width = constraints.maxWidth;
+                              final crossAxisCount = width >= 960
+                                  ? 4
+                                  : width >= 700
+                                  ? 3
+                                  : 2;
+                              return GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: organizations.length,
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: crossAxisCount,
+                                      crossAxisSpacing: 10,
+                                      mainAxisSpacing: 10,
+                                      childAspectRatio: 1.08,
+                                    ),
+                                itemBuilder: (context, index) =>
+                                    _OrganizationGridCard(
+                                      organization: organizations[index],
+                                    ),
+                              );
+                            },
                           );
                         },
                         loading: () => const AppLoadingState(
@@ -328,144 +389,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                           message: 'Could not load organizations',
                           icon: Icons.error_outline_rounded,
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      _SectionHeader(
-                        title: 'Featured Story',
-                        subtitle: 'Khawlian Chanchin digital book',
-                        icon: Icons.auto_stories_rounded,
-                        actionLabel: 'Open',
-                        onActionTap: () =>
-                            ref.read(bottomNavIndexProvider.notifier).state = 3,
-                      ),
-                      const SizedBox(height: 10),
-                      bookAsync.when(
-                        data: (book) => GlassCard(
-                          onTap: () =>
-                              ref.read(bottomNavIndexProvider.notifier).state =
-                                  3,
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 42,
-                                height: 42,
-                                decoration: BoxDecoration(
-                                  color: AppColors.accentGold.withValues(
-                                    alpha: 0.14,
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(
-                                  Icons.menu_book_rounded,
-                                  color: AppColors.accentGold,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      book.title,
-                                      style: AppTextStyles.titleSmall.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    if ((book.description ?? '').isNotEmpty)
-                                      Text(
-                                        book.description!,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: AppTextStyles.bodySmall.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(Icons.chevron_right_rounded),
-                            ],
-                          ),
-                        ),
-                        loading: () =>
-                            const AppLoadingState(message: 'Loading story...'),
-                        error: (_, __) => const AppEmptyState(
-                          message: 'Could not load featured story',
-                          icon: Icons.error_outline_rounded,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      continueReadingAsync.when(
-                        data: (lastRead) {
-                          if (lastRead == null) return const SizedBox.shrink();
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _SectionHeader(
-                                title: 'Continue Reading',
-                                subtitle: 'Resume where you stopped',
-                                icon: Icons.play_arrow_rounded,
-                                actionLabel: 'Open',
-                                onActionTap: () => context.push(
-                                  '/book/chapter/${lastRead.chapterId}',
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              GlassCard(
-                                onTap: () => context.push(
-                                  '/book/chapter/${lastRead.chapterId}',
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.bookmark_outline_rounded,
-                                      color: AppColors.accentGold,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            lastRead.chapterTitle ??
-                                                'Last read chapter',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: AppTextStyles.bodyMedium
-                                                .copyWith(
-                                                  color: Theme.of(
-                                                    context,
-                                                  ).colorScheme.onSurface,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                          ),
-                                          Text(
-                                            'Updated ${timeago.format(lastRead.updatedAt)}',
-                                            style: AppTextStyles.bodySmall
-                                                .copyWith(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Icon(Icons.chevron_right_rounded),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                        loading: () => const SizedBox.shrink(),
-                        error: (_, __) => const SizedBox.shrink(),
                       ),
                     ],
                   ),
@@ -541,6 +464,7 @@ class _HeaderBanner extends StatelessWidget {
         : hour < 18
         ? 'Good afternoon'
         : 'Good evening';
+    final today = DateFormat('EEE, d MMM').format(DateTime.now());
 
     return GlassCard(
       child: Row(
@@ -560,7 +484,7 @@ class _HeaderBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Khawlian Village Community Dashboard',
+                  'Liankhawpui Community Index - $today',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -576,6 +500,102 @@ class _HeaderBanner extends StatelessWidget {
                   ),
                 ],
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommunityIndexPanel extends StatelessWidget {
+  final int? announcementCount;
+  final int? newsCount;
+  final int? organizationCount;
+  final bool isOnline;
+
+  const _CommunityIndexPanel({
+    required this.announcementCount,
+    required this.newsCount,
+    required this.organizationCount,
+    required this.isOnline,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(10),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          _IndexChip(
+            icon: Icons.campaign_rounded,
+            label: 'Announcements',
+            value: _formatCount(announcementCount),
+          ),
+          _IndexChip(
+            icon: Icons.newspaper_rounded,
+            label: 'News',
+            value: _formatCount(newsCount),
+          ),
+          _IndexChip(
+            icon: Icons.account_tree_rounded,
+            label: 'Organizations',
+            value: _formatCount(organizationCount),
+          ),
+          _IndexChip(
+            icon: isOnline ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+            label: 'Sync',
+            value: isOnline ? 'Online' : 'Cached',
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatCount(int? value) {
+    if (value == null) return '--';
+    return '$value';
+  }
+}
+
+class _IndexChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _IndexChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.accentGold),
+          const SizedBox(width: 6),
+          Text(
+            '$label: ',
+            style: AppTextStyles.labelSmall.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            value,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -633,72 +653,69 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _AnnouncementStripCard extends StatelessWidget {
-  final dynamic item;
+class _AnnouncementGridCard extends StatelessWidget {
+  final Announcement announcement;
 
-  const _AnnouncementStripCard({required this.item});
+  const _AnnouncementGridCard({required this.announcement});
 
   @override
   Widget build(BuildContext context) {
-    final preview = markdownExcerpt(item.content, maxLength: 120);
-    return SizedBox(
-      width: 260,
-      child: GlassCard(
-        onTap: () => context.push('/announcement/${item.id}'),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  item.isPinned
-                      ? Icons.push_pin_rounded
-                      : Icons.notifications_rounded,
-                  size: 16,
-                  color: AppColors.accentGold,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    item.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontWeight: FontWeight.w700,
-                    ),
+    final preview = markdownExcerpt(announcement.content, maxLength: 110);
+    return GlassCard(
+      onTap: () => context.push('/announcement/${announcement.id}'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                announcement.isPinned
+                    ? Icons.push_pin_rounded
+                    : Icons.notifications_rounded,
+                size: 16,
+                color: AppColors.accentGold,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  announcement.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              preview,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                height: 1.4,
               ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            preview,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              height: 1.4,
             ),
-            const Spacer(),
-            Text(
-              timeago.format(item.createdAt),
-              style: AppTextStyles.labelSmall.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+          ),
+          const Spacer(),
+          Text(
+            timeago.format(announcement.createdAt),
+            style: AppTextStyles.labelSmall.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _NewsListTile extends StatelessWidget {
+class _NewsGridCard extends StatelessWidget {
   final News news;
 
-  const _NewsListTile({required this.news});
+  const _NewsGridCard({required this.news});
 
   @override
   Widget build(BuildContext context) {
@@ -709,20 +726,22 @@ class _NewsListTile extends StatelessWidget {
     );
 
     return GlassCard(
-      padding: const EdgeInsets.all(10),
       onTap: () => context.push('/news/${news.id}'),
-      child: Row(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: SizedBox(
-              width: 82,
-              height: 82,
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
               child: displayImageUrl == null
                   ? Container(
                       color: Theme.of(
                         context,
                       ).colorScheme.surfaceContainerHighest,
+                      alignment: Alignment.center,
                       child: const Icon(Icons.image_not_supported_rounded),
                     )
                   : AdaptiveCachedImage(
@@ -738,8 +757,8 @@ class _NewsListTile extends StatelessWidget {
                     ),
             ),
           ),
-          const SizedBox(width: 10),
-          Expanded(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -753,15 +772,6 @@ class _NewsListTile extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  markdownExcerpt(news.content, maxLength: 90),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 6),
                 Text(
                   timeago.format(news.createdAt),
                   style: AppTextStyles.labelSmall.copyWith(
@@ -777,18 +787,74 @@ class _NewsListTile extends StatelessWidget {
   }
 }
 
-class _OrgQuickChip extends StatelessWidget {
-  final String name;
-  final VoidCallback onTap;
+class _OrganizationGridCard extends StatelessWidget {
+  final Organization organization;
 
-  const _OrgQuickChip({required this.name, required this.onTap});
+  const _OrganizationGridCard({required this.organization});
 
   @override
   Widget build(BuildContext context) {
-    return ActionChip(
-      avatar: const Icon(Icons.business_rounded, size: 16),
-      label: Text(name, overflow: TextOverflow.ellipsis),
-      onPressed: onTap,
+    return GlassCard(
+      onTap: () => context.push('/organization/${organization.id}'),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if ((organization.logoUrl ?? '').isNotEmpty)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox(
+                width: 52,
+                height: 52,
+                child: AdaptiveCachedImage(
+                  imageUrl: organization.logoUrl!,
+                  fit: BoxFit.cover,
+                  placeholderBuilder: (_) => Container(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                  ),
+                  errorBuilder: (_) => Icon(
+                    Icons.business_rounded,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            )
+          else
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.accentGold.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.business_rounded,
+                color: AppColors.accentGold,
+              ),
+            ),
+          const SizedBox(height: 8),
+          Text(
+            organization.name,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            (organization.type ?? 'Institution').trim(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
