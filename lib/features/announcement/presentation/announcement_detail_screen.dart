@@ -290,7 +290,7 @@ class AnnouncementDetailScreen extends ConsumerWidget {
 
   String? _resolveHeroImageUrl(Announcement announcement) {
     final markdownImage = firstMarkdownImageUrl(announcement.content);
-    return resolveDisplayImageUrl(
+    return resolveDetailImageUrl(
       thumbUrl: announcement.thumbUrl,
       coverUrl: markdownImage ?? announcement.coverUrl,
       legacyImageUrl: announcement.legacyImageUrl,

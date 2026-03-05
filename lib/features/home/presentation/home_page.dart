@@ -610,7 +610,7 @@ class _NewsGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayImageUrl = resolveDisplayImageUrl(
+    final displayImageUrl = resolveListImageUrl(
       thumbUrl: news.thumbUrl,
       coverUrl: news.coverUrl ?? firstMarkdownImageUrl(news.content),
       legacyImageUrl: news.legacyImageUrl,

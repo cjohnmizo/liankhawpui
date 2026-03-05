@@ -54,7 +54,7 @@ class NewsListScreen extends ConsumerWidget {
                     ),
                     itemBuilder: (context, index) {
                       final news = newsList[index];
-                      final displayImageUrl = resolveDisplayImageUrl(
+                      final displayImageUrl = resolveListImageUrl(
                         thumbUrl: news.thumbUrl,
                         coverUrl:
                             news.coverUrl ??

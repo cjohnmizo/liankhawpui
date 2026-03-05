@@ -25,7 +25,7 @@ class News {
     this.isPublished = false,
   });
 
-  String? get displayImageUrl => resolveDisplayImageUrl(
+  String? get displayImageUrl => resolveListImageUrl(
     thumbUrl: thumbUrl,
     coverUrl: coverUrl,
     legacyImageUrl: legacyImageUrl,

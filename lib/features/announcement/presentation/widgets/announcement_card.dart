@@ -16,7 +16,7 @@ class AnnouncementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final displayImageUrl = resolveDisplayImageUrl(
+    final displayImageUrl = resolveListImageUrl(
       thumbUrl: announcement.thumbUrl,
       coverUrl:
           announcement.coverUrl ?? firstMarkdownImageUrl(announcement.content),

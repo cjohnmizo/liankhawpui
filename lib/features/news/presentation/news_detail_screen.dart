@@ -228,7 +228,7 @@ class NewsDetailScreen extends ConsumerWidget {
 
   String? _resolveHeroImageUrl(News news) {
     final markdownImage = firstMarkdownImageUrl(news.content);
-    return resolveDisplayImageUrl(
+    return resolveDetailImageUrl(
       thumbUrl: news.thumbUrl,
       coverUrl: markdownImage ?? news.coverUrl,
       legacyImageUrl: news.legacyImageUrl,

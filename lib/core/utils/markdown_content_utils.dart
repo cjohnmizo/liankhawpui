@@ -56,6 +56,101 @@ String? resolveDisplayImageUrl({
   return null;
 }
 
+String? resolveListImageUrl({
+  String? thumbUrl,
+  String? coverUrl,
+  String? legacyImageUrl,
+}) {
+  final directThumb = _normalizeUrl(thumbUrl);
+  if (directThumb != null) return directThumb;
+
+  final cover = _normalizeUrl(coverUrl);
+  if (cover != null) {
+    final derivedThumb = deriveThumbnailUrlFromFull(cover);
+    return derivedThumb ?? cover;
+  }
+
+  final legacy = _normalizeUrl(legacyImageUrl);
+  if (legacy != null) {
+    final derivedThumb = deriveThumbnailUrlFromFull(legacy);
+    return derivedThumb ?? legacy;
+  }
+
+  return null;
+}
+
+String? resolveDetailImageUrl({
+  String? thumbUrl,
+  String? coverUrl,
+  String? legacyImageUrl,
+}) {
+  final cover = _normalizeUrl(coverUrl);
+  if (cover != null) {
+    final full = deriveFullImageUrlFromThumb(cover);
+    return full ?? cover;
+  }
+
+  final thumb = _normalizeUrl(thumbUrl);
+  if (thumb != null) {
+    final full = deriveFullImageUrlFromThumb(thumb);
+    return full ?? thumb;
+  }
+
+  final legacy = _normalizeUrl(legacyImageUrl);
+  if (legacy != null) {
+    final full = deriveFullImageUrlFromThumb(legacy);
+    return full ?? legacy;
+  }
+
+  return null;
+}
+
+String? deriveThumbnailUrlFromFull(String? imageUrl) {
+  final normalized = _normalizeUrl(imageUrl);
+  if (normalized == null) return null;
+  final uri = Uri.tryParse(normalized);
+  if (uri == null || uri.pathSegments.isEmpty) return null;
+
+  final segments = List<String>.from(uri.pathSegments);
+  final index = segments.indexOf('post-images');
+  if (index == -1) return null;
+
+  final currentName = segments.last;
+  if (currentName.contains('_thumb.')) {
+    return uri.toString();
+  }
+  final dot = currentName.lastIndexOf('.');
+  final thumbName = dot > 0
+      ? '${currentName.substring(0, dot)}_thumb${currentName.substring(dot)}'
+      : '${currentName}_thumb';
+  segments[index] = 'post-thumbs';
+  segments[segments.length - 1] = thumbName;
+  return uri.replace(pathSegments: segments).toString();
+}
+
+String? deriveFullImageUrlFromThumb(String? imageUrl) {
+  final normalized = _normalizeUrl(imageUrl);
+  if (normalized == null) return null;
+  final uri = Uri.tryParse(normalized);
+  if (uri == null || uri.pathSegments.isEmpty) return null;
+
+  final segments = List<String>.from(uri.pathSegments);
+  final index = segments.indexOf('post-thumbs');
+  if (index == -1) return null;
+
+  final currentName = segments.last;
+  final fullName = currentName.replaceFirst('_thumb.', '.');
+  segments[index] = 'post-images';
+  segments[segments.length - 1] = fullName;
+  return uri.replace(pathSegments: segments).toString();
+}
+
+String? _normalizeUrl(String? value) {
+  final normalized = value?.trim();
+  if (normalized == null || normalized.isEmpty) return null;
+  return normalized;
+}
+
 class MarkdownAttachmentLink {
   final String label;
   final String href;
