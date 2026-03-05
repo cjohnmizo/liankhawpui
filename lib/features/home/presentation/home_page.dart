@@ -212,7 +212,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       const SizedBox(height: 10),
                       announcementsAsync.when(
                         data: (items) {
-                          final top = items.take(6).toList();
+                          final top = items.take(3).toList();
                           if (top.isEmpty) {
                             return const AppEmptyState(
                               message: 'No announcements yet',
