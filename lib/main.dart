@@ -27,11 +27,9 @@ void main() async {
       SupabaseService.initialize(),
       timeout: const Duration(seconds: 12),
     );
-    await _runWithTimeout(
-      'PowerSync local DB',
-      PowerSyncService().initialize(enableRemoteSync: false),
-      timeout: const Duration(seconds: 12),
-    );
+    // Local DB setup can take longer on first launch/low-end devices.
+    // Do not hard-timeout here or app may fail before splash is shown.
+    await PowerSyncService().initialize(enableRemoteSync: false);
 
     runApp(const ProviderScope(child: LiankhawpuiApp()));
 
