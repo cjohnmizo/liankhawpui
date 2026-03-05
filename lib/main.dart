@@ -12,6 +12,7 @@ import 'package:liankhawpui/core/services/powersync_service.dart';
 import 'package:liankhawpui/core/services/onesignal_service.dart';
 import 'package:liankhawpui/core/router/app_router.dart';
 import 'package:liankhawpui/core/widgets/network_status_overlay.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 const bool _testMode = bool.fromEnvironment('TEST_MODE', defaultValue: false);
 
@@ -40,7 +41,6 @@ void main() async {
     }
 
     // Keep first render fast; initialize remote services after app start.
-    unawaited(PowerSyncService().startAutoSyncLifecycle());
     unawaited(_initializeDeferredServices());
   } catch (e) {
     debugPrint('CRITICAL: app initialization failed: $e');
@@ -63,6 +63,9 @@ Future<T> _runWithTimeout<T>(
 }
 
 Future<void> _initializeDeferredServices() async {
+  await _ensureGuestSessionForPublicSync();
+  await PowerSyncService().startAutoSyncLifecycle();
+
   try {
     await OneSignalService.initialize();
     await OneSignalService.syncExternalUserId(
@@ -70,6 +73,21 @@ Future<void> _initializeDeferredServices() async {
     );
   } catch (e) {
     debugPrint('WARN: OneSignal initialization failed: $e');
+  }
+}
+
+Future<void> _ensureGuestSessionForPublicSync() async {
+  final auth = SupabaseService.client.auth;
+  if (auth.currentSession != null) return;
+
+  try {
+    await auth.signInAnonymously();
+  } on AuthException catch (e) {
+    debugPrint(
+      'WARN: Anonymous guest sign-in failed. Guest sync may be empty: ${e.message}',
+    );
+  } catch (e) {
+    debugPrint('WARN: Anonymous guest sign-in failed: $e');
   }
 }
 
