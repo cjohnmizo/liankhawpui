@@ -335,7 +335,7 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Images are auto-optimized (Normal/Low Data). Documents up to 5 MB.',
+                          'Images are auto-optimized (Normal/Low Data). PDF recommended. DOCX/XLSX supported. Max size 5 MB.',
                           style: AppTextStyles.bodySmall.copyWith(
                             color: Theme.of(
                               context,

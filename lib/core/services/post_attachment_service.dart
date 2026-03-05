@@ -109,9 +109,8 @@ class PostAttachmentService {
   static const int maxDocumentBytes = 5 * 1024 * 1024;
   static const List<String> allowedDocumentExtensions = <String>[
     'pdf',
-    'doc',
     'docx',
-    'txt',
+    'xlsx',
   ];
   static const String _postImageFolder = 'post-images';
   static const String _postThumbFolder = 'post-thumbs';
@@ -238,15 +237,21 @@ class PostAttachmentService {
         .replaceFirst('.', '')
         .toLowerCase();
     if (!allowedDocumentExtensions.contains(extension)) {
+      throw Exception('Unsupported document type. Allowed: PDF, DOCX, XLSX.');
+    }
+
+    if (file.size > maxDocumentBytes) {
       throw Exception(
-        'Unsupported document type. Allowed: ${allowedDocumentExtensions.join(', ')}',
+        'Document is too large (${humanReadableBytes(file.size)}). '
+        'Max allowed is ${humanReadableBytes(maxDocumentBytes)}.',
       );
     }
 
     final bytes = await _readPlatformFileBytes(file);
     if (bytes.length > maxDocumentBytes) {
       throw Exception(
-        'Document is ${_toKb(bytes.length)} KB. Max allowed is 5120 KB.',
+        'Document is too large (${humanReadableBytes(bytes.length)}). '
+        'Max allowed is ${humanReadableBytes(maxDocumentBytes)}.',
       );
     }
 
@@ -367,12 +372,10 @@ class PostAttachmentService {
     switch (extension) {
       case 'pdf':
         return 'application/pdf';
-      case 'doc':
-        return 'application/msword';
       case 'docx':
         return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      case 'txt':
-        return 'text/plain';
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       default:
         return 'application/octet-stream';
     }
@@ -435,8 +438,6 @@ class PostAttachmentService {
     }
     return null;
   }
-
-  String _toKb(int bytes) => (bytes / 1024).toStringAsFixed(1);
 
   static String humanReadableBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';

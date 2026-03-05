@@ -336,7 +336,7 @@ class _AnnouncementCreateScreenState
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Images are auto-optimized (Normal/Low Data). Documents up to 5 MB.',
+                              'Images are auto-optimized (Normal/Low Data). PDF recommended. DOCX/XLSX supported. Max size 5 MB.',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             if (!isOnline) ...[
