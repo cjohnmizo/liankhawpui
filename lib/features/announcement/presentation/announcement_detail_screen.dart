@@ -176,7 +176,9 @@ class AnnouncementDetailScreen extends ConsumerWidget {
     required String content,
   }) {
     final markdownImage = firstMarkdownImageUrl(content);
-    if (markdownImage != null && markdownImage.isNotEmpty) {
+    if (markdownImage != null &&
+        markdownImage.isNotEmpty &&
+        isRenderableImageUrl(markdownImage)) {
       return markdownImage;
     }
 

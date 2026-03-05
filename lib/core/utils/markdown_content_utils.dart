@@ -36,3 +36,8 @@ String? firstMarkdownImageUrl(String value) {
   if (raw == null || raw.isEmpty) return null;
   return raw;
 }
+
+bool isRenderableImageUrl(String value) {
+  final normalized = value.trim().toLowerCase();
+  return normalized.startsWith('http://') || normalized.startsWith('https://');
+}
