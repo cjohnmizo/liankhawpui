@@ -180,6 +180,7 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                       ),
                       trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => context.push('/legal/privacy'),
                     ),
                     const Divider(height: 1),
                     ListTile(
@@ -192,6 +193,20 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                       ),
                       trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => context.push('/legal/terms'),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.groups_rounded),
+                      title: Text(
+                        'About App / Us',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => context.push('/about'),
                     ),
                   ],
                 ),

@@ -25,6 +25,8 @@ import 'package:liankhawpui/features/dashboard/presentation/manage_users_screen.
 import 'package:liankhawpui/features/auth/presentation/profile_screen.dart';
 import 'package:liankhawpui/features/auth/presentation/edit_profile_screen.dart';
 import 'package:liankhawpui/features/auth/domain/user_role.dart';
+import 'package:liankhawpui/features/settings/presentation/about_app_screen.dart';
+import 'package:liankhawpui/features/settings/presentation/legal_document_screen.dart';
 import 'package:liankhawpui/features/settings/presentation/settings_screen.dart';
 import 'package:liankhawpui/features/auth/presentation/forgot_password_screen.dart';
 import 'package:liankhawpui/features/auth/presentation/registration_screen.dart';
@@ -173,6 +175,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/legal/privacy',
+        builder: (context, state) =>
+            const LegalDocumentScreen(type: LegalDocumentType.privacyPolicy),
+      ),
+      GoRoute(
+        path: '/legal/terms',
+        builder: (context, state) =>
+            const LegalDocumentScreen(type: LegalDocumentType.termsOfService),
+      ),
+      GoRoute(
+        path: '/about',
+        builder: (context, state) => const AboutAppScreen(),
       ),
       // Add more routes here
     ],
