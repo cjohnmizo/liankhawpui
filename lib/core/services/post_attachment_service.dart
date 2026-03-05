@@ -11,6 +11,24 @@ import 'package:uuid/uuid.dart';
 
 enum PostAttachmentType { image, document }
 
+class ImageUploadPreviewData {
+  final String originalFileName;
+  final int originalSizeBytes;
+  final ProcessedImage fullImage;
+  final ProcessedImage thumbImage;
+  final bool lowDataMode;
+
+  const ImageUploadPreviewData({
+    required this.originalFileName,
+    required this.originalSizeBytes,
+    required this.fullImage,
+    required this.thumbImage,
+    required this.lowDataMode,
+  });
+
+  int get estimatedStoredBytes => fullImage.sizeBytes + thumbImage.sizeBytes;
+}
+
 class PostAttachmentUploadResult {
   final PostAttachmentType type;
   final String fileName;
@@ -18,6 +36,14 @@ class PostAttachmentUploadResult {
   final String publicUrl;
   final String objectPath;
   final String contentType;
+  final String? originalFileName;
+  final int? originalSizeBytes;
+  final int? width;
+  final int? height;
+  final int? thumbSizeBytes;
+  final int? thumbWidth;
+  final int? thumbHeight;
+  final int? totalStoredBytes;
   final String? thumbObjectPath;
   final String? thumbPublicUrl;
   final String? thumbContentType;
@@ -29,6 +55,14 @@ class PostAttachmentUploadResult {
     required this.publicUrl,
     required this.objectPath,
     required this.contentType,
+    this.originalFileName,
+    this.originalSizeBytes,
+    this.width,
+    this.height,
+    this.thumbSizeBytes,
+    this.thumbWidth,
+    this.thumbHeight,
+    this.totalStoredBytes,
     this.thumbObjectPath,
     this.thumbPublicUrl,
     this.thumbContentType,
@@ -71,6 +105,7 @@ class _UploadObject {
 
 class PostAttachmentService {
   static const String bucketName = 'post-attachments';
+  static const int maxImageInputBytes = 15 * 1024 * 1024;
   static const int maxDocumentBytes = 5 * 1024 * 1024;
   static const List<String> allowedDocumentExtensions = <String>[
     'pdf',
@@ -96,6 +131,7 @@ class PostAttachmentService {
   Future<PostAttachmentUploadResult?> pickCompressAndUploadImage({
     required String folder,
     required bool lowDataMode,
+    Future<bool> Function(ImageUploadPreviewData preview)? confirmUpload,
   }) async {
     _assertNoUrlInput(folder);
     // Retained for backward compatibility; image uploads now use fixed folders.
@@ -104,6 +140,13 @@ class PostAttachmentService {
       lowDataMode: lowDataMode,
     );
     if (imageFile == null) return null;
+    final originalSize = await imageFile.length();
+    if (originalSize > maxImageInputBytes) {
+      throw Exception(
+        'Image is too large (${humanReadableBytes(originalSize)}). '
+        'Please pick an image under ${humanReadableBytes(maxImageInputBytes)}.',
+      );
+    }
 
     final fullPreset = lowDataMode
         ? MediaPreset.lowDataPostFull
@@ -120,6 +163,18 @@ class PostAttachmentService {
       imageFile,
       preset: thumbPreset,
     );
+    final preview = ImageUploadPreviewData(
+      originalFileName: p.basename(imageFile.path),
+      originalSizeBytes: originalSize,
+      fullImage: processedFull,
+      thumbImage: processedThumb,
+      lowDataMode: lowDataMode,
+    );
+
+    if (confirmUpload != null) {
+      final shouldContinue = await confirmUpload(preview);
+      if (!shouldContinue) return null;
+    }
 
     final baseName = _buildObjectBaseName();
     final fullExtension = _extensionForContentType(processedFull.contentType);
@@ -151,6 +206,14 @@ class PostAttachmentService {
       publicUrl: fullUpload.publicUrl ?? '',
       objectPath: fullUpload.objectPath,
       contentType: processedFull.contentType,
+      originalFileName: preview.originalFileName,
+      originalSizeBytes: preview.originalSizeBytes,
+      width: processedFull.width,
+      height: processedFull.height,
+      thumbSizeBytes: processedThumb.sizeBytes,
+      thumbWidth: processedThumb.width,
+      thumbHeight: processedThumb.height,
+      totalStoredBytes: preview.estimatedStoredBytes,
       thumbObjectPath: thumbUpload.objectPath,
       thumbPublicUrl: thumbUpload.publicUrl,
       thumbContentType: processedThumb.contentType,
@@ -209,6 +272,9 @@ class PostAttachmentService {
       publicUrl: '',
       objectPath: upload.objectPath,
       contentType: contentType,
+      originalFileName: file.name,
+      originalSizeBytes: bytes.length,
+      totalStoredBytes: bytes.length,
     );
   }
 
@@ -371,6 +437,15 @@ class PostAttachmentService {
   }
 
   String _toKb(int bytes) => (bytes / 1024).toStringAsFixed(1);
+
+  static String humanReadableBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+  }
 
   void _assertNoUrlInput(String value) {
     final normalized = value.trim().toLowerCase();

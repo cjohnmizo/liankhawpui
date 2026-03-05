@@ -145,6 +145,7 @@ class _AnnouncementCreateScreenState
       final result = await _attachmentService.pickCompressAndUploadImage(
         folder: 'announcements',
         lowDataMode: lowDataMode,
+        confirmUpload: _confirmImageUpload,
       );
       if (result == null || !mounted) return;
 
@@ -180,6 +181,57 @@ class _AnnouncementCreateScreenState
     } finally {
       if (mounted) setState(() => _isUploadingAttachment = false);
     }
+  }
+
+  Future<bool> _confirmImageUpload(ImageUploadPreviewData preview) async {
+    if (!mounted) return false;
+    final original = PostAttachmentService.humanReadableBytes(
+      preview.originalSizeBytes,
+    );
+    final full = PostAttachmentService.humanReadableBytes(
+      preview.fullImage.sizeBytes,
+    );
+    final thumb = PostAttachmentService.humanReadableBytes(
+      preview.thumbImage.sizeBytes,
+    );
+    final total = PostAttachmentService.humanReadableBytes(
+      preview.estimatedStoredBytes,
+    );
+
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Upload Preview'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Original: $original'),
+                const SizedBox(height: 6),
+                Text('Optimized full: $full'),
+                Text('Thumbnail: $thumb'),
+                const SizedBox(height: 6),
+                Text('Estimated stored total: $total'),
+                const SizedBox(height: 8),
+                const Text(
+                  'This saves storage and mobile data.',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Upload'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   Future<void> _attachDocument() async {
