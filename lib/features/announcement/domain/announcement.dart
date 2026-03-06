@@ -32,17 +32,37 @@ class Announcement {
   );
 
   factory Announcement.fromRow(Map<String, dynamic> row) {
+    final createdAtRaw = row['created_at'];
+    final updatedAtRaw = row['updated_at'];
+
     return Announcement(
-      id: row['id'] as String,
-      title: row['title'] as String,
-      content: row['content'] as String,
-      legacyImageUrl: row['image_url'] as String?,
-      coverUrl: row['cover_url'] as String?,
-      thumbUrl: row['thumb_url'] as String?,
-      createdBy: row['created_by'] as String?,
-      createdAt: DateTime.parse(row['created_at'] as String),
-      updatedAt: DateTime.parse(row['updated_at'] as String),
-      isPinned: (row['is_pinned'] as int? ?? 0) == 1,
+      id: row['id'].toString(),
+      title: row['title']?.toString() ?? '',
+      content: row['content']?.toString() ?? '',
+      legacyImageUrl: row['image_url']?.toString(),
+      coverUrl: row['cover_url']?.toString(),
+      thumbUrl: row['thumb_url']?.toString(),
+      createdBy: row['created_by']?.toString(),
+      createdAt: _parseDateTime(createdAtRaw),
+      updatedAt: _parseDateTime(updatedAtRaw),
+      isPinned: _parseBool(row['is_pinned']),
     );
+  }
+
+  static DateTime _parseDateTime(Object? value) {
+    if (value is DateTime) return value;
+    final parsed = DateTime.tryParse(value?.toString() ?? '');
+    if (parsed != null) return parsed;
+    return DateTime.now();
+  }
+
+  static bool _parseBool(Object? value) {
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    final normalized = value?.toString().trim().toLowerCase();
+    if (normalized == '1' || normalized == 'true' || normalized == 't') {
+      return true;
+    }
+    return false;
   }
 }
