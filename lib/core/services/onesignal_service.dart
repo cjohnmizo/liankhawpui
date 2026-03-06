@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:liankhawpui/core/config/env_config.dart';
@@ -215,11 +216,21 @@ class OneSignalService {
   }
 
   static bool _openAnnouncementRoute(String announcementId) {
-    final context = appNavigatorKey.currentContext;
-    if (context == null) return false;
+    final navState = appNavigatorKey.currentState;
+    final context = navState?.context;
+    if (navState == null || context == null || !navState.mounted) {
+      return false;
+    }
 
-    final router = GoRouter.of(context);
-    router.go('/announcement/$announcementId');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final freshContext = appNavigatorKey.currentState?.context;
+      if (freshContext == null) return;
+      try {
+        GoRouter.of(freshContext).go('/announcement/$announcementId');
+      } catch (error) {
+        debugPrint('Announcement navigation failed: $error');
+      }
+    });
     return true;
   }
 }

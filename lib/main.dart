@@ -261,15 +261,24 @@ Future<void> _initializeLocalPowerSyncOnly() async {
   }
 }
 
-class LiankhawpuiApp extends ConsumerWidget {
+class LiankhawpuiApp extends ConsumerStatefulWidget {
   const LiankhawpuiApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LiankhawpuiApp> createState() => _LiankhawpuiAppState();
+}
+
+class _LiankhawpuiAppState extends ConsumerState<LiankhawpuiApp> {
+  @override
+  void initState() {
+    super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       OneSignalService.flushPendingNavigation();
     });
+  }
 
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
     final textScaleFactor = ref.watch(textScaleFactorProvider);
