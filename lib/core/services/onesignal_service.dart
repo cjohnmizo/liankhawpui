@@ -152,10 +152,12 @@ class OneSignalService {
 
   static String? _extractAnnouncementId(OSNotificationClickEvent event) {
     final data = event.notification.additionalData;
-    final type = data?['type']?.toString().trim().toLowerCase();
+    final type = _normalizeType(data?['type']);
     final idFromData =
         _normalizeId(data?['announcement_id']) ??
-        _normalizeId(data?['announcementId']);
+        _normalizeId(data?['announcementId']) ??
+        _normalizeId(data?['id']) ??
+        _extractNestedAnnouncementId(data?['announcement']);
 
     if (idFromData != null &&
         (type == null || type.isEmpty || type == 'announcement')) {
@@ -184,12 +186,26 @@ class OneSignalService {
     }
 
     for (var i = 0; i < segments.length - 1; i++) {
-      if (segments[i] == 'announcement') {
+      if (segments[i].toLowerCase() == 'announcement') {
         return _normalizeId(segments[i + 1]);
       }
     }
 
     return null;
+  }
+
+  static String? _extractNestedAnnouncementId(Object? value) {
+    if (value is Map) {
+      final map = Map<String, dynamic>.from(value);
+      return _normalizeId(map['id']) ?? _normalizeId(map['announcement_id']);
+    }
+    return null;
+  }
+
+  static String? _normalizeType(Object? value) {
+    final parsed = value?.toString().trim().toLowerCase();
+    if (parsed == null || parsed.isEmpty) return null;
+    return parsed;
   }
 
   static String? _normalizeId(Object? value) {

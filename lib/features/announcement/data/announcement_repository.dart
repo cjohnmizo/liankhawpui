@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:liankhawpui/core/services/powersync_service.dart';
+import 'package:liankhawpui/core/services/supabase_service.dart';
 import 'package:liankhawpui/features/announcement/domain/announcement.dart';
 import 'package:powersync/powersync.dart';
 import 'package:uuid/uuid.dart';
@@ -43,7 +44,9 @@ class AnnouncementRepository {
       yield null;
       return;
     }
-    yield* db
+
+    var attemptedRemoteFallback = false;
+    final stream = db
         .watch(
           'SELECT * FROM announcements WHERE id = ? LIMIT 1',
           parameters: [id],
@@ -55,6 +58,24 @@ class AnnouncementRepository {
         .handleError((error) {
           debugPrint('watchAnnouncementById stream error: $error');
         });
+
+    await for (final localAnnouncement in stream) {
+      if (localAnnouncement != null) {
+        yield localAnnouncement;
+        continue;
+      }
+
+      if (!attemptedRemoteFallback) {
+        attemptedRemoteFallback = true;
+        final remoteAnnouncement = await _fetchAnnouncementByIdRemote(id);
+        if (remoteAnnouncement != null) {
+          yield remoteAnnouncement;
+          continue;
+        }
+      }
+
+      yield null;
+    }
   }
 
   Future<void> createAnnouncement({
@@ -116,6 +137,25 @@ class AnnouncementRepository {
   void _logIgnoredLegacyImageUrl(String? imageUrl) {
     if (imageUrl != null && imageUrl.trim().isNotEmpty) {
       debugPrint('Ignoring legacy imageUrl: URL uploads disabled');
+    }
+  }
+
+  Future<Announcement?> _fetchAnnouncementByIdRemote(String id) async {
+    try {
+      final response = await SupabaseService.client
+          .from('announcements')
+          .select()
+          .eq('id', id)
+          .maybeSingle();
+
+      if (response == null) {
+        return null;
+      }
+
+      return Announcement.fromRow(response);
+    } catch (error) {
+      debugPrint('Remote announcement fallback failed for $id: $error');
+      return null;
     }
   }
 }
