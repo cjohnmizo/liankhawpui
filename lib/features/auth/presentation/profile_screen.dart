@@ -19,6 +19,26 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.t;
     final user = ref.watch(currentUserProvider);
+    final detailRows = [
+      (
+        icon: Icons.phone_outlined,
+        label: t.phone,
+        value: user.phoneNumber ?? t.notSet,
+      ),
+      (
+        icon: Icons.cake_outlined,
+        label: t.dateOfBirth,
+        value: user.dob == null
+            ? t.notSet
+            : DateFormat.yMMMd().format(user.dob!),
+      ),
+      (
+        icon: Icons.location_on_outlined,
+        label: t.address,
+        value: user.address ?? t.notSet,
+      ),
+    ];
+
     final profileContent = Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 820),
@@ -27,82 +47,166 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             GlassCard(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 44,
-                    backgroundColor: AppColors.accentGold.withValues(
-                      alpha: 0.14,
-                    ),
-                    backgroundImage: user.photoUrl == null
-                        ? null
-                        : CachedNetworkImageProvider(user.photoUrl!),
-                    child: user.photoUrl == null
-                        ? const Icon(
-                            Icons.person_rounded,
-                            size: 40,
-                            color: AppColors.accentGold,
-                          )
-                        : null,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 42,
+                        backgroundColor: AppColors.accentGold.withValues(
+                          alpha: 0.14,
+                        ),
+                        backgroundImage: user.photoUrl == null
+                            ? null
+                            : CachedNetworkImageProvider(user.photoUrl!),
+                        child: user.photoUrl == null
+                            ? const Icon(
+                                Icons.person_rounded,
+                                size: 38,
+                                color: AppColors.accentGold,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.fullName ?? t.communityMember,
+                              style: AppTextStyles.titleLarge.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              user.email ?? t.noEmail,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _RoleBadge(role: user.role),
+                                if (user.isGuest)
+                                  _InfoChip(
+                                    icon: Icons.lock_outline_rounded,
+                                    label: t.guestSubtitle,
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.tonalIcon(
+                          onPressed: user.isGuest
+                              ? () => context.push('/login')
+                              : () => context.push('/profile/edit'),
+                          icon: Icon(
+                            user.isGuest
+                                ? Icons.login_rounded
+                                : Icons.edit_rounded,
+                          ),
+                          label: Text(user.isGuest ? t.signIn : t.myProfile),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push('/settings'),
+                          icon: const Icon(Icons.settings_outlined),
+                          label: Text(t.settings),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            GlassCard(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.person_outline_rounded),
+                    title: Text(t.myProfile),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push('/profile/edit'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.bookmark_outline_rounded),
+                    title: Text(t.savedPosts),
+                    subtitle: Text(t.comingSoon),
+                    enabled: false,
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.settings_outlined),
+                    title: Text(t.settings),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push('/settings'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            GlassCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    user.fullName ?? t.communityMember,
+                    t.accountDetails,
                     style: AppTextStyles.titleMedium.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user.email ?? t.noEmail,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 12),
+                  for (var i = 0; i < detailRows.length; i++) ...[
+                    _ProfileDetailRow(
+                      icon: detailRows[i].icon,
+                      label: detailRows[i].label,
+                      value: detailRows[i].value,
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  _RoleBadge(role: user.role),
+                    if (i != detailRows.length - 1)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 10),
+                        child: Divider(height: 1),
+                      ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: 14),
-            _ActionCard(
-              title: t.myProfile,
-              icon: Icons.person_outline_rounded,
-              onTap: () => context.push('/profile/edit'),
-            ),
-            _ActionCard(
-              title: t.savedPosts,
-              subtitle: t.comingSoon,
-              icon: Icons.bookmark_outline_rounded,
-              enabled: false,
-              onTap: null,
-            ),
-            _ActionCard(
-              title: t.settings,
-              icon: Icons.settings_outlined,
-              onTap: () => context.push('/settings'),
-            ),
-            const SizedBox(height: 8),
-            _DetailItem(label: t.phone, value: user.phoneNumber ?? t.notSet),
-            _DetailItem(
-              label: t.dateOfBirth,
-              value: user.dob == null
-                  ? t.notSet
-                  : DateFormat.yMMMd().format(user.dob!),
-            ),
-            _DetailItem(label: t.address, value: user.address ?? t.notSet),
-            const SizedBox(height: 10),
-            FilledButton.tonalIcon(
-              onPressed: user.isGuest
-                  ? () => context.push('/login')
-                  : () async {
-                      await ref.read(authRepositoryProvider).signOut();
-                      if (context.mounted) context.go('/login');
-                    },
-              icon: Icon(
-                user.isGuest ? Icons.login_rounded : Icons.logout_rounded,
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonalIcon(
+                onPressed: user.isGuest
+                    ? () => context.push('/login')
+                    : () async {
+                        await ref.read(authRepositoryProvider).signOut();
+                        if (context.mounted) context.go('/login');
+                      },
+                icon: Icon(
+                  user.isGuest ? Icons.login_rounded : Icons.logout_rounded,
+                ),
+                label: Text(user.isGuest ? t.signIn : t.signOut),
               ),
-              label: Text(user.isGuest ? t.signIn : t.signOut),
             ),
           ],
         ),
@@ -155,74 +259,95 @@ class _RoleBadge extends StatelessWidget {
   }
 }
 
-class _ActionCard extends StatelessWidget {
-  final String title;
-  final String? subtitle;
+class _InfoChip extends StatelessWidget {
   final IconData icon;
-  final VoidCallback? onTap;
-  final bool enabled;
+  final String label;
 
-  const _ActionCard({
-    required this.title,
-    required this.icon,
-    required this.onTap,
-    this.subtitle,
-    this.enabled = true,
-  });
+  const _InfoChip({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: GlassCard(
-        padding: const EdgeInsets.all(0),
-        child: ListTile(
-          enabled: enabled,
-          leading: Icon(icon),
-          title: Text(title),
-          subtitle: subtitle == null ? null : Text(subtitle!),
-          trailing: const Icon(Icons.chevron_right_rounded),
-          onTap: onTap,
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _DetailItem extends StatelessWidget {
+class _ProfileDetailRow extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
 
-  const _DetailItem({required this.label, required this.value});
+  const _ProfileDetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: GlassCard(
-        child: Row(
-          children: [
-            SizedBox(
-              width: 120,
-              child: Text(
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
                 label,
                 style: AppTextStyles.bodySmall.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
-            ),
-            Expanded(
-              child: Text(
+              const SizedBox(height: 3),
+              Text(
                 value,
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
+                  height: 1.4,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

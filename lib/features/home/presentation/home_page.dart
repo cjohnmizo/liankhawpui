@@ -75,10 +75,10 @@ class _HomePageState extends ConsumerState<HomePage> {
           const CircularAppLogo(size: 30, padding: 1.2),
           const SizedBox(width: 8),
           Text(
-            title.toUpperCase(),
+            title,
             style: AppTextStyles.titleMedium.copyWith(
               color: Theme.of(context).colorScheme.onSurface,
-              letterSpacing: 0.5,
+              letterSpacing: 0.2,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -355,62 +355,96 @@ class _HeaderBanner extends StatelessWidget {
               DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topCenter,
+                    begin: Alignment.topLeft,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.20),
-                      Colors.black.withValues(alpha: 0.42),
+                      Colors.black.withValues(alpha: 0.16),
+                      Colors.black.withValues(alpha: 0.56),
                     ],
                   ),
                 ),
               ),
               Positioned(
-                left: 10,
-                top: 10,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    t.khawlianVillage,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
+                left: 14,
+                top: 14,
+                right: 14,
+                child: Row(
+                  children: [
+                    const CircularAppLogo(size: 34, padding: 1.8),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          t.khawlianVillage,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
               Positioned(
-                left: 12,
-                bottom: 12,
+                left: 14,
+                right: 14,
+                bottom: 14,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      t.communityUpdates,
-                      style: AppTextStyles.titleSmall.copyWith(
+                      'Liankhawpui',
+                      style: AppTextStyles.displaySmall.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
                       ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
                       t.newsAnnouncementsOrganizations,
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: Colors.white.withValues(alpha: 0.92),
+                        height: 1.45,
                       ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _BannerTag(
+                          icon: Icons.campaign_rounded,
+                          label: t.announcements,
+                        ),
+                        _BannerTag(
+                          icon: Icons.newspaper_rounded,
+                          label: t.recentNews,
+                        ),
+                        _BannerTag(
+                          icon: Icons.account_tree_rounded,
+                          label: t.organizations,
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
               if (!isOnline)
                 Positioned(
-                  right: 10,
-                  bottom: 10,
+                  right: 14,
+                  top: 14,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -455,10 +489,18 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(icon, size: 18, color: AppColors.accentGold),
-        const SizedBox(width: 8),
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.accentGold.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 18, color: AppColors.accentGold),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,12 +522,51 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
         if (actionLabel != null && onActionTap != null)
-          TextButton.icon(
+          TextButton(
             onPressed: onActionTap,
-            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-            label: Text(actionLabel!),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(actionLabel!),
+                const SizedBox(width: 4),
+                const Icon(Icons.arrow_forward_rounded, size: 16),
+              ],
+            ),
           ),
       ],
+    );
+  }
+}
+
+class _BannerTag extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _BannerTag({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -501,76 +582,100 @@ class _AnnouncementListCard extends StatelessWidget {
     final preview = markdownExcerpt(announcement.content, maxLength: 120);
     return GlassCard(
       onTap: () => context.push('/announcement/${announcement.id}'),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                announcement.isPinned
-                    ? Icons.push_pin_rounded
-                    : Icons.notifications_rounded,
-                size: 16,
-                color: AppColors.accentGold,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  announcement.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              if (announcement.isPinned)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentGold.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    t.pinned,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.accentGold,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            preview,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              height: 1.4,
+          Container(
+            width: 4,
+            height: 88,
+            decoration: BoxDecoration(
+              color: announcement.isPinned
+                  ? AppColors.accentGold
+                  : AppColors.primaryNavyLight.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(999),
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(
-                Icons.access_time_rounded,
-                size: 12,
-                color: AppColors.textTertiary,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                timeago.format(announcement.createdAt),
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      announcement.isPinned
+                          ? Icons.push_pin_rounded
+                          : Icons.notifications_rounded,
+                      size: 16,
+                      color: AppColors.accentGold,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        announcement.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    if (announcement.isPinned)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentGold.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          t.pinned,
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: AppColors.accentGold,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  preview,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.access_time_rounded,
+                      size: 12,
+                      color: AppColors.textTertiary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      timeago.format(announcement.createdAt),
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -601,14 +706,17 @@ class _NewsListCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: SizedBox(
               width: 104,
-              height: 86,
+              height: 92,
               child: displayImageUrl == null
                   ? Container(
                       color: Theme.of(
                         context,
                       ).colorScheme.surfaceContainerHighest,
                       alignment: Alignment.center,
-                      child: const Icon(Icons.image_not_supported_rounded),
+                      child: Icon(
+                        Icons.image_not_supported_rounded,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     )
                   : AdaptiveCachedImage(
                       imageUrl: displayImageUrl,
@@ -628,25 +736,37 @@ class _NewsListCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  margin: const EdgeInsets.only(bottom: 5),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentGold.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    news.category,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.accentGold,
-                      fontWeight: FontWeight.w700,
+                Row(
+                  children: [
+                    Flexible(
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentGold.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          news.category,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: AppColors.accentGold,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.arrow_outward_rounded,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ],
                 ),
                 Text(
                   news.title,
@@ -657,16 +777,17 @@ class _NewsListCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   preview,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    height: 1.45,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text(
                   timeago.format(news.createdAt),
                   style: AppTextStyles.labelSmall.copyWith(
@@ -692,67 +813,80 @@ class _OrganizationGridCard extends StatelessWidget {
     return GlassCard(
       onTap: () => context.push('/organization/${organization.id}'),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if ((organization.logoUrl ?? '').isNotEmpty)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: SizedBox(
-                width: 52,
-                height: 52,
-                child: AdaptiveCachedImage(
-                  imageUrl: organization.logoUrl!,
-                  fit: BoxFit.cover,
-                  placeholderBuilder: (_) => Container(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
+          Row(
+            children: [
+              if ((organization.logoUrl ?? '').isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 56,
+                    height: 56,
+                    child: AdaptiveCachedImage(
+                      imageUrl: organization.logoUrl!,
+                      fit: BoxFit.cover,
+                      placeholderBuilder: (_) => Container(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                      ),
+                      errorBuilder: (_) => Icon(
+                        Icons.business_rounded,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
-                  errorBuilder: (_) => Icon(
+                )
+              else
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: AppColors.accentGold.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
                     Icons.business_rounded,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: AppColors.accentGold,
                   ),
                 ),
+              const Spacer(),
+              Icon(
+                Icons.arrow_forward_rounded,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-            )
-          else
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: AppColors.accentGold.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.business_rounded,
-                color: AppColors.accentGold,
-              ),
-            ),
-          const SizedBox(height: 8),
+            ],
+          ),
+          const SizedBox(height: 14),
           Text(
             organization.name,
             maxLines: 2,
-            textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.bodySmall.copyWith(
+            style: AppTextStyles.bodyMedium.copyWith(
               color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            (organization.type ?? 'Institution').trim(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(999),
             ),
-          ),
-          const SizedBox(height: 6),
-          Icon(
-            Icons.arrow_forward_rounded,
-            size: 14,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            child: Text(
+              (organization.type ?? 'Institution').trim(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.labelSmall.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),

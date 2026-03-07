@@ -26,6 +26,10 @@ class AppStrings {
   bool get isMizo => language == AppLanguage.mizo;
 
   String get settings => _value('Settings', 'Thil remna');
+  String get settingsIntro => _value(
+    'Adjust language, reading comfort, and sync preferences.',
+    'Tawng, chhiar nuamna leh sync setting siamthat rawh.',
+  );
   String get appearance => _value('Appearance', 'Lang leh hmel');
   String get darkMode => _value('Dark Mode', 'Theme muthim');
   String get darkModeSubtitle =>
@@ -148,6 +152,7 @@ class AppStrings {
   String get offlineCache => _value('Offline cache', 'Offline cache');
   String get pinned => _value('Pinned', 'Dah');
   String get profileTitle => _value('Profile', 'Profile');
+  String get accountDetails => _value('Account Details', 'Account chungchang');
   String get savedPosts => _value('Saved Posts', 'Thu vawn');
   String get comingSoon => _value('Coming soon', 'A lo thleng dawn');
   String get phone => _value('Phone', 'Phone');

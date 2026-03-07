@@ -51,6 +51,49 @@ class SettingsScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              GlassCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t.settings,
+                      style: AppTextStyles.titleLarge.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      t.settingsIntro,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _PreferencePill(
+                          icon: Icons.language_rounded,
+                          label: t.languageName(appLanguage),
+                        ),
+                        _PreferencePill(
+                          icon: Icons.format_size_rounded,
+                          label: '${(textScaleFactor * 100).round()}%',
+                        ),
+                        _PreferencePill(
+                          icon: lowDataMode
+                              ? Icons.data_saver_on_rounded
+                              : Icons.data_saver_off_rounded,
+                          label: t.lowDataMode,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
               _buildSectionHeader(context, t.appearance),
               const SizedBox(height: 10),
               GlassCard(
@@ -385,14 +428,58 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 8),
-      child: Text(
-        title,
-        style: AppTextStyles.titleSmall.copyWith(
-          color: Theme.of(context).colorScheme.onSurface,
-          fontWeight: FontWeight.w700,
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 20,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
+            borderRadius: BorderRadius.circular(999),
+          ),
         ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: AppTextStyles.titleSmall.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PreferencePill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _PreferencePill({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -458,6 +545,12 @@ class _SyncStatusSection extends ConsumerWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              const Spacer(),
+              _ConnectionBadge(
+                label: connectionLabel,
+                hasError: hasSyncError,
+                isConnected: status?.connected ?? false,
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -467,8 +560,51 @@ class _SyncStatusSection extends ConsumerWidget {
           const SizedBox(height: 8),
           _StatusRow(label: t.uploadQueue, value: pendingUploads),
           if (errorMessage != null) ...[
-            const SizedBox(height: 8),
-            _StatusRow(label: t.lastError, value: errorMessage),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.error.withValues(alpha: 0.16),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    size: 18,
+                    color: AppColors.error,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          t.lastError,
+                          style: AppTextStyles.labelMedium.copyWith(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          errorMessage,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
           const SizedBox(height: 16),
           SizedBox(
@@ -574,6 +710,49 @@ class _SyncStatusSection extends ConsumerWidget {
   }
 }
 
+class _ConnectionBadge extends StatelessWidget {
+  final String label;
+  final bool hasError;
+  final bool isConnected;
+
+  const _ConnectionBadge({
+    required this.label,
+    required this.hasError,
+    required this.isConnected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final backgroundColor = hasError
+        ? AppColors.error.withValues(alpha: 0.12)
+        : isConnected
+        ? AppColors.success.withValues(alpha: 0.12)
+        : Theme.of(
+            context,
+          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.8);
+    final foregroundColor = hasError
+        ? AppColors.error
+        : isConnected
+        ? AppColors.success
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.labelSmall.copyWith(
+          color: foregroundColor,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
 class _StatusRow extends StatelessWidget {
   final String label;
   final String value;
@@ -583,6 +762,7 @@ class _StatusRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Text(
@@ -592,11 +772,16 @@ class _StatusRow extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          value,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+            ),
           ),
         ),
       ],
