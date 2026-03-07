@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/config/app_assets.dart';
 import 'package:liankhawpui/core/localization/app_strings.dart';
@@ -108,10 +107,27 @@ class _HomePageState extends ConsumerState<HomePage> {
       return const Icon(Icons.person_rounded);
     }
 
-    return CircleAvatar(
-      radius: 14,
-      backgroundColor: AppColors.surfaceVariant,
-      backgroundImage: CachedNetworkImageProvider(photoUrl),
+    return ClipOval(
+      child: SizedBox(
+        width: 28,
+        height: 28,
+        child: AdaptiveCachedImage(
+          imageUrl: photoUrl,
+          fit: BoxFit.cover,
+          cacheWidth: 84,
+          cacheHeight: 84,
+          placeholderBuilder: (_) => Container(
+            color: AppColors.surfaceVariant,
+            alignment: Alignment.center,
+            child: const Icon(Icons.person_rounded, size: 16),
+          ),
+          errorBuilder: (_) => Container(
+            color: AppColors.surfaceVariant,
+            alignment: Alignment.center,
+            child: const Icon(Icons.person_rounded, size: 16),
+          ),
+        ),
+      ),
     );
   }
 
@@ -166,13 +182,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                               icon: Icons.article_outlined,
                             );
                           }
-                          return ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
+                          return _buildSeparatedColumn(
                             itemCount: top.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, index) =>
+                            itemBuilder: (index) =>
                                 _NewsListCard(news: top[index]),
                           );
                         },
@@ -202,13 +214,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                               icon: Icons.campaign_outlined,
                             );
                           }
-                          return ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
+                          return _buildSeparatedColumn(
                             itemCount: top.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, index) =>
+                            itemBuilder: (index) =>
                                 _AnnouncementListCard(announcement: top[index]),
                           );
                         },
@@ -249,21 +257,25 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   : width >= 700
                                   ? 3
                                   : 2;
-                              return GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: organizations.length,
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: crossAxisCount,
-                                      crossAxisSpacing: 10,
-                                      mainAxisSpacing: 10,
-                                      childAspectRatio: 1.0,
+                              const spacing = 10.0;
+                              final cardWidth =
+                                  (width - (spacing * (crossAxisCount - 1))) /
+                                  crossAxisCount;
+                              return Wrap(
+                                spacing: spacing,
+                                runSpacing: spacing,
+                                children: [
+                                  for (final organization in organizations)
+                                    SizedBox(
+                                      width: cardWidth,
+                                      child: AspectRatio(
+                                        aspectRatio: 1,
+                                        child: _OrganizationGridCard(
+                                          organization: organization,
+                                        ),
+                                      ),
                                     ),
-                                itemBuilder: (context, index) =>
-                                    _OrganizationGridCard(
-                                      organization: organizations[index],
-                                    ),
+                                ],
                               );
                             },
                           );
@@ -299,6 +311,20 @@ class _HomePageState extends ConsumerState<HomePage> {
       visit(org);
     }
     return flat;
+  }
+
+  Widget _buildSeparatedColumn({
+    required int itemCount,
+    required Widget Function(int index) itemBuilder,
+  }) {
+    return Column(
+      children: [
+        for (var index = 0; index < itemCount; index++) ...[
+          itemBuilder(index),
+          if (index != itemCount - 1) const SizedBox(height: 10),
+        ],
+      ],
+    );
   }
 
   void _showCreateMenu(BuildContext context) {
@@ -727,6 +753,8 @@ class _NewsListCard extends StatelessWidget {
                   : AdaptiveCachedImage(
                       imageUrl: displayImageUrl,
                       fit: BoxFit.cover,
+                      cacheWidth: 320,
+                      cacheHeight: 280,
                       placeholderBuilder: (_) => Container(
                         color: Theme.of(
                           context,
@@ -832,6 +860,8 @@ class _OrganizationGridCard extends StatelessWidget {
                     child: AdaptiveCachedImage(
                       imageUrl: organization.logoUrl!,
                       fit: BoxFit.cover,
+                      cacheWidth: 144,
+                      cacheHeight: 144,
                       placeholderBuilder: (_) => Container(
                         color: Theme.of(
                           context,

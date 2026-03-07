@@ -8,6 +8,8 @@ class AdaptiveCachedImage extends ConsumerWidget {
   final BoxFit fit;
   final Widget Function(BuildContext context)? placeholderBuilder;
   final Widget Function(BuildContext context)? errorBuilder;
+  final int? cacheWidth;
+  final int? cacheHeight;
   final int lowDataCacheWidth;
   final int lowDataCacheHeight;
 
@@ -16,6 +18,8 @@ class AdaptiveCachedImage extends ConsumerWidget {
     this.fit = BoxFit.cover,
     this.placeholderBuilder,
     this.errorBuilder,
+    this.cacheWidth,
+    this.cacheHeight,
     this.lowDataCacheWidth = 720,
     this.lowDataCacheHeight = 720,
     super.key,
@@ -24,6 +28,10 @@ class AdaptiveCachedImage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lowDataMode = ref.watch(lowDataModeEnabledProvider);
+    final effectiveCacheWidth =
+        cacheWidth ?? (lowDataMode ? lowDataCacheWidth : null);
+    final effectiveCacheHeight =
+        cacheHeight ?? (lowDataMode ? lowDataCacheHeight : null);
 
     return CachedNetworkImage(
       imageUrl: imageUrl,
@@ -32,10 +40,10 @@ class AdaptiveCachedImage extends ConsumerWidget {
       fadeInDuration: lowDataMode
           ? Duration.zero
           : const Duration(milliseconds: 180),
-      memCacheWidth: lowDataMode ? lowDataCacheWidth : null,
-      memCacheHeight: lowDataMode ? lowDataCacheHeight : null,
-      maxWidthDiskCache: lowDataMode ? lowDataCacheWidth : null,
-      maxHeightDiskCache: lowDataMode ? lowDataCacheHeight : null,
+      memCacheWidth: effectiveCacheWidth,
+      memCacheHeight: effectiveCacheHeight,
+      maxWidthDiskCache: effectiveCacheWidth,
+      maxHeightDiskCache: effectiveCacheHeight,
       placeholder: (_, __) {
         return placeholderBuilder?.call(context) ??
             const Center(child: CircularProgressIndicator(strokeWidth: 2));
