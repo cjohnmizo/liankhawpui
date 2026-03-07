@@ -172,6 +172,36 @@ Deno.serve(async (req) => {
         );
       }
 
+      const { data: currentProfile, error: currentProfileError } = await adminClient
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle();
+      if (currentProfileError) {
+        return jsonResponse(
+          {
+            error: `Failed to read current profile role: ${currentProfileError.message}`,
+          },
+          400,
+        );
+      }
+
+      const { data: authUserData, error: authUserError } = await adminClient.auth
+        .admin.getUserById(userId);
+      if (authUserError || !authUserData.user) {
+        return jsonResponse(
+          { error: authUserError?.message ?? "Auth user not found." },
+          400,
+        );
+      }
+
+      const previousRole = normalizedRole(currentProfile?.role) ?? "guest";
+      const existingMetadata = authUserData.user.user_metadata &&
+          typeof authUserData.user.user_metadata === "object" &&
+          !Array.isArray(authUserData.user.user_metadata)
+        ? authUserData.user.user_metadata as Record<string, unknown>
+        : {};
+
       const { error: profileError } = await adminClient
         .from("profiles")
         .update({ role })
@@ -183,9 +213,26 @@ Deno.serve(async (req) => {
         );
       }
 
-      await adminClient.auth.admin.updateUserById(userId, {
-        user_metadata: { role },
-      });
+      const { error: authUpdateError } = await adminClient.auth.admin
+        .updateUserById(userId, {
+          user_metadata: {
+            ...existingMetadata,
+            role,
+          },
+        });
+      if (authUpdateError) {
+        await adminClient.from("profiles").update({ role: previousRole }).eq(
+          "id",
+          userId,
+        );
+        return jsonResponse(
+          {
+            error:
+              `Failed to update auth role metadata: ${authUpdateError.message}`,
+          },
+          400,
+        );
+      }
 
       return jsonResponse({
         status: "updated",
