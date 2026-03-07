@@ -97,6 +97,21 @@ Proprietary. All rights reserved. See `LICENSE` for details.
    flutter run
    ```
 
+### Local Cleanup and Recovery
+
+- Safe to remove:
+  - `build/`
+  - `.flutter-plugins-dependencies`
+  - local `.log` files
+- Do not remove `.dart_tool/` unless you immediately run:
+  ```bash
+  flutter pub get
+  ```
+- If VS Code still shows missing Flutter/Dart imports after cleanup:
+  1. Run `flutter pub get`
+  2. Run `Dart: Restart Analysis Server`
+  3. Reload the VS Code window if needed
+
 ### Google Login Setup
 
 1. Supabase Dashboard -> `Authentication -> Providers -> Google`: enable Google.
