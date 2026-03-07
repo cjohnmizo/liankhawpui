@@ -337,7 +337,7 @@ class _AnnouncementCreateScreenState
                       RichMarkdownEditor(
                         controller: _contentController,
                         hintText:
-                            'Write announcement content. Use toolbar for bold, list, links, and preview.',
+                            'Write announcement content. Use toolbar for bold, justify, list, links, and preview.',
                         minLines: 8,
                         maxLines: 18,
                       ),

@@ -498,7 +498,8 @@ class _NewsEditScreenState extends ConsumerState<NewsEditScreen> {
                   _fieldLabel(context, 'Content'),
                   RichMarkdownEditor(
                     controller: _contentController,
-                    hintText: 'Write your article with formatting and links...',
+                    hintText:
+                        'Write your article with formatting, justify, and links...',
                     minLines: 10,
                     maxLines: 22,
                   ),
