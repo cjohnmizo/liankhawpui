@@ -24,7 +24,12 @@ If the function is not yet deployed (or returns an invalid token), remote PowerS
 Function source and deploy commands are in [`supabase/functions/README.md`](functions/README.md).
 
 ## Post Attachments Storage
-- Bucket: `post-attachments` (public read, staff write).
+- Image bucket: `post-attachments` (public read, staff write).
+- Document bucket: `post-documents` (private bucket, signed URL access).
 - App-side limits:
-  - Image upload: max `40 KB` after compression.
-  - Document upload: max `70 KB` (`pdf`, `doc`, `docx`, `txt`).
+  - Image input guard: reject files over `15 MB` before optimization.
+  - Document upload: max `5 MB` (`pdf`, `docx`, `xlsx`).
+- Current app policy:
+  - feed/list images should use thumbnails
+  - full images are for detail screens
+  - documents are opened with signed URLs, not public URLs

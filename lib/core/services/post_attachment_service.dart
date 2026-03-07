@@ -10,6 +10,9 @@ import 'package:path/path.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+const String kPostAttachmentImageBucket = 'post-attachments';
+const String kPostAttachmentDocumentBucket = 'post-documents';
+
 enum PostAttachmentType { image, document }
 
 class ImageUploadPreviewData {
@@ -80,8 +83,11 @@ class PostAttachmentUploadResult {
     return '[$label](${encodePrivateDocumentHref(objectPath)})';
   }
 
-  static String encodePrivateDocumentHref(String objectPath) {
-    return 'lpdoc://attachment?path=${Uri.encodeComponent(objectPath)}';
+  static String encodePrivateDocumentHref(
+    String objectPath, {
+    String bucketName = kPostAttachmentDocumentBucket,
+  }) {
+    return 'lpdoc://attachment?bucket=${Uri.encodeComponent(bucketName)}&path=${Uri.encodeComponent(objectPath)}';
   }
 
   static String? decodePrivateDocumentPath(String href) {
@@ -90,6 +96,14 @@ class PostAttachmentUploadResult {
     final encodedPath = uri.queryParameters['path'];
     if (encodedPath == null || encodedPath.trim().isEmpty) return null;
     return Uri.decodeComponent(encodedPath);
+  }
+
+  static String? decodePrivateDocumentBucket(String href) {
+    final uri = Uri.tryParse(href);
+    if (uri == null || uri.scheme != 'lpdoc') return null;
+    final encodedBucket = uri.queryParameters['bucket'];
+    if (encodedBucket == null || encodedBucket.trim().isEmpty) return null;
+    return Uri.decodeComponent(encodedBucket);
   }
 
   String _escapeMarkdown(String value) {
@@ -104,8 +118,19 @@ class _UploadObject {
   const _UploadObject({required this.objectPath, this.publicUrl});
 }
 
+class _PrivateDocumentTarget {
+  final String bucketName;
+  final String objectPath;
+
+  const _PrivateDocumentTarget({
+    required this.bucketName,
+    required this.objectPath,
+  });
+}
+
 class PostAttachmentService {
-  static const String bucketName = 'post-attachments';
+  static const String bucketName = kPostAttachmentImageBucket;
+  static const String documentBucketName = kPostAttachmentDocumentBucket;
   static const int maxImageInputBytes = 15 * 1024 * 1024;
   static const int maxDocumentBytes = 5 * 1024 * 1024;
   static const List<String> allowedDocumentExtensions = <String>[
@@ -188,6 +213,7 @@ class PostAttachmentService {
     final thumbFileName = '${baseName}_thumb$thumbExtension';
 
     final fullUpload = await _uploadBytes(
+      bucketName: bucketName,
       bytes: processedFull.bytes,
       folder: _postImageFolder,
       objectFileName: fullFileName,
@@ -196,6 +222,7 @@ class PostAttachmentService {
       generatePublicUrl: true,
     );
     final thumbUpload = await _uploadBytes(
+      bucketName: bucketName,
       bytes: processedThumb.bytes,
       folder: _postThumbFolder,
       objectFileName: thumbFileName,
@@ -288,6 +315,7 @@ class PostAttachmentService {
     final baseName = _buildObjectBaseName();
     final objectFileName = '$baseName.${extension.toLowerCase()}';
     final upload = await _uploadBytes(
+      bucketName: documentBucketName,
       bytes: bytes,
       folder: folder,
       objectFileName: objectFileName,
@@ -320,15 +348,17 @@ class PostAttachmentService {
 
   Future<String> createSignedUrl({
     required String objectPath,
+    String bucketName = documentBucketName,
     int expiresInSeconds = 3600,
   }) async {
     final normalized = _normalizeObjectPath(objectPath);
     if (normalized.isEmpty) {
       throw Exception('Attachment path is empty');
     }
+    final resolvedBucketName = _normalizeDocumentBucketName(bucketName);
     try {
       return await SupabaseService.client.storage
-          .from(bucketName)
+          .from(resolvedBucketName)
           .createSignedUrl(normalized, expiresInSeconds);
     } on StorageException catch (error) {
       throw Exception('Could not create signed URL: ${error.message}');
@@ -339,10 +369,11 @@ class PostAttachmentService {
     String href, {
     int expiresInSeconds = 3600,
   }) async {
-    final privatePath = _extractPrivateDocumentPath(href);
-    if (privatePath != null) {
+    final privateTarget = _extractPrivateDocumentTarget(href);
+    if (privateTarget != null) {
       final signed = await createSignedUrl(
-        objectPath: privatePath,
+        objectPath: privateTarget.objectPath,
+        bucketName: privateTarget.bucketName,
         expiresInSeconds: expiresInSeconds,
       );
       return Uri.tryParse(signed);
@@ -351,6 +382,7 @@ class PostAttachmentService {
   }
 
   Future<_UploadObject> _uploadBytes({
+    required String bucketName,
     required Uint8List bytes,
     required String folder,
     required String objectFileName,
@@ -451,17 +483,25 @@ class PostAttachmentService {
     if (value.startsWith('/')) {
       value = value.substring(1);
     }
-    if (value.startsWith('$bucketName/')) {
-      value = value.substring(bucketName.length + 1);
+    for (final knownBucket in const <String>[bucketName, documentBucketName]) {
+      if (value.startsWith('$knownBucket/')) {
+        value = value.substring(knownBucket.length + 1);
+      }
     }
     return value;
   }
 
-  String? _extractPrivateDocumentPath(String href) {
+  _PrivateDocumentTarget? _extractPrivateDocumentTarget(String href) {
     final fromCustomScheme =
         PostAttachmentUploadResult.decodePrivateDocumentPath(href);
     if (fromCustomScheme != null && fromCustomScheme.isNotEmpty) {
-      return _normalizeObjectPath(fromCustomScheme);
+      final bucket = _normalizeDocumentBucketName(
+        PostAttachmentUploadResult.decodePrivateDocumentBucket(href),
+      );
+      return _PrivateDocumentTarget(
+        bucketName: bucket,
+        objectPath: _normalizeObjectPath(fromCustomScheme),
+      );
     }
 
     final uri = Uri.tryParse(href);
@@ -469,9 +509,21 @@ class PostAttachmentService {
     final hasScheme = uri.scheme.isNotEmpty;
     if (!hasScheme && href.contains('/')) {
       final normalized = _normalizeObjectPath(href);
-      return normalized.isEmpty ? null : normalized;
+      if (normalized.isEmpty) return null;
+      return _PrivateDocumentTarget(
+        bucketName: bucketName,
+        objectPath: normalized,
+      );
     }
     return null;
+  }
+
+  String _normalizeDocumentBucketName(String? value) {
+    final normalized = value?.trim();
+    if (normalized == documentBucketName || normalized == bucketName) {
+      return normalized!;
+    }
+    return bucketName;
   }
 
   static String humanReadableBytes(int bytes) {
