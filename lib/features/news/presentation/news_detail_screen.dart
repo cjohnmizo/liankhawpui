@@ -8,6 +8,7 @@ import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/utils/markdown_content_utils.dart';
 import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
+import 'package:liankhawpui/core/widgets/app_markdown_body.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/auth/domain/app_user.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
@@ -209,7 +210,7 @@ class _NewsDetailScreenState extends ConsumerState<NewsDetailScreen> {
                               ),
                             const SizedBox(height: 10),
                           ],
-                          MarkdownBody(
+                          AppMarkdownBody(
                             data: news.content,
                             selectable: true,
                             styleSheet: MarkdownStyleSheet(

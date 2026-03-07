@@ -8,6 +8,7 @@ import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/utils/markdown_content_utils.dart';
 import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
+import 'package:liankhawpui/core/widgets/app_markdown_body.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/announcement/domain/announcement.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_providers.dart';
@@ -252,7 +253,7 @@ class AnnouncementDetailScreen extends ConsumerWidget {
                               ),
                             const SizedBox(height: 10),
                           ],
-                          MarkdownBody(
+                          AppMarkdownBody(
                             data: announcement.content,
                             selectable: true,
                             styleSheet: MarkdownStyleSheet(

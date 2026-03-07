@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:liankhawpui/core/services/post_attachment_service.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
+import 'package:liankhawpui/core/widgets/app_markdown_body.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -106,6 +106,11 @@ class _RichMarkdownEditorState extends State<RichMarkdownEditor> {
                 onTap: () => _prefixLines('> '),
               ),
               _toolButton(
+                icon: Icons.format_align_justify_rounded,
+                tooltip: 'Justify block',
+                onTap: _wrapJustifyBlock,
+              ),
+              _toolButton(
                 icon: Icons.link_rounded,
                 tooltip: 'Insert link',
                 onTap: _insertLink,
@@ -140,7 +145,7 @@ class _RichMarkdownEditorState extends State<RichMarkdownEditor> {
                       ),
                     )
                   : SingleChildScrollView(
-                      child: MarkdownBody(
+                      child: AppMarkdownBody(
                         data: widget.controller.text,
                         selectable: true,
                         onTapLink: (_, href, __) async {
@@ -258,6 +263,37 @@ class _RichMarkdownEditorState extends State<RichMarkdownEditor> {
       numbered.add('${i + 1}. ${lines[i]}');
     }
     final replacement = numbered.join('\n');
+    final updated = text.replaceRange(start, end, replacement);
+
+    widget.controller.value = TextEditingValue(
+      text: updated,
+      selection: TextSelection.collapsed(offset: start + replacement.length),
+    );
+  }
+
+  void _wrapJustifyBlock() {
+    final selection = widget.controller.selection;
+    final text = widget.controller.text;
+    const blockPrefix = ':::justify\n';
+    const blockSuffix = '\n:::';
+
+    if (!selection.isValid || selection.start < 0 || selection.end < 0) {
+      MarkdownEditing.insertText(
+        widget.controller,
+        '${blockPrefix}Your justified paragraph here.$blockSuffix',
+        addLeadingBreak: text.isNotEmpty,
+        addTrailingBreak: true,
+      );
+      return;
+    }
+
+    final start = selection.start;
+    final end = selection.end;
+    final selectedText = text.substring(start, end).trim();
+    final content = selectedText.isEmpty
+        ? 'Your justified paragraph here.'
+        : selectedText;
+    final replacement = '$blockPrefix$content$blockSuffix';
     final updated = text.replaceRange(start, end, replacement);
 
     widget.controller.value = TextEditingValue(

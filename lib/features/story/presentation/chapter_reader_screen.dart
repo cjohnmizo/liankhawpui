@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
+import 'package:liankhawpui/core/widgets/app_markdown_body.dart';
 import 'package:liankhawpui/core/widgets/app_states.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/story/domain/chapter.dart';
@@ -130,7 +131,7 @@ class _ChapterReaderScreenState extends ConsumerState<ChapterReaderScreen> {
                           ],
                           const SizedBox(height: 12),
                           GlassCard(
-                            child: MarkdownBody(
+                            child: AppMarkdownBody(
                               data: chapter.content,
                               styleSheet:
                                   MarkdownStyleSheet.fromTheme(

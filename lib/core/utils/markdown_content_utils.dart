@@ -1,6 +1,12 @@
 String markdownToPlainText(String value) {
   var output = value;
 
+  output = output.replaceAll(
+    RegExp(r'^\s*:::justify\s*$', multiLine: true),
+    ' ',
+  );
+  output = output.replaceAll(RegExp(r'^\s*:::\s*$', multiLine: true), ' ');
+
   // Images: ![alt](url) -> alt
   output = output.replaceAllMapped(
     RegExp(r'!\[([^\]]*)\]\(([^)]+)\)'),
