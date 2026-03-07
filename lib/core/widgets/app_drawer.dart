@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/localization/app_strings.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/theme/theme_provider.dart';
+import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:liankhawpui/core/widgets/app_logo.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 
@@ -295,11 +295,21 @@ class _DrawerAvatar extends StatelessWidget {
       return const CircularAppLogo(size: 56);
     }
 
-    return CircleAvatar(
-      radius: 28,
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-      backgroundImage: CachedNetworkImageProvider(normalized),
-      child: null,
+    return ClipOval(
+      child: SizedBox(
+        width: 56,
+        height: 56,
+        child: AdaptiveCachedImage(
+          imageUrl: normalized,
+          fit: BoxFit.cover,
+          cacheWidth: 168,
+          cacheHeight: 168,
+          placeholderBuilder: (_) => Container(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          ),
+          errorBuilder: (_) => const CircularAppLogo(size: 56),
+        ),
+      ),
     );
   }
 }

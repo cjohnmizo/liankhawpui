@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:liankhawpui/core/localization/app_strings.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
+import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/auth/domain/user_role.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
@@ -52,21 +52,45 @@ class ProfileScreen extends ConsumerWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 42,
-                        backgroundColor: AppColors.accentGold.withValues(
-                          alpha: 0.14,
+                      ClipOval(
+                        child: SizedBox(
+                          width: 84,
+                          height: 84,
+                          child: user.photoUrl == null
+                              ? Container(
+                                  color: AppColors.accentGold.withValues(
+                                    alpha: 0.14,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    Icons.person_rounded,
+                                    size: 38,
+                                    color: AppColors.accentGold,
+                                  ),
+                                )
+                              : AdaptiveCachedImage(
+                                  imageUrl: user.photoUrl!,
+                                  fit: BoxFit.cover,
+                                  cacheWidth: 252,
+                                  cacheHeight: 252,
+                                  placeholderBuilder: (_) => Container(
+                                    color: AppColors.accentGold.withValues(
+                                      alpha: 0.14,
+                                    ),
+                                  ),
+                                  errorBuilder: (_) => Container(
+                                    color: AppColors.accentGold.withValues(
+                                      alpha: 0.14,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Icon(
+                                      Icons.person_rounded,
+                                      size: 38,
+                                      color: AppColors.accentGold,
+                                    ),
+                                  ),
+                                ),
                         ),
-                        backgroundImage: user.photoUrl == null
-                            ? null
-                            : CachedNetworkImageProvider(user.photoUrl!),
-                        child: user.photoUrl == null
-                            ? const Icon(
-                                Icons.person_rounded,
-                                size: 38,
-                                color: AppColors.accentGold,
-                              )
-                            : null,
                       ),
                       const SizedBox(width: 16),
                       Expanded(

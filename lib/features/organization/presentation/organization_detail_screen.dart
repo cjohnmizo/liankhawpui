@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +10,7 @@ import 'package:liankhawpui/core/services/image_service.dart';
 import 'package:liankhawpui/core/services/storage_budget_service.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
+import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:liankhawpui/core/widgets/app_states.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
@@ -289,13 +289,20 @@ class OrganizationDetailScreen extends ConsumerWidget {
                                                   Icons.person_rounded,
                                                 ),
                                               )
-                                            : CachedNetworkImage(
+                                            : AdaptiveCachedImage(
                                                 imageUrl: bearer.photoUrl!,
                                                 fit: BoxFit.cover,
-                                                errorWidget: (_, __, ___) =>
-                                                    const Icon(
-                                                      Icons.person_rounded,
+                                                cacheWidth: 120,
+                                                cacheHeight: 120,
+                                                placeholderBuilder: (_) =>
+                                                    Container(
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .surfaceContainerHighest,
                                                     ),
+                                                errorBuilder: (_) => const Icon(
+                                                  Icons.person_rounded,
+                                                ),
                                               ),
                                       ),
                                     ),
@@ -763,10 +770,14 @@ class _OrgAvatar extends StatelessWidget {
       child: SizedBox(
         width: 58,
         height: 58,
-        child: CachedNetworkImage(
+        child: AdaptiveCachedImage(
           imageUrl: url!,
           fit: BoxFit.cover,
-          errorWidget: (_, __, ___) => const Icon(Icons.business_rounded),
+          cacheWidth: 174,
+          cacheHeight: 174,
+          placeholderBuilder: (_) =>
+              Container(color: AppColors.surfaceVariantLight),
+          errorBuilder: (_) => const Icon(Icons.business_rounded),
         ),
       ),
     );
