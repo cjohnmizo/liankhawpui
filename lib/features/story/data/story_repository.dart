@@ -1,17 +1,24 @@
 import 'package:liankhawpui/core/services/powersync_service.dart';
 import 'package:liankhawpui/features/story/domain/book.dart';
 import 'package:liankhawpui/features/story/domain/chapter.dart';
+import 'package:powersync/powersync.dart';
 import 'package:uuid/uuid.dart';
 
 class StoryRepository {
   static const String singletonBookId = '00000000-0000-0000-0000-000000000001';
   static const String defaultBookTitle = 'Khawlian Chanchin';
 
-  final _db = PowerSyncService().db;
+  final _powerSync = PowerSyncService();
   final _uuid = const Uuid();
 
+  Future<PowerSyncDatabase> _ensureDb() async {
+    await _powerSync.ensureLocalDatabaseReady();
+    return _powerSync.db;
+  }
+
   Future<Book?> getSingleBook() async {
-    final primary = await _db.getOptional(
+    final db = await _ensureDb();
+    final primary = await db.getOptional(
       'SELECT * FROM books WHERE id = ? LIMIT 1',
       [singletonBookId],
     );
@@ -19,7 +26,7 @@ class StoryRepository {
       return Book.fromRow(primary);
     }
 
-    final fallback = await _db.getOptional(
+    final fallback = await db.getOptional(
       'SELECT * FROM books ORDER BY title ASC LIMIT 1',
     );
     if (fallback == null) {
@@ -34,7 +41,8 @@ class StoryRepository {
       return existing;
     }
 
-    await _db.execute(
+    final db = await _ensureDb();
+    await db.execute(
       '''
       INSERT INTO books (id, title, author, cover_url, description)
       VALUES (?, ?, ?, ?, ?)
@@ -62,7 +70,8 @@ class StoryRepository {
     String? coverUrl,
     String? description,
   }) async {
-    await _db.execute(
+    final db = await _ensureDb();
+    await db.execute(
       '''
       UPDATE books
       SET title = ?, author = ?, cover_url = ?, description = ?
@@ -73,7 +82,8 @@ class StoryRepository {
   }
 
   Future<List<Chapter>> getChapters(String bookId) async {
-    final results = await _db.getAll(
+    final db = await _ensureDb();
+    final results = await db.getAll(
       'SELECT * FROM chapters WHERE book_id = ? ORDER BY chapter_number ASC',
       [bookId],
     );
@@ -81,10 +91,10 @@ class StoryRepository {
   }
 
   Future<Chapter?> getChapter(String chapterId) async {
-    final result = await _db.getOptional(
-      'SELECT * FROM chapters WHERE id = ?',
-      [chapterId],
-    );
+    final db = await _ensureDb();
+    final result = await db.getOptional('SELECT * FROM chapters WHERE id = ?', [
+      chapterId,
+    ]);
     if (result == null) return null;
     return Chapter.fromRow(result);
   }
@@ -96,9 +106,10 @@ class StoryRepository {
     String? imageUrl,
     required int chapterNumber,
   }) async {
+    final db = await _ensureDb();
     final id = _uuid.v4();
     final now = DateTime.now().toIso8601String();
-    await _db.execute(
+    await db.execute(
       '''
       INSERT INTO chapters (id, book_id, title, content, image_url, chapter_number, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -114,8 +125,9 @@ class StoryRepository {
     String? imageUrl,
     required int chapterNumber,
   }) async {
+    final db = await _ensureDb();
     final now = DateTime.now().toIso8601String();
-    await _db.execute(
+    await db.execute(
       '''
       UPDATE chapters
       SET title = ?, content = ?, image_url = ?, chapter_number = ?, updated_at = ?
@@ -126,6 +138,7 @@ class StoryRepository {
   }
 
   Future<void> deleteChapter(String chapterId) async {
-    await _db.execute('DELETE FROM chapters WHERE id = ?', [chapterId]);
+    final db = await _ensureDb();
+    await db.execute('DELETE FROM chapters WHERE id = ?', [chapterId]);
   }
 }

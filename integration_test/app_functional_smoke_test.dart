@@ -35,8 +35,11 @@ Future<void> tapText(
   await tester.pump(const Duration(milliseconds: 600));
 }
 
-Future<void> openDrawerFromBottomMenu(WidgetTester tester) async {
-  await tapText(tester, 'Menu');
+Future<void> openDrawer(WidgetTester tester) async {
+  final menuButton = find.byIcon(Icons.menu_rounded);
+  await waitFor(tester, menuButton);
+  await tester.tap(menuButton.first);
+  await tester.pump(const Duration(milliseconds: 600));
   await waitFor(tester, find.text('Settings'));
 }
 
@@ -90,39 +93,43 @@ void main() {
     await Supabase.instance.client.auth.signOut().catchError((_) => {});
     await tester.pumpAndSettle();
 
-    // Home (Guest) - wait until bottom navigation is ready.
+    // Home (Guest) - wait until the dashboard sections are visible.
     await waitFor(
       tester,
-      find.text('Menu'),
+      find.text('Recent News'),
       timeout: const Duration(seconds: 40),
     );
-    expect(find.text('Menu'), findsOneWidget);
-    expect(find.text('News'), findsOneWidget);
-    expect(find.text('Updates'), findsOneWidget);
+    expect(find.text('Recent News'), findsOneWidget);
+    expect(find.text('Announcements'), findsOneWidget);
+    expect(find.text('Organization List'), findsOneWidget);
     expect(find.byType(FloatingActionButton), findsNothing);
 
-    // Bottom navigation: News
+    // Drawer: News
+    await openDrawer(tester);
     await tapText(tester, 'News');
     await waitFor(tester, find.text('News Feed'));
+    await tapBackButton(tester);
 
-    // Bottom navigation: Updates (Announcements)
-    await tapText(tester, 'Updates');
+    // Drawer: Announcements
+    await openDrawer(tester);
+    await tapText(tester, 'Announcements');
     await waitFor(tester, find.text('Announcements'));
+    await tapBackButton(tester);
 
     // Drawer: Organizations
-    await openDrawerFromBottomMenu(tester);
+    await openDrawer(tester);
     await tapText(tester, 'Organizations');
     await waitFor(tester, find.text('Organizations'));
     await tapBackButton(tester);
 
     // Drawer: Directory
-    await openDrawerFromBottomMenu(tester);
+    await openDrawer(tester);
     await tapText(tester, 'Directory');
     await waitFor(tester, find.text('Khawlian Chanchin'));
     await tapBackButton(tester);
 
     // Drawer: Settings and theme toggle control presence
-    await openDrawerFromBottomMenu(tester);
+    await openDrawer(tester);
     await tapText(tester, 'Settings');
     await waitFor(tester, find.text('Settings'));
     expect(find.text('Dark Mode'), findsOneWidget);
@@ -132,7 +139,7 @@ void main() {
     await tapBackButton(tester);
 
     // Drawer -> Sign In
-    await openDrawerFromBottomMenu(tester);
+    await openDrawer(tester);
     await tapText(tester, 'Sign In');
     await waitFor(tester, find.text('Welcome Back'));
     expect(find.text('Forgot Password?'), findsOneWidget);
@@ -150,10 +157,9 @@ void main() {
 
     // Back to home from login
     await tapBackButton(tester);
-    await tapText(tester, 'Home');
     await waitFor(
       tester,
-      find.text('Featured News'),
+      find.text('Recent News'),
       timeout: const Duration(seconds: 40),
     );
 

@@ -53,7 +53,25 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
         timeout: const Duration(seconds: 12),
       );
 
-      await PowerSyncService().ensureLocalDatabaseReady();
+      final localDatabaseInit = PowerSyncService().ensureLocalDatabaseReady();
+      try {
+        await _runWithTimeout(
+          'PowerSync local DB',
+          localDatabaseInit,
+          timeout: const Duration(seconds: 12),
+        );
+      } on StateError catch (error) {
+        debugPrint(
+          'WARN: $error App will continue while the local database finishes initializing.',
+        );
+        unawaited(
+          localDatabaseInit.catchError((Object asyncError, StackTrace _) {
+            debugPrint(
+              'WARN: PowerSync local DB initialization failed after timeout: $asyncError',
+            );
+          }),
+        );
+      }
 
       if (!mounted) return;
       setState(() => _ready = true);
