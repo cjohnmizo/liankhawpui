@@ -109,12 +109,21 @@ void main() {
     // Home (Guest) - wait until the dashboard sections are visible.
     await waitFor(
       tester,
-      find.text('Recent News'),
+      find.byKey(const ValueKey('home_section_recent_news')),
       timeout: const Duration(seconds: 40),
     );
-    expect(find.text('Recent News'), findsOneWidget);
-    expect(find.text('Announcements'), findsOneWidget);
-    expect(find.text('Organization List'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('home_section_recent_news')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('home_section_announcements')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('home_section_organizations')),
+      findsOneWidget,
+    );
     expect(find.byType(FloatingActionButton), findsNothing);
 
     // Drawer: News
@@ -172,7 +181,7 @@ void main() {
     await tapBackButton(tester);
     await waitFor(
       tester,
-      find.text('Recent News'),
+      find.byKey(const ValueKey('home_section_recent_news')),
       timeout: const Duration(seconds: 40),
     );
 

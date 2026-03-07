@@ -149,6 +149,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       _HeaderBanner(isOnline: isOnline),
                       const SizedBox(height: 18),
                       _SectionHeader(
+                        titleKey: const ValueKey('home_section_recent_news'),
                         title: t.recentNews,
                         subtitle: t.latestStoriesFromVillage,
                         icon: Icons.newspaper_rounded,
@@ -184,6 +185,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                       const SizedBox(height: 20),
                       _SectionHeader(
+                        titleKey: const ValueKey('home_section_announcements'),
                         title: t.announcements,
                         subtitle: t.villageUpdatesAndNotices,
                         icon: Icons.campaign_rounded,
@@ -219,6 +221,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                       const SizedBox(height: 20),
                       _SectionHeader(
+                        titleKey: const ValueKey('home_section_organizations'),
                         title: t.organizationList,
                         subtitle: t.villageGroupsInGridView,
                         icon: Icons.account_tree_rounded,
@@ -472,6 +475,7 @@ class _HeaderBanner extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
+  final Key? titleKey;
   final String title;
   final String subtitle;
   final IconData icon;
@@ -479,6 +483,7 @@ class _SectionHeader extends StatelessWidget {
   final VoidCallback? onActionTap;
 
   const _SectionHeader({
+    this.titleKey,
     required this.title,
     required this.subtitle,
     required this.icon,
@@ -506,6 +511,7 @@ class _SectionHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
+                key: titleKey,
                 title,
                 style: AppTextStyles.titleMedium.copyWith(
                   color: Theme.of(context).colorScheme.onSurface,
