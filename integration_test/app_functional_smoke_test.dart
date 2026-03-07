@@ -36,11 +36,24 @@ Future<void> tapText(
 }
 
 Future<void> openDrawer(WidgetTester tester) async {
-  final menuButton = find.byIcon(Icons.menu_rounded);
+  final menuButton = find.byKey(const ValueKey('home_menu_button'));
   await waitFor(tester, menuButton);
+  await tester.ensureVisible(menuButton.first);
   await tester.tap(menuButton.first);
   await tester.pump(const Duration(milliseconds: 600));
   await waitFor(tester, find.text('Settings'));
+}
+
+Future<void> tapByKey(
+  WidgetTester tester,
+  Key key, {
+  Duration timeout = const Duration(seconds: 15),
+}) async {
+  final finder = find.byKey(key);
+  await waitFor(tester, finder, timeout: timeout);
+  await tester.ensureVisible(finder.first);
+  await tester.tap(finder.first);
+  await tester.pump(const Duration(milliseconds: 700));
 }
 
 Future<void> tapBackButton(
@@ -106,31 +119,31 @@ void main() {
 
     // Drawer: News
     await openDrawer(tester);
-    await tapText(tester, 'News');
+    await tapByKey(tester, const ValueKey('drawer_news'));
     await waitFor(tester, find.text('News Feed'));
     await tapBackButton(tester);
 
     // Drawer: Announcements
     await openDrawer(tester);
-    await tapText(tester, 'Announcements');
+    await tapByKey(tester, const ValueKey('drawer_announcements'));
     await waitFor(tester, find.text('Announcements'));
     await tapBackButton(tester);
 
     // Drawer: Organizations
     await openDrawer(tester);
-    await tapText(tester, 'Organizations');
+    await tapByKey(tester, const ValueKey('drawer_organizations'));
     await waitFor(tester, find.text('Organizations'));
     await tapBackButton(tester);
 
     // Drawer: Directory
     await openDrawer(tester);
-    await tapText(tester, 'Directory');
+    await tapByKey(tester, const ValueKey('drawer_directory'));
     await waitFor(tester, find.text('Khawlian Chanchin'));
     await tapBackButton(tester);
 
     // Drawer: Settings and theme toggle control presence
     await openDrawer(tester);
-    await tapText(tester, 'Settings');
+    await tapByKey(tester, const ValueKey('drawer_settings'));
     await waitFor(tester, find.text('Settings'));
     expect(find.text('Dark Mode'), findsOneWidget);
     final darkModeSwitch = find.byType(Switch).first;
@@ -140,7 +153,7 @@ void main() {
 
     // Drawer -> Sign In
     await openDrawer(tester);
-    await tapText(tester, 'Sign In');
+    await tapByKey(tester, const ValueKey('drawer_sign_in'));
     await waitFor(tester, find.text('Welcome Back'));
     expect(find.text('Forgot Password?'), findsOneWidget);
     expect(find.text('Sign Up'), findsOneWidget);
@@ -164,7 +177,7 @@ void main() {
     );
 
     // Guest profile access should route to login screen
-    final profileIcon = find.byIcon(Icons.person_rounded);
+    final profileIcon = find.byKey(const ValueKey('home_profile_button'));
     await waitFor(tester, profileIcon);
     await tester.tap(profileIcon.first);
     await tester.pump(const Duration(seconds: 1));

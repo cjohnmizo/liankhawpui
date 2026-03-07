@@ -86,6 +86,7 @@ class AppDrawer extends ConsumerWidget {
               child: Column(
                 children: [
                   _DrawerItem(
+                    itemKey: const ValueKey('drawer_home'),
                     icon: Icons.home_rounded,
                     label: t.home,
                     onTap: () {
@@ -94,6 +95,7 @@ class AppDrawer extends ConsumerWidget {
                     },
                   ),
                   _DrawerItem(
+                    itemKey: const ValueKey('drawer_news'),
                     icon: Icons.newspaper_rounded,
                     label: t.news,
                     onTap: () {
@@ -102,6 +104,7 @@ class AppDrawer extends ConsumerWidget {
                     },
                   ),
                   _DrawerItem(
+                    itemKey: const ValueKey('drawer_announcements'),
                     icon: Icons.campaign_rounded,
                     label: t.announcements,
                     onTap: () {
@@ -110,6 +113,7 @@ class AppDrawer extends ConsumerWidget {
                     },
                   ),
                   _DrawerItem(
+                    itemKey: const ValueKey('drawer_organizations'),
                     icon: Icons.business_rounded,
                     label: t.organizations,
                     onTap: () {
@@ -118,6 +122,7 @@ class AppDrawer extends ConsumerWidget {
                     },
                   ),
                   _DrawerItem(
+                    itemKey: const ValueKey('drawer_directory'),
                     icon: Icons.menu_book_rounded,
                     label: t.directory,
                     onTap: () {
@@ -128,6 +133,7 @@ class AppDrawer extends ConsumerWidget {
                   Divider(color: AppColors.glassBorder, height: 26),
                   if (!user.isGuest) ...[
                     _DrawerItem(
+                      itemKey: const ValueKey('drawer_profile'),
                       icon: Icons.person_rounded,
                       label: t.myProfile,
                       onTap: () {
@@ -138,6 +144,7 @@ class AppDrawer extends ConsumerWidget {
                   ],
                   if (user.role.isEditor) ...[
                     _DrawerItem(
+                      itemKey: const ValueKey('drawer_dashboard'),
                       icon: Icons.dashboard_rounded,
                       label: t.adminDashboard,
                       isHighlight: true,
@@ -149,6 +156,7 @@ class AppDrawer extends ConsumerWidget {
                   ],
                   if (user.isGuest)
                     _DrawerItem(
+                      itemKey: const ValueKey('drawer_sign_in'),
                       icon: Icons.login_rounded,
                       label: t.signIn,
                       isHighlight: true,
@@ -159,6 +167,7 @@ class AppDrawer extends ConsumerWidget {
                     )
                   else
                     _DrawerItem(
+                      itemKey: const ValueKey('drawer_sign_out'),
                       icon: Icons.logout_rounded,
                       label: t.signOut,
                       onTap: () async {
@@ -171,6 +180,7 @@ class AppDrawer extends ConsumerWidget {
                     ),
                   Divider(color: AppColors.glassBorder, height: 26),
                   _DrawerItem(
+                    itemKey: const ValueKey('drawer_settings'),
                     icon: Icons.settings_rounded,
                     label: t.settings,
                     onTap: () {
@@ -228,12 +238,14 @@ class AppDrawer extends ConsumerWidget {
 }
 
 class _DrawerItem extends StatelessWidget {
+  final Key? itemKey;
   final IconData icon;
   final String label;
   final VoidCallback onTap;
   final bool isHighlight;
 
   const _DrawerItem({
+    this.itemKey,
     required this.icon,
     required this.label,
     required this.onTap,
@@ -247,6 +259,7 @@ class _DrawerItem extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: ListTile(
+        key: itemKey,
         leading: Icon(
           icon,
           color: isHighlight

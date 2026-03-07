@@ -66,6 +66,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     return AppBar(
       titleSpacing: 12,
       leading: IconButton(
+        key: const ValueKey('home_menu_button'),
         icon: const Icon(Icons.menu_rounded),
         onPressed: () => _scaffoldKey.currentState?.openDrawer(),
       ),
@@ -91,6 +92,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             onPressed: () => context.push('/dashboard'),
           ),
         IconButton(
+          key: const ValueKey('home_profile_button'),
           tooltip: user.isGuest ? t.signIn : t.profile,
           icon: _buildProfileActionIcon(user),
           onPressed: () =>

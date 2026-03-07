@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:liankhawpui/core/localization/app_strings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const bool kTestMode = bool.fromEnvironment('TEST_MODE', defaultValue: false);
 const _lowDataModeKey = 'low_data_mode_enabled';
 const _textScaleFactorKey = 'text_scale_factor';
 const _appLanguageKey = 'app_language_code';
@@ -47,12 +48,14 @@ class LowDataModeNotifier extends AsyncNotifier<bool> {
 
   @override
   Future<bool> build() async {
+    if (kTestMode) return true;
     final prefs = await _ensurePrefs();
     return prefs.getBool(_lowDataModeKey) ?? true;
   }
 
   Future<void> setEnabled(bool enabled) async {
     state = AsyncData(enabled);
+    if (kTestMode) return;
     final prefs = await _ensurePrefs();
     await prefs.setBool(_lowDataModeKey, enabled);
   }
@@ -69,6 +72,7 @@ class TextScaleNotifier extends AsyncNotifier<double> {
 
   @override
   Future<double> build() async {
+    if (kTestMode) return 1.0;
     final prefs = await _ensurePrefs();
     final stored = prefs.getDouble(_textScaleFactorKey) ?? 1.0;
     return _normalize(stored);
@@ -77,12 +81,14 @@ class TextScaleNotifier extends AsyncNotifier<double> {
   Future<void> setScale(double scale) async {
     final normalized = _normalize(scale);
     state = AsyncData(normalized);
+    if (kTestMode) return;
     final prefs = await _ensurePrefs();
     await prefs.setDouble(_textScaleFactorKey, normalized);
   }
 
   Future<void> reset() async {
     state = const AsyncData(1.0);
+    if (kTestMode) return;
     final prefs = await _ensurePrefs();
     await prefs.setDouble(_textScaleFactorKey, 1.0);
   }
@@ -103,6 +109,7 @@ class AppLanguageNotifier extends AsyncNotifier<AppLanguage> {
 
   @override
   Future<AppLanguage> build() async {
+    if (kTestMode) return AppLanguage.english;
     final prefs = await _ensurePrefs();
     final stored = prefs.getString(_appLanguageKey);
     return AppLanguage.fromStorageCode(stored);
@@ -110,6 +117,7 @@ class AppLanguageNotifier extends AsyncNotifier<AppLanguage> {
 
   Future<void> setLanguage(AppLanguage language) async {
     state = AsyncData(language);
+    if (kTestMode) return;
     final prefs = await _ensurePrefs();
     await prefs.setString(_appLanguageKey, language.storageCode);
   }
@@ -138,6 +146,7 @@ class LastReadChapterNotifier extends AsyncNotifier<LastReadChapter?> {
 
   @override
   Future<LastReadChapter?> build() async {
+    if (kTestMode) return null;
     final prefs = await _ensurePrefs();
     return _readValue(prefs);
   }
@@ -146,6 +155,16 @@ class LastReadChapterNotifier extends AsyncNotifier<LastReadChapter?> {
     required String chapterId,
     String? chapterTitle,
   }) async {
+    if (kTestMode) {
+      state = AsyncData(
+        LastReadChapter(
+          chapterId: chapterId,
+          chapterTitle: chapterTitle,
+          updatedAt: DateTime.now(),
+        ),
+      );
+      return;
+    }
     final prefs = await _ensurePrefs();
     final now = DateTime.now();
     await prefs.setString(_lastReadChapterIdKey, chapterId);
@@ -163,6 +182,10 @@ class LastReadChapterNotifier extends AsyncNotifier<LastReadChapter?> {
   }
 
   Future<void> clear() async {
+    if (kTestMode) {
+      state = const AsyncData(null);
+      return;
+    }
     final prefs = await _ensurePrefs();
     await prefs.remove(_lastReadChapterIdKey);
     await prefs.remove(_lastReadChapterTitleKey);
