@@ -1,10 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/localization/app_strings.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
+import 'package:liankhawpui/core/widgets/adaptive_cached_image.dart';
 import 'package:liankhawpui/core/widgets/app_states.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
 import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
@@ -265,11 +265,16 @@ class _OrganizationLogo extends StatelessWidget {
       child: SizedBox(
         width: 42,
         height: 42,
-        child: CachedNetworkImage(
+        child: AdaptiveCachedImage(
           imageUrl: url!,
           fit: BoxFit.cover,
-          errorWidget: (_, __, ___) => Container(
+          cacheWidth: 96,
+          cacheHeight: 96,
+          placeholderBuilder: (_) =>
+              Container(color: AppColors.surfaceVariantLight),
+          errorBuilder: (_) => Container(
             color: AppColors.surfaceVariantLight,
+            alignment: Alignment.center,
             child: const Icon(Icons.business_rounded),
           ),
         ),

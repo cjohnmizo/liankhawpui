@@ -10,8 +10,16 @@ import 'package:intl/intl.dart';
 class AnnouncementCard extends StatelessWidget {
   final Announcement announcement;
   final VoidCallback? onTap;
+  final int? imageCacheWidth;
+  final int? imageCacheHeight;
 
-  const AnnouncementCard({super.key, required this.announcement, this.onTap});
+  const AnnouncementCard({
+    super.key,
+    required this.announcement,
+    this.onTap,
+    this.imageCacheWidth,
+    this.imageCacheHeight,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +46,8 @@ class AnnouncementCard extends StatelessWidget {
               child: AdaptiveCachedImage(
                 imageUrl: displayImageUrl,
                 fit: BoxFit.cover,
+                cacheWidth: imageCacheWidth,
+                cacheHeight: imageCacheHeight,
                 placeholderBuilder: (_) => Container(
                   color: isDark
                       ? AppColors.surfaceVariant

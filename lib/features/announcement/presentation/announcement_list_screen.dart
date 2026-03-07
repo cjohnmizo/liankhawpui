@@ -43,24 +43,40 @@ class AnnouncementListScreen extends ConsumerWidget {
                 return LayoutBuilder(
                   builder: (context, constraints) {
                     final width = constraints.maxWidth;
+                    const spacing = 12.0;
                     final crossAxisCount = width >= 1050
                         ? 3
                         : width >= 680
                         ? 2
                         : 1;
                     final childAspectRatio = crossAxisCount == 1 ? 1.1 : 1.25;
+                    final cardWidth =
+                        (width - (spacing * (crossAxisCount - 1))) /
+                        crossAxisCount;
+                    final devicePixelRatio = MediaQuery.devicePixelRatioOf(
+                      context,
+                    );
+                    final imageCacheWidth = (cardWidth * devicePixelRatio)
+                        .round()
+                        .clamp(240, 960);
+                    final imageCacheHeight = (imageCacheWidth * 0.58)
+                        .round()
+                        .clamp(160, 640);
                     return GridView.builder(
+                      key: const PageStorageKey('announcement_list_grid'),
                       itemCount: list.length,
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: crossAxisCount,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
+                        crossAxisSpacing: spacing,
+                        mainAxisSpacing: spacing,
                         childAspectRatio: childAspectRatio,
                       ),
                       itemBuilder: (context, index) {
                         final item = list[index];
                         final card = AnnouncementCard(
                           announcement: item,
+                          imageCacheWidth: imageCacheWidth,
+                          imageCacheHeight: imageCacheHeight,
                           onTap: () => context.push('/announcement/${item.id}'),
                         );
                         if (!user.role.isEditor) return card;

@@ -39,19 +39,33 @@ class NewsListScreen extends ConsumerWidget {
               return LayoutBuilder(
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
+                  const spacing = 12.0;
                   final crossAxisCount = width >= 1050
                       ? 3
                       : width >= 680
                       ? 2
                       : 1;
                   final childAspectRatio = width >= 1050 ? 0.95 : 0.9;
+                  final cardWidth =
+                      (width - (spacing * (crossAxisCount - 1))) /
+                      crossAxisCount;
+                  final devicePixelRatio = MediaQuery.devicePixelRatioOf(
+                    context,
+                  );
+                  final imageCacheWidth = (cardWidth * devicePixelRatio)
+                      .round()
+                      .clamp(240, 960);
+                  final imageCacheHeight = (imageCacheWidth * 0.7)
+                      .round()
+                      .clamp(180, 720);
 
                   return GridView.builder(
+                    key: const PageStorageKey('news_list_grid'),
                     itemCount: newsList.length,
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: crossAxisCount,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
+                      crossAxisSpacing: spacing,
+                      mainAxisSpacing: spacing,
                       childAspectRatio: childAspectRatio,
                     ),
                     itemBuilder: (context, index) {
@@ -95,6 +109,8 @@ class NewsListScreen extends ConsumerWidget {
                                     : AdaptiveCachedImage(
                                         imageUrl: displayImageUrl,
                                         fit: BoxFit.cover,
+                                        cacheWidth: imageCacheWidth,
+                                        cacheHeight: imageCacheHeight,
                                         placeholderBuilder: (_) => Container(
                                           color: Theme.of(
                                             context,
@@ -163,7 +179,7 @@ class NewsListScreen extends ConsumerWidget {
                                       const SizedBox(width: 4),
                                       Expanded(
                                         child: Text(
-                                          '$relativeTime • ${DateFormat.yMMMd().format(news.createdAt)}',
+                                          '$relativeTime - ${DateFormat.yMMMd().format(news.createdAt)}',
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: AppTextStyles.bodySmall
