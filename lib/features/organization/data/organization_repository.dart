@@ -1,12 +1,25 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:liankhawpui/core/services/image_service.dart';
 import 'package:liankhawpui/core/services/powersync_service.dart';
+import 'package:liankhawpui/core/services/storage_budget_service.dart';
+import 'package:liankhawpui/core/services/supabase_service.dart';
 import 'package:liankhawpui/features/organization/domain/office_bearer.dart';
 import 'package:liankhawpui/features/organization/domain/organization.dart';
 import 'package:powersync/powersync.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 class OrganizationRepository {
+  static const String _mediaBucket = 'post-attachments';
+  static const int _maxImageInputBytes = 15 * 1024 * 1024;
+  static const String _logoCacheControl = 'public, max-age=31536000, immutable';
+  static const String _memberPhotoCacheControl =
+      'public, max-age=31536000, immutable';
+
   final _powerSync = PowerSyncService();
+  final _imageService = ImageService();
+  final _storageBudgetService = StorageBudgetService();
   final _uuid = const Uuid();
 
   Future<PowerSyncDatabase> _ensureDb() async {
@@ -242,6 +255,145 @@ class OrganizationRepository {
     await db.execute('DELETE FROM office_bearers WHERE id = ?', [id]);
   }
 
+  Future<String> uploadOrganizationLogo({
+    required String organizationId,
+    required File imageFile,
+    required bool lowDataMode,
+  }) async {
+    final organization = await getOrganizationById(organizationId);
+    if (organization == null) {
+      throw StateError('Organization not found.');
+    }
+
+    final processed = await _prepareImageForUpload(
+      imageFile,
+      preset: MediaPreset.ngoLogo,
+    );
+    final objectPath = await _uploadImageBytes(
+      bytes: processed.bytes,
+      folder: 'organization-logos',
+      entityId: organizationId,
+      contentType: processed.contentType,
+      cacheControl: _logoCacheControl,
+    );
+    final publicUrl = SupabaseService.client.storage
+        .from(_mediaBucket)
+        .getPublicUrl(objectPath);
+
+    final db = await _ensureDb();
+    await db.execute('UPDATE organizations SET logo_url = ? WHERE id = ?', [
+      publicUrl,
+      organizationId,
+    ]);
+    await _storageBudgetService.recordEntries([
+      MediaBudgetEntry(
+        objectPath: objectPath,
+        mimeType: processed.contentType,
+        sizeBytes: processed.sizeBytes,
+        kind: MediaBudgetKind.image,
+        width: processed.width,
+        height: processed.height,
+        originalFileName: imageFile.uri.pathSegments.isEmpty
+            ? null
+            : imageFile.uri.pathSegments.last,
+      ),
+    ]);
+
+    final oldObjectPath = _extractStorageObjectPath(organization.logoUrl);
+    if (oldObjectPath != null && oldObjectPath != objectPath) {
+      await _removeStoredObjects([oldObjectPath]);
+    }
+
+    return publicUrl;
+  }
+
+  Future<void> removeOrganizationLogo(String organizationId) async {
+    final organization = await getOrganizationById(organizationId);
+    if (organization == null) {
+      throw StateError('Organization not found.');
+    }
+
+    final db = await _ensureDb();
+    await db.execute('UPDATE organizations SET logo_url = NULL WHERE id = ?', [
+      organizationId,
+    ]);
+
+    final oldObjectPath = _extractStorageObjectPath(organization.logoUrl);
+    if (oldObjectPath != null) {
+      await _removeStoredObjects([oldObjectPath]);
+    }
+  }
+
+  Future<String> uploadOfficeBearerPhoto({
+    required String bearerId,
+    required File imageFile,
+    required bool lowDataMode,
+  }) async {
+    final bearer = await _getOfficeBearerById(bearerId);
+    if (bearer == null) {
+      throw StateError('Office bearer not found.');
+    }
+
+    final processed = await _prepareImageForUpload(
+      imageFile,
+      preset: lowDataMode ? MediaPreset.lowDataAvatar : MediaPreset.avatar,
+    );
+    final objectPath = await _uploadImageBytes(
+      bytes: processed.bytes,
+      folder: 'office-bearers',
+      entityId: bearerId,
+      contentType: processed.contentType,
+      cacheControl: _memberPhotoCacheControl,
+    );
+    final publicUrl = SupabaseService.client.storage
+        .from(_mediaBucket)
+        .getPublicUrl(objectPath);
+
+    final db = await _ensureDb();
+    await db.execute('UPDATE office_bearers SET photo_url = ? WHERE id = ?', [
+      publicUrl,
+      bearerId,
+    ]);
+    await _storageBudgetService.recordEntries([
+      MediaBudgetEntry(
+        objectPath: objectPath,
+        mimeType: processed.contentType,
+        sizeBytes: processed.sizeBytes,
+        kind: MediaBudgetKind.image,
+        width: processed.width,
+        height: processed.height,
+        originalFileName: imageFile.uri.pathSegments.isEmpty
+            ? null
+            : imageFile.uri.pathSegments.last,
+      ),
+    ]);
+
+    final oldObjectPath = _extractStorageObjectPath(bearer.photoUrl);
+    if (oldObjectPath != null && oldObjectPath != objectPath) {
+      await _removeStoredObjects([oldObjectPath]);
+    }
+
+    return publicUrl;
+  }
+
+  Future<void> removeOfficeBearerPhoto(String bearerId) async {
+    final bearer = await _getOfficeBearerById(bearerId);
+    if (bearer == null) {
+      throw StateError('Office bearer not found.');
+    }
+
+    final db = await _ensureDb();
+    await db.execute(
+      'UPDATE office_bearers SET photo_url = NULL WHERE id = ?',
+      [bearerId],
+    );
+
+    final oldObjectPath = _extractStorageObjectPath(bearer.photoUrl);
+    if (oldObjectPath != null) {
+      await _removeStoredObjects([oldObjectPath]);
+    }
+  }
+
   List<Organization> _buildTree(List<Organization> allOrgs) {
     final orgIds = allOrgs.map((org) => org.id).toSet();
     final Map<String, List<Organization>> childrenMap = {};
@@ -292,5 +444,107 @@ class OrganizationRepository {
       return null;
     }
     return normalized;
+  }
+
+  Future<ProcessedImage> _prepareImageForUpload(
+    File imageFile, {
+    required MediaPreset preset,
+  }) async {
+    final originalSize = await imageFile.length();
+    if (originalSize > _maxImageInputBytes) {
+      throw Exception('Image is too large. Please choose one under 15 MB.');
+    }
+
+    return _imageService.processImage(imageFile, preset: preset);
+  }
+
+  Future<String> _uploadImageBytes({
+    required Uint8List bytes,
+    required String folder,
+    required String entityId,
+    required String contentType,
+    required String cacheControl,
+  }) async {
+    final userId = SupabaseService.client.auth.currentUser?.id;
+    if (userId == null) {
+      throw StateError('Sign in required before uploading media.');
+    }
+
+    final extension = _extensionForContentType(contentType);
+    final objectPath =
+        '$userId/$folder/${entityId}_${DateTime.now().millisecondsSinceEpoch}_${_uuid.v4().substring(0, 8)}$extension';
+
+    try {
+      await SupabaseService.client.storage
+          .from(_mediaBucket)
+          .uploadBinary(
+            objectPath,
+            bytes,
+            fileOptions: FileOptions(
+              contentType: contentType,
+              cacheControl: cacheControl,
+              upsert: false,
+            ),
+          );
+    } on StorageException catch (error) {
+      throw Exception('Image upload failed: ${error.message}');
+    }
+
+    return objectPath;
+  }
+
+  Future<OfficeBearer?> _getOfficeBearerById(String id) async {
+    final db = await _ensureDb();
+    final row = await db.getOptional(
+      'SELECT * FROM office_bearers WHERE id = ? LIMIT 1',
+      [id],
+    );
+    if (row == null) return null;
+    return OfficeBearer.fromRow(row);
+  }
+
+  String _extensionForContentType(String contentType) {
+    final normalized = contentType.toLowerCase();
+    if (normalized.contains('webp')) return '.webp';
+    if (normalized.contains('png')) return '.png';
+    if (normalized.contains('jpeg') || normalized.contains('jpg')) {
+      return '.jpg';
+    }
+    return '.bin';
+  }
+
+  String? _extractStorageObjectPath(String? url) {
+    final raw = url?.trim();
+    if (raw == null || raw.isEmpty) return null;
+    if (!raw.startsWith('http://') && !raw.startsWith('https://')) {
+      return raw;
+    }
+
+    final uri = Uri.tryParse(raw);
+    if (uri == null) return null;
+    const markerPrefix = '/storage/v1/object/public/';
+    const marker = '$markerPrefix$_mediaBucket/';
+    final index = uri.path.indexOf(marker);
+    if (index == -1) return null;
+    return Uri.decodeComponent(uri.path.substring(index + marker.length));
+  }
+
+  Future<void> _removeStoredObjects(Iterable<String> objectPaths) async {
+    final normalized = objectPaths
+        .map((path) => path.trim())
+        .where((path) => path.isNotEmpty)
+        .toSet();
+    if (normalized.isEmpty) {
+      return;
+    }
+
+    try {
+      await SupabaseService.client.storage
+          .from(_mediaBucket)
+          .remove(normalized.toList());
+    } catch (_) {
+      // Keep data mutations resilient if storage cleanup fails.
+    }
+    await _storageBudgetService.removeEntriesByObjectPaths(normalized);
   }
 }

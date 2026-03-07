@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -84,17 +85,8 @@ class _OrganizationManageScreenState
                                     left: item.depth * 12.0,
                                     top: 2,
                                   ),
-                                  width: 42,
-                                  height: 42,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.accentGold.withValues(
-                                      alpha: 0.14,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.business_rounded,
-                                    color: AppColors.accentGold,
+                                  child: _OrganizationLeadingLogo(
+                                    url: item.organization.logoUrl,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -425,6 +417,47 @@ class _MetaChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _OrganizationLeadingLogo extends StatelessWidget {
+  final String? url;
+
+  const _OrganizationLeadingLogo({this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = url?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: AppColors.accentGold.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.business_rounded, color: AppColors.accentGold),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        width: 42,
+        height: 42,
+        child: CachedNetworkImage(
+          imageUrl: normalized,
+          fit: BoxFit.cover,
+          errorWidget: (_, __, ___) => Container(
+            color: AppColors.accentGold.withValues(alpha: 0.14),
+            child: const Icon(
+              Icons.business_rounded,
+              color: AppColors.accentGold,
+            ),
+          ),
+        ),
       ),
     );
   }

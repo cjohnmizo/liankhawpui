@@ -96,6 +96,23 @@ class StorageBudgetService {
     await prefs.setString(_entriesKey, _encodeEntries(existing.values));
   }
 
+  Future<void> removeEntriesByObjectPaths(Iterable<String> objectPaths) async {
+    final normalizedPaths = objectPaths
+        .map((path) => path.trim())
+        .where((path) => path.isNotEmpty)
+        .toSet();
+    if (normalizedPaths.isEmpty) {
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final existing = _readEntries(prefs);
+    existing.removeWhere(
+      (_, entry) => normalizedPaths.contains(entry.objectPath.trim()),
+    );
+    await prefs.setString(_entriesKey, _encodeEntries(existing.values));
+  }
+
   Future<StorageBudget> computeStorageBudget() async {
     final prefs = await SharedPreferences.getInstance();
     final entries = _readEntries(prefs).values;

@@ -204,7 +204,9 @@ class _OrganizationEditScreenState
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'Logo and staff photo uploads are intentionally excluded here. Uploads remain picker-only across the app.',
+                            widget.isEditing
+                                ? 'Manage logo and staff photos from the organization detail screen. Uploads remain picker-only across the app.'
+                                : 'Create the organization first, then add logo and staff photos from the detail screen. Uploads remain picker-only across the app.',
                             style: AppTextStyles.bodySmall.copyWith(
                               color: Theme.of(
                                 context,
@@ -212,6 +214,21 @@ class _OrganizationEditScreenState
                               height: 1.4,
                             ),
                           ),
+                          if (widget.isEditing) ...[
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                onPressed: () => context.push(
+                                  '/organization/${widget.organizationId}',
+                                ),
+                                icon: const Icon(Icons.open_in_new_rounded),
+                                label: const Text(
+                                  'Open detail to manage media',
+                                ),
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 18),
                           SizedBox(
                             width: double.infinity,

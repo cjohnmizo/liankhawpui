@@ -1,8 +1,14 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
+import 'package:liankhawpui/core/services/image_service.dart';
+import 'package:liankhawpui/core/services/storage_budget_service.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/widgets/app_states.dart';
@@ -22,6 +28,7 @@ class OrganizationDetailScreen extends ConsumerWidget {
     final treeAsync = ref.watch(organizationTreeProvider);
     final officeBearersAsync = ref.watch(officeBearersProvider(orgId));
     final currentUser = ref.watch(currentUserProvider);
+    final storageBudgetAsync = ref.watch(storageBudgetProvider);
     final canManage = currentUser.role.isEditor;
 
     return Scaffold(
@@ -127,6 +134,80 @@ class OrganizationDetailScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  if (canManage) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () =>
+                              _uploadOrganizationLogo(context, ref, org),
+                          icon: const Icon(Icons.add_a_photo_rounded),
+                          label: Text(
+                            (org.logoUrl ?? '').trim().isEmpty
+                                ? 'Upload Logo'
+                                : 'Replace Logo',
+                          ),
+                        ),
+                        if ((org.logoUrl ?? '').trim().isNotEmpty)
+                          TextButton.icon(
+                            onPressed: () =>
+                                _removeOrganizationLogo(context, ref, org),
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              color: AppColors.error,
+                            ),
+                            label: const Text(
+                              'Remove Logo',
+                              style: TextStyle(color: AppColors.error),
+                            ),
+                          ),
+                      ],
+                    ),
+                    storageBudgetAsync.when(
+                      data: (budget) {
+                        if (budget.percentOf1GB < 80) {
+                          return const SizedBox.shrink();
+                        }
+                        final blocked = budget.percentOf1GB >= 95;
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: GlassCard(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  blocked
+                                      ? Icons.warning_amber_rounded
+                                      : Icons.storage_rounded,
+                                  color: blocked
+                                      ? AppColors.error
+                                      : AppColors.accentGold,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    blocked
+                                        ? 'Storage is almost full (${budget.percentOf1GB.toStringAsFixed(1)}% of 1 GB). New uploads are blocked.'
+                                        : 'Storage nearing limit (${budget.percentOf1GB.toStringAsFixed(1)}% of 1 GB used).',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
+                  ],
                   if ((org.description ?? '').trim().isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Text(
@@ -273,14 +354,30 @@ class OrganizationDetailScreen extends ConsumerWidget {
                                             );
                                             return;
                                           }
+                                          if (value == 'upload_photo') {
+                                            await _uploadOfficeBearerPhoto(
+                                              context,
+                                              ref,
+                                              bearer,
+                                            );
+                                            return;
+                                          }
+                                          if (value == 'remove_photo') {
+                                            await _removeOfficeBearerPhoto(
+                                              context,
+                                              ref,
+                                              bearer,
+                                            );
+                                            return;
+                                          }
                                           await _deleteOfficeBearer(
                                             context,
                                             ref,
                                             bearer,
                                           );
                                         },
-                                        itemBuilder: (context) => const [
-                                          PopupMenuItem<String>(
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem<String>(
                                             value: 'edit',
                                             child: ListTile(
                                               leading: Icon(Icons.edit_rounded),
@@ -289,7 +386,33 @@ class OrganizationDetailScreen extends ConsumerWidget {
                                               minLeadingWidth: 18,
                                             ),
                                           ),
-                                          PopupMenuItem<String>(
+                                          const PopupMenuItem<String>(
+                                            value: 'upload_photo',
+                                            child: ListTile(
+                                              leading: Icon(
+                                                Icons.add_a_photo_rounded,
+                                              ),
+                                              title: Text('Upload Photo'),
+                                              contentPadding: EdgeInsets.zero,
+                                              minLeadingWidth: 18,
+                                            ),
+                                          ),
+                                          if ((bearer.photoUrl ?? '')
+                                              .trim()
+                                              .isNotEmpty)
+                                            const PopupMenuItem<String>(
+                                              value: 'remove_photo',
+                                              child: ListTile(
+                                                leading: Icon(
+                                                  Icons
+                                                      .image_not_supported_rounded,
+                                                ),
+                                                title: Text('Remove Photo'),
+                                                contentPadding: EdgeInsets.zero,
+                                                minLeadingWidth: 18,
+                                              ),
+                                            ),
+                                          const PopupMenuItem<String>(
                                             value: 'delete',
                                             child: ListTile(
                                               leading: Icon(
@@ -428,6 +551,164 @@ class OrganizationDetailScreen extends ConsumerWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('${bearer.name} removed.')));
+  }
+
+  Future<void> _uploadOrganizationLogo(
+    BuildContext context,
+    WidgetRef ref,
+    Organization organization,
+  ) async {
+    if (!_canUploadMore(context, ref)) return;
+    final file = await _pickImageFile(context, ref);
+    if (file == null) return;
+
+    try {
+      final lowDataMode = ref.read(lowDataModeEnabledProvider);
+      await ref
+          .read(organizationRepositoryProvider)
+          .uploadOrganizationLogo(
+            organizationId: organization.id,
+            imageFile: file,
+            lowDataMode: lowDataMode,
+          );
+      ref.invalidate(storageBudgetProvider);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Logo updated.')));
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Logo upload failed: $error')));
+    }
+  }
+
+  Future<void> _removeOrganizationLogo(
+    BuildContext context,
+    WidgetRef ref,
+    Organization organization,
+  ) async {
+    try {
+      await ref
+          .read(organizationRepositoryProvider)
+          .removeOrganizationLogo(organization.id);
+      ref.invalidate(storageBudgetProvider);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Logo removed.')));
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to remove logo: $error')));
+    }
+  }
+
+  Future<void> _uploadOfficeBearerPhoto(
+    BuildContext context,
+    WidgetRef ref,
+    OfficeBearer bearer,
+  ) async {
+    if (!_canUploadMore(context, ref)) return;
+    final file = await _pickImageFile(context, ref);
+    if (file == null) return;
+
+    try {
+      final lowDataMode = ref.read(lowDataModeEnabledProvider);
+      await ref
+          .read(organizationRepositoryProvider)
+          .uploadOfficeBearerPhoto(
+            bearerId: bearer.id,
+            imageFile: file,
+            lowDataMode: lowDataMode,
+          );
+      ref.invalidate(storageBudgetProvider);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${bearer.name} photo updated.')));
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Photo upload failed: $error')));
+    }
+  }
+
+  Future<void> _removeOfficeBearerPhoto(
+    BuildContext context,
+    WidgetRef ref,
+    OfficeBearer bearer,
+  ) async {
+    try {
+      await ref
+          .read(organizationRepositoryProvider)
+          .removeOfficeBearerPhoto(bearer.id);
+      ref.invalidate(storageBudgetProvider);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${bearer.name} photo removed.')));
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to remove photo: $error')));
+    }
+  }
+
+  bool _canUploadMore(BuildContext context, WidgetRef ref) {
+    final budget = ref.read(storageBudgetProvider).valueOrNull;
+    if ((budget?.percentOf1GB ?? 0) < 95) {
+      return true;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Storage is almost full. Delete old attachments or reduce uploads.',
+        ),
+      ),
+    );
+    return false;
+  }
+
+  Future<ImageSource?> _pickImageSource(BuildContext context) {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded),
+              title: const Text('Gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_rounded),
+              title: const Text('Camera'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<File?> _pickImageFile(BuildContext context, WidgetRef ref) async {
+    final source = await _pickImageSource(context);
+    if (source == null) return null;
+
+    final imageService = ImageService();
+    final lowDataMode = ref.read(lowDataModeEnabledProvider);
+    if (source == ImageSource.gallery) {
+      return imageService.pickImageFromGallery(lowDataMode: lowDataMode);
+    }
+    return imageService.pickImageFromCamera(lowDataMode: lowDataMode);
   }
 
   Organization? _findOrg(List<Organization> nodes, String id) {
