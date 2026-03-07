@@ -77,6 +77,11 @@ class DashboardScreen extends ConsumerWidget {
                         label: 'Manage Khawlian Chanchin',
                         onTap: () => context.push('/book/manage'),
                       ),
+                      _ActionPill(
+                        icon: Icons.account_tree_rounded,
+                        label: 'Manage Organizations',
+                        onTap: () => context.push('/dashboard/organizations'),
+                      ),
                       if (currentUser.role.isEditor || kTestMode)
                         _ActionPill(
                           icon: Icons.notifications_active_rounded,
@@ -185,7 +190,7 @@ Widget _buildStatGrid({
       color: const Color(0xFF0891B2),
       onTap: (placeholder && !kTestMode)
           ? null
-          : () => context.push('/organization'),
+          : () => context.push('/dashboard/organizations'),
     ),
   ];
 

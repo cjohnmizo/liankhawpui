@@ -7,6 +7,7 @@ import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/widgets/app_states.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
+import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 import 'package:liankhawpui/features/organization/domain/organization.dart';
 import 'package:liankhawpui/features/organization/presentation/organization_providers.dart';
 
@@ -42,6 +43,7 @@ class _OrganizationScreenState extends ConsumerState<OrganizationScreen> {
   Widget build(BuildContext context) {
     final t = context.t;
     final treeAsync = ref.watch(organizationTreeProvider);
+    final currentUser = ref.watch(currentUserProvider);
     final content = Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1000),
@@ -98,6 +100,14 @@ class _OrganizationScreenState extends ConsumerState<OrganizationScreen> {
           icon: const Icon(Icons.arrow_back_rounded),
         ),
         title: Text(t.organizations),
+        actions: [
+          if (currentUser.role.isEditor)
+            IconButton(
+              tooltip: 'Manage organizations',
+              onPressed: () => context.push('/dashboard/organizations'),
+              icon: const Icon(Icons.edit_note_rounded),
+            ),
+        ],
       ),
       body: content,
     );

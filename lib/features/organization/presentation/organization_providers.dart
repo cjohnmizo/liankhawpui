@@ -7,16 +7,19 @@ final organizationRepositoryProvider = Provider<OrganizationRepository>((ref) {
   return OrganizationRepository();
 });
 
-final organizationTreeProvider = FutureProvider<List<Organization>>((
-  ref,
-) async {
+final organizationListProvider = StreamProvider<List<Organization>>((ref) {
   final repo = ref.watch(organizationRepositoryProvider);
-  return repo.getOrganizationTree();
+  return repo.watchOrganizations();
 });
 
-final officeBearersProvider = FutureProvider.family<List<OfficeBearer>, String>(
-  (ref, orgId) async {
+final organizationTreeProvider = StreamProvider<List<Organization>>((ref) {
+  final repo = ref.watch(organizationRepositoryProvider);
+  return repo.watchOrganizationTree();
+});
+
+final officeBearersProvider = StreamProvider.family<List<OfficeBearer>, String>(
+  (ref, orgId) {
     final repo = ref.watch(organizationRepositoryProvider);
-    return repo.getOfficeBearers(orgId);
+    return repo.watchOfficeBearers(orgId);
   },
 );

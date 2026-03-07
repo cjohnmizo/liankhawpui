@@ -13,6 +13,8 @@ import 'package:liankhawpui/features/splash/presentation/splash_screen.dart';
 import 'package:liankhawpui/features/home/presentation/home_page.dart';
 import 'package:liankhawpui/features/organization/presentation/organization_screen.dart';
 import 'package:liankhawpui/features/organization/presentation/organization_detail_screen.dart';
+import 'package:liankhawpui/features/organization/presentation/organization_edit_screen.dart';
+import 'package:liankhawpui/features/organization/presentation/organization_manage_screen.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_list_screen.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_create_screen.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_detail_screen.dart';
@@ -152,6 +154,23 @@ final routerProvider = Provider<GoRouter>((ref) {
               final role = filter == 'guest' ? UserRole.guest : null;
               return ManageUsersScreen(initialRole: role);
             },
+          ),
+          GoRoute(
+            path: 'organizations',
+            builder: (context, state) => const OrganizationManageScreen(),
+            routes: [
+              GoRoute(
+                path: 'create',
+                builder: (context, state) => const OrganizationEditScreen(),
+              ),
+              GoRoute(
+                path: 'edit/:id',
+                builder: (context, state) {
+                  final id = state.pathParameters['id']!;
+                  return OrganizationEditScreen(organizationId: id);
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: 'news',
