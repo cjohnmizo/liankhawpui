@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:liankhawpui/core/localization/app_strings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _lowDataModeKey = 'low_data_mode_enabled';
 const _textScaleFactorKey = 'text_scale_factor';
+const _appLanguageKey = 'app_language_code';
 const _lastReadChapterIdKey = 'last_read_chapter_id';
 const _lastReadChapterTitleKey = 'last_read_chapter_title';
 const _lastReadChapterUpdatedAtKey = 'last_read_chapter_updated_at';
@@ -23,6 +25,16 @@ final textScaleProvider = AsyncNotifierProvider<TextScaleNotifier, double>(
 final textScaleFactorProvider = Provider<double>((ref) {
   final asyncValue = ref.watch(textScaleProvider);
   return asyncValue.valueOrNull ?? 1.0;
+});
+
+final appLanguageProvider =
+    AsyncNotifierProvider<AppLanguageNotifier, AppLanguage>(
+      AppLanguageNotifier.new,
+    );
+
+final currentAppLanguageProvider = Provider<AppLanguage>((ref) {
+  final asyncValue = ref.watch(appLanguageProvider);
+  return asyncValue.valueOrNull ?? AppLanguage.english;
 });
 
 final lastReadChapterProvider =
@@ -77,6 +89,29 @@ class TextScaleNotifier extends AsyncNotifier<double> {
 
   double _normalize(double value) {
     return value.clamp(0.85, 1.35).toDouble();
+  }
+
+  Future<SharedPreferences> _ensurePrefs() async {
+    if (_prefs != null) return _prefs!;
+    _prefs = await SharedPreferences.getInstance();
+    return _prefs!;
+  }
+}
+
+class AppLanguageNotifier extends AsyncNotifier<AppLanguage> {
+  SharedPreferences? _prefs;
+
+  @override
+  Future<AppLanguage> build() async {
+    final prefs = await _ensurePrefs();
+    final stored = prefs.getString(_appLanguageKey);
+    return AppLanguage.fromStorageCode(stored);
+  }
+
+  Future<void> setLanguage(AppLanguage language) async {
+    state = AsyncData(language);
+    final prefs = await _ensurePrefs();
+    await prefs.setString(_appLanguageKey, language.storageCode);
   }
 
   Future<SharedPreferences> _ensurePrefs() async {

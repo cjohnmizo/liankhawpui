@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:liankhawpui/core/config/app_assets.dart';
 import 'package:liankhawpui/core/config/env_config.dart';
+import 'package:liankhawpui/core/localization/app_strings.dart';
 import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
 import 'package:liankhawpui/core/theme/app_theme.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
@@ -282,6 +283,7 @@ class _LiankhawpuiAppState extends ConsumerState<LiankhawpuiApp> {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
     final textScaleFactor = ref.watch(textScaleFactorProvider);
+    final appLanguage = ref.watch(currentAppLanguageProvider);
 
     return MaterialApp.router(
       title: 'Liankhawpui',
@@ -298,7 +300,10 @@ class _LiankhawpuiAppState extends ConsumerState<LiankhawpuiApp> {
           ),
           child: child,
         );
-        return NetworkStatusOverlay(child: scaledChild);
+        return AppStringsScope(
+          strings: AppStrings(appLanguage),
+          child: NetworkStatusOverlay(child: scaledChild),
+        );
       },
       debugShowCheckedModeBanner: false,
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:liankhawpui/core/localization/app_strings.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/utils/markdown_content_utils.dart';
@@ -18,6 +19,7 @@ class NewsListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.t;
     final newsAsync = ref.watch(newsStreamProvider);
 
     final content = Center(
@@ -28,8 +30,8 @@ class NewsListScreen extends ConsumerWidget {
           child: newsAsync.when(
             data: (newsList) {
               if (newsList.isEmpty) {
-                return const AppEmptyState(
-                  message: 'No news published yet',
+                return AppEmptyState(
+                  message: t.noNewsPublishedYet,
                   icon: Icons.article_outlined,
                 );
               }
@@ -185,9 +187,9 @@ class NewsListScreen extends ConsumerWidget {
                 },
               );
             },
-            loading: () => const AppLoadingState(message: 'Loading news...'),
-            error: (_, __) => const AppEmptyState(
-              message: 'Could not load news',
+            loading: () => AppLoadingState(message: t.loadingRecentNews),
+            error: (_, __) => AppEmptyState(
+              message: t.couldNotLoadRecentNews,
               icon: Icons.error_outline_rounded,
             ),
           ),
@@ -205,7 +207,7 @@ class NewsListScreen extends ConsumerWidget {
           onPressed: () => context.canPop() ? context.pop() : context.go('/'),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
-        title: const Text('News Feed'),
+        title: Text(t.newsFeed),
       ),
       body: content,
     );

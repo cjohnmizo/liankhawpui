@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:liankhawpui/core/localization/app_strings.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/widgets/app_states.dart';
@@ -39,6 +40,7 @@ class _OrganizationScreenState extends ConsumerState<OrganizationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     final treeAsync = ref.watch(organizationTreeProvider);
     final content = Center(
       child: ConstrainedBox(
@@ -57,8 +59,8 @@ class _OrganizationScreenState extends ConsumerState<OrganizationScreen> {
                     if (filtered.isEmpty) {
                       return AppEmptyState(
                         message: allOrganizations.isEmpty
-                            ? 'No organizations available'
-                            : 'No organizations found for this search',
+                            ? t.noOrganizationsAvailable
+                            : t.noOrganizationsFoundForThisSearch,
                         icon: Icons.search_off_rounded,
                       );
                     }
@@ -73,11 +75,10 @@ class _OrganizationScreenState extends ConsumerState<OrganizationScreen> {
                       },
                     );
                   },
-                  loading: () => const AppLoadingState(
-                    message: 'Loading organizations...',
-                  ),
-                  error: (_, __) => const AppEmptyState(
-                    message: 'Could not load organizations',
+                  loading: () =>
+                      AppLoadingState(message: t.loadingOrganizations),
+                  error: (_, __) => AppEmptyState(
+                    message: t.couldNotLoadOrganizations,
                     icon: Icons.error_outline_rounded,
                   ),
                 ),
@@ -96,20 +97,21 @@ class _OrganizationScreenState extends ConsumerState<OrganizationScreen> {
           onPressed: () => context.canPop() ? context.pop() : context.go('/'),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
-        title: const Text('Organizations'),
+        title: Text(t.organizations),
       ),
       body: content,
     );
   }
 
   Widget _buildSearchAndFilters(BuildContext context) {
+    final t = context.t;
     return GlassCard(
       child: Column(
         children: [
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search organizations',
+              hintText: t.searchOrganizations,
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: _searchController.text.trim().isEmpty
                   ? null

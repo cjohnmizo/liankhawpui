@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:liankhawpui/core/localization/app_strings.dart';
 import 'package:liankhawpui/core/providers/app_preferences_provider.dart';
 import 'package:liankhawpui/core/providers/sync_providers.dart';
 import 'package:liankhawpui/core/services/onesignal_service.dart';
@@ -17,17 +18,20 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.t;
     final themeMode = ref.watch(themeModeProvider);
     final lowDataMode = ref.watch(lowDataModeEnabledProvider);
     final lowDataModeAsync = ref.watch(lowDataModeProvider);
     final textScaleFactor = ref.watch(textScaleFactorProvider);
     final textScaleAsync = ref.watch(textScaleProvider);
+    final appLanguage = ref.watch(currentAppLanguageProvider);
+    final appLanguageAsync = ref.watch(appLanguageProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Settings',
+          t.settings,
           style: AppTextStyles.titleLarge.copyWith(
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.onSurface,
@@ -47,13 +51,96 @@ class SettingsScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _buildSectionHeader(context, 'Appearance'),
+              _buildSectionHeader(context, t.appearance),
               const SizedBox(height: 10),
               GlassCard(
                 isPremium: false,
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: [
+                    ListTile(
+                      leading: const Icon(Icons.language_rounded),
+                      title: Text(
+                        t.languageLabel,
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      subtitle: Text(
+                        t.languageSubtitle,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      trailing: Text(
+                        t.languageName(appLanguage),
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      onTap: appLanguageAsync.isLoading
+                          ? null
+                          : () async {
+                              await showModalBottomSheet<void>(
+                                context: context,
+                                showDragHandle: true,
+                                builder: (sheetContext) {
+                                  final sheetStrings = sheetContext.t;
+                                  return SafeArea(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        ListTile(
+                                          title: Text(
+                                            sheetStrings.languageLabel,
+                                            style: AppTextStyles.titleMedium
+                                                .copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          ),
+                                          subtitle: Text(
+                                            sheetStrings.languageSubtitle,
+                                          ),
+                                        ),
+                                        RadioGroup<AppLanguage>(
+                                          groupValue: appLanguage,
+                                          onChanged: (value) async {
+                                            if (value == null) return;
+                                            await ref
+                                                .read(
+                                                  appLanguageProvider.notifier,
+                                                )
+                                                .setLanguage(value);
+                                            if (sheetContext.mounted) {
+                                              Navigator.of(sheetContext).pop();
+                                            }
+                                          },
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              for (final language
+                                                  in AppLanguage.values)
+                                                RadioListTile<AppLanguage>(
+                                                  value: language,
+                                                  title: Text(
+                                                    sheetStrings.languageName(
+                                                      language,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                    ),
+                    const Divider(height: 1),
                     SwitchListTile(
                       value:
                           themeMode == ThemeMode.dark ||
@@ -64,14 +151,14 @@ class SettingsScreen extends ConsumerWidget {
                             : ThemeMode.light;
                       },
                       title: Text(
-                        'Dark Mode',
+                        t.darkMode,
                         style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       subtitle: Text(
-                        'Enable dark theme for the app',
+                        t.darkModeSubtitle,
                         style: AppTextStyles.bodySmall.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -82,14 +169,14 @@ class SettingsScreen extends ConsumerWidget {
                     ListTile(
                       leading: const Icon(Icons.format_size_rounded),
                       title: Text(
-                        'Font Size',
+                        t.fontSize,
                         style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       subtitle: Text(
-                        'Adjust text size across the app',
+                        t.fontSizeSubtitle,
                         style: AppTextStyles.bodySmall.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -146,7 +233,7 @@ class SettingsScreen extends ConsumerWidget {
                                         .read(textScaleProvider.notifier)
                                         .reset();
                                   },
-                            child: const Text('Reset'),
+                            child: Text(t.reset),
                           ),
                         ],
                       ),
@@ -155,7 +242,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              _buildSectionHeader(context, 'Network & Sync'),
+              _buildSectionHeader(context, t.networkAndSync),
               const SizedBox(height: 10),
               GlassCard(
                 isPremium: false,
@@ -172,14 +259,14 @@ class SettingsScreen extends ConsumerWidget {
                                   .setEnabled(value);
                             },
                       title: Text(
-                        'Low Data Mode',
+                        t.lowDataMode,
                         style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       subtitle: Text(
-                        'Reduce image quality and bandwidth usage',
+                        t.lowDataModeSubtitle,
                         style: AppTextStyles.bodySmall.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -192,7 +279,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              _buildSectionHeader(context, 'Notifications'),
+              _buildSectionHeader(context, t.notifications),
               const SizedBox(height: 10),
               GlassCard(
                 isPremium: false,
@@ -200,14 +287,14 @@ class SettingsScreen extends ConsumerWidget {
                 child: ListTile(
                   leading: const Icon(Icons.notifications_active_outlined),
                   title: Text(
-                    'Enable Push Notifications',
+                    t.enablePushNotifications,
                     style: AppTextStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   subtitle: Text(
-                    'Allow announcement and news alerts on this device',
+                    t.enablePushNotificationsSubtitle,
                     style: AppTextStyles.bodySmall.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -217,15 +304,15 @@ class SettingsScreen extends ConsumerWidget {
                     await OneSignalService.requestNotificationPermission();
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Notification permission request sent.'),
+                      SnackBar(
+                        content: Text(t.notificationPermissionRequested),
                       ),
                     );
                   },
                 ),
               ),
               const SizedBox(height: 18),
-              _buildSectionHeader(context, 'About'),
+              _buildSectionHeader(context, t.about),
               const SizedBox(height: 10),
               GlassCard(
                 isPremium: false,
@@ -235,7 +322,7 @@ class SettingsScreen extends ConsumerWidget {
                     ListTile(
                       leading: const Icon(Icons.info_outline_rounded),
                       title: Text(
-                        'Version',
+                        t.version,
                         style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                           color: Theme.of(context).colorScheme.onSurface,
@@ -252,7 +339,7 @@ class SettingsScreen extends ConsumerWidget {
                     ListTile(
                       leading: const Icon(Icons.privacy_tip_outlined),
                       title: Text(
-                        'Privacy Policy',
+                        t.privacyPolicy,
                         style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                           color: Theme.of(context).colorScheme.onSurface,
@@ -265,7 +352,7 @@ class SettingsScreen extends ConsumerWidget {
                     ListTile(
                       leading: const Icon(Icons.description_outlined),
                       title: Text(
-                        'Terms of Service',
+                        t.termsOfService,
                         style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                           color: Theme.of(context).colorScheme.onSurface,
@@ -278,7 +365,7 @@ class SettingsScreen extends ConsumerWidget {
                     ListTile(
                       leading: const Icon(Icons.groups_rounded),
                       title: Text(
-                        'About App / Us',
+                        t.aboutAppUs,
                         style: AppTextStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                           color: Theme.of(context).colorScheme.onSurface,
@@ -318,6 +405,7 @@ class _SyncStatusSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.t;
     final service = ref.watch(powerSyncServiceProvider);
     final user = ref.watch(currentUserProvider);
     final statusAsync = ref.watch(powerSyncStatusProvider);
@@ -338,13 +426,14 @@ class _SyncStatusSection extends ConsumerWidget {
     );
 
     final connectionLabel = _buildConnectionLabel(
+      context: context,
       status: status,
       remoteSyncEnabled: service.isRemoteSyncEnabled,
       signedIn: signedIn,
       hasError: hasSyncError,
     );
-    final lastSynced = _formatLastSynced(status?.lastSyncedAt);
-    final pendingUploads = _formatQueueStats(queueStats);
+    final lastSynced = _formatLastSynced(context, status?.lastSyncedAt);
+    final pendingUploads = _formatQueueStats(context, queueStats);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
@@ -363,7 +452,7 @@ class _SyncStatusSection extends ConsumerWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                'Sync Status',
+                t.syncStatus,
                 style: AppTextStyles.titleSmall.copyWith(
                   color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
@@ -372,14 +461,14 @@ class _SyncStatusSection extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _StatusRow(label: 'Connection', value: connectionLabel),
+          _StatusRow(label: t.connection, value: connectionLabel),
           const SizedBox(height: 8),
-          _StatusRow(label: 'Last Synced', value: lastSynced),
+          _StatusRow(label: t.lastSynced, value: lastSynced),
           const SizedBox(height: 8),
-          _StatusRow(label: 'Upload Queue', value: pendingUploads),
+          _StatusRow(label: t.uploadQueue, value: pendingUploads),
           if (errorMessage != null) ...[
             const SizedBox(height: 8),
-            _StatusRow(label: 'Last Error', value: errorMessage),
+            _StatusRow(label: t.lastError, value: errorMessage),
           ],
           const SizedBox(height: 16),
           SizedBox(
@@ -390,15 +479,13 @@ class _SyncStatusSection extends ConsumerWidget {
                       await service.syncNow();
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Sync refresh requested.'),
-                          ),
+                          SnackBar(content: Text(t.syncRefreshRequested)),
                         );
                       }
                     }
                   : null,
               icon: const Icon(Icons.sync_rounded),
-              label: const Text('Sync Now'),
+              label: Text(t.syncNow),
             ),
           ),
         ],
@@ -407,33 +494,35 @@ class _SyncStatusSection extends ConsumerWidget {
   }
 
   String _buildConnectionLabel({
+    required BuildContext context,
     required SyncStatus? status,
     required bool remoteSyncEnabled,
     required bool signedIn,
     required bool hasError,
   }) {
+    final t = context.t;
     if (!remoteSyncEnabled) {
-      return 'Remote sync disabled';
+      return t.remoteSyncDisabled;
     }
     if (!signedIn) {
-      return 'Sign in to sync';
+      return t.signInToSync;
     }
     if (status == null) {
-      return 'Checking...';
+      return t.checking;
     }
     if (status.connecting) {
-      return 'Connecting';
+      return t.connecting;
     }
     if (status.downloading || status.uploading) {
-      return 'Syncing';
+      return t.syncing;
     }
     if (status.connected) {
-      return 'Connected';
+      return t.connected;
     }
     if (hasError) {
-      return 'Reconnecting';
+      return t.reconnecting;
     }
-    return 'Offline';
+    return t.offline;
   }
 
   bool _hasBlockingSyncError({
@@ -473,13 +562,13 @@ class _SyncStatusSection extends ConsumerWidget {
     return '${redacted.substring(0, 77)}...';
   }
 
-  String _formatLastSynced(DateTime? value) {
-    if (value == null) return 'Not yet';
+  String _formatLastSynced(BuildContext context, DateTime? value) {
+    if (value == null) return context.t.notYet;
     return DateFormat('dd MMM yyyy, HH:mm').format(value.toLocal());
   }
 
-  String _formatQueueStats(UploadQueueStats? stats) {
-    if (stats == null) return 'Loading...';
+  String _formatQueueStats(BuildContext context, UploadQueueStats? stats) {
+    if (stats == null) return context.t.loading;
     final sizeKb = ((stats.size ?? 0) / 1024).toStringAsFixed(1);
     return '${stats.count} items ($sizeKb KB)';
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:liankhawpui/core/localization/app_strings.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/widgets/app_states.dart';
 import 'package:liankhawpui/features/announcement/presentation/announcement_providers.dart';
@@ -12,6 +13,7 @@ class AnnouncementListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.t;
     final announcementsAsync = ref.watch(announcementsProvider);
     final user = ref.watch(currentUserProvider);
 
@@ -21,7 +23,7 @@ class AnnouncementListScreen extends ConsumerWidget {
           onPressed: () => context.canPop() ? context.pop() : context.go('/'),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
-        title: const Text('Announcements'),
+        title: Text(t.announcements),
       ),
       body: Center(
         child: ConstrainedBox(
@@ -31,9 +33,9 @@ class AnnouncementListScreen extends ConsumerWidget {
             child: announcementsAsync.when(
               data: (list) {
                 if (list.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: AppEmptyState(
-                      message: 'No announcements published yet',
+                      message: t.noAnnouncementsYet,
                       icon: Icons.campaign_outlined,
                     ),
                   );
@@ -147,10 +149,9 @@ class AnnouncementListScreen extends ConsumerWidget {
                   },
                 );
               },
-              loading: () =>
-                  const AppLoadingState(message: 'Loading announcements...'),
-              error: (_, __) => const AppEmptyState(
-                message: 'Could not load announcements',
+              loading: () => AppLoadingState(message: t.loadingAnnouncements),
+              error: (_, __) => AppEmptyState(
+                message: t.couldNotLoadAnnouncements,
                 icon: Icons.error_outline_rounded,
               ),
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:liankhawpui/core/localization/app_strings.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/theme/theme_provider.dart';
@@ -13,6 +14,7 @@ class AppDrawer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.t;
     final user = ref.watch(currentUserProvider);
     final themeMode = ref.watch(themeModeProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -53,8 +55,8 @@ class AppDrawer extends ConsumerWidget {
                     children: [
                       Text(
                         user.isGuest
-                            ? 'Guest'
-                            : (user.fullName ?? 'Community Member'),
+                            ? t.guest
+                            : (user.fullName ?? t.communityMember),
                         style: AppTextStyles.titleMedium.copyWith(
                           color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.w700,
@@ -64,9 +66,7 @@ class AppDrawer extends ConsumerWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        user.isGuest
-                            ? 'Sign in to access more'
-                            : (user.email ?? ''),
+                        user.isGuest ? t.guestSubtitle : (user.email ?? ''),
                         style: AppTextStyles.bodySmall.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -87,7 +87,7 @@ class AppDrawer extends ConsumerWidget {
                 children: [
                   _DrawerItem(
                     icon: Icons.home_rounded,
-                    label: 'Home',
+                    label: t.home,
                     onTap: () {
                       context.pop(); // Close drawer
                       context.go('/');
@@ -95,7 +95,7 @@ class AppDrawer extends ConsumerWidget {
                   ),
                   _DrawerItem(
                     icon: Icons.newspaper_rounded,
-                    label: 'News',
+                    label: t.news,
                     onTap: () {
                       context.pop();
                       context.push('/news');
@@ -103,7 +103,7 @@ class AppDrawer extends ConsumerWidget {
                   ),
                   _DrawerItem(
                     icon: Icons.campaign_rounded,
-                    label: 'Announcements',
+                    label: t.announcements,
                     onTap: () {
                       context.pop();
                       context.push('/announcement');
@@ -111,7 +111,7 @@ class AppDrawer extends ConsumerWidget {
                   ),
                   _DrawerItem(
                     icon: Icons.business_rounded,
-                    label: 'Organizations',
+                    label: t.organizations,
                     onTap: () {
                       context.pop();
                       context.push('/organization');
@@ -119,7 +119,7 @@ class AppDrawer extends ConsumerWidget {
                   ),
                   _DrawerItem(
                     icon: Icons.menu_book_rounded,
-                    label: 'Directory',
+                    label: t.directory,
                     onTap: () {
                       context.pop();
                       context.push('/book');
@@ -129,7 +129,7 @@ class AppDrawer extends ConsumerWidget {
                   if (!user.isGuest) ...[
                     _DrawerItem(
                       icon: Icons.person_rounded,
-                      label: 'My Profile',
+                      label: t.myProfile,
                       onTap: () {
                         context.pop();
                         context.push('/profile');
@@ -139,7 +139,7 @@ class AppDrawer extends ConsumerWidget {
                   if (user.role.isEditor) ...[
                     _DrawerItem(
                       icon: Icons.dashboard_rounded,
-                      label: 'Admin Dashboard',
+                      label: t.adminDashboard,
                       isHighlight: true,
                       onTap: () {
                         context.pop();
@@ -150,7 +150,7 @@ class AppDrawer extends ConsumerWidget {
                   if (user.isGuest)
                     _DrawerItem(
                       icon: Icons.login_rounded,
-                      label: 'Sign In',
+                      label: t.signIn,
                       isHighlight: true,
                       onTap: () {
                         context.pop();
@@ -160,7 +160,7 @@ class AppDrawer extends ConsumerWidget {
                   else
                     _DrawerItem(
                       icon: Icons.logout_rounded,
-                      label: 'Sign Out',
+                      label: t.signOut,
                       onTap: () async {
                         context.pop();
                         await ref.read(authRepositoryProvider).signOut();
@@ -172,7 +172,7 @@ class AppDrawer extends ConsumerWidget {
                   Divider(color: AppColors.glassBorder, height: 26),
                   _DrawerItem(
                     icon: Icons.settings_rounded,
-                    label: 'Settings',
+                    label: t.settings,
                     onTap: () {
                       context.pop();
                       context.push('/settings');
@@ -190,7 +190,7 @@ class AppDrawer extends ConsumerWidget {
                               : ThemeMode.light;
                         },
                         title: Text(
-                          'Dark Mode',
+                          t.darkMode,
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.w600,
@@ -215,7 +215,7 @@ class AppDrawer extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'App Version 1.0.0',
+              t.appVersion('1.0.0'),
               style: AppTextStyles.caption.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),

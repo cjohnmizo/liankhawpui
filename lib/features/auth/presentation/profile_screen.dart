@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:liankhawpui/core/localization/app_strings.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
 import 'package:liankhawpui/core/widgets/glass_card.dart';
@@ -16,6 +17,7 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.t;
     final user = ref.watch(currentUserProvider);
     final profileContent = Center(
       child: ConstrainedBox(
@@ -44,7 +46,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    user.fullName ?? 'Community Member',
+                    user.fullName ?? t.communityMember,
                     style: AppTextStyles.titleMedium.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w700,
@@ -52,7 +54,7 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    user.email ?? 'No email',
+                    user.email ?? t.noEmail,
                     style: AppTextStyles.bodySmall.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -64,31 +66,31 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 14),
             _ActionCard(
-              title: 'My Profile',
+              title: t.myProfile,
               icon: Icons.person_outline_rounded,
               onTap: () => context.push('/profile/edit'),
             ),
-            const _ActionCard(
-              title: 'Saved Posts',
-              subtitle: 'Coming soon',
+            _ActionCard(
+              title: t.savedPosts,
+              subtitle: t.comingSoon,
               icon: Icons.bookmark_outline_rounded,
               enabled: false,
               onTap: null,
             ),
             _ActionCard(
-              title: 'Settings',
+              title: t.settings,
               icon: Icons.settings_outlined,
               onTap: () => context.push('/settings'),
             ),
             const SizedBox(height: 8),
-            _DetailItem(label: 'Phone', value: user.phoneNumber ?? 'Not set'),
+            _DetailItem(label: t.phone, value: user.phoneNumber ?? t.notSet),
             _DetailItem(
-              label: 'Date of Birth',
+              label: t.dateOfBirth,
               value: user.dob == null
-                  ? 'Not set'
+                  ? t.notSet
                   : DateFormat.yMMMd().format(user.dob!),
             ),
-            _DetailItem(label: 'Address', value: user.address ?? 'Not set'),
+            _DetailItem(label: t.address, value: user.address ?? t.notSet),
             const SizedBox(height: 10),
             FilledButton.tonalIcon(
               onPressed: user.isGuest
@@ -100,7 +102,7 @@ class ProfileScreen extends ConsumerWidget {
               icon: Icon(
                 user.isGuest ? Icons.login_rounded : Icons.logout_rounded,
               ),
-              label: Text(user.isGuest ? 'Sign In' : 'Logout'),
+              label: Text(user.isGuest ? t.signIn : t.signOut),
             ),
           ],
         ),
@@ -111,7 +113,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text(t.profileTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_rounded),
@@ -131,7 +133,7 @@ class _RoleBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final roleName = role.name.toUpperCase();
+    final roleName = context.t.roleLabel(role.name).toUpperCase();
     final isStaff = role.isEditor;
     final color = isStaff ? AppColors.accentGold : AppColors.primaryNavy;
     return Container(

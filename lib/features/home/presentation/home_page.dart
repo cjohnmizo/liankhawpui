@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:liankhawpui/core/config/app_assets.dart';
+import 'package:liankhawpui/core/localization/app_strings.dart';
 import 'package:liankhawpui/core/providers/network_status_provider.dart';
 import 'package:liankhawpui/core/theme/app_colors.dart';
 import 'package:liankhawpui/core/theme/text_styles.dart';
@@ -34,6 +35,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     final user = ref.watch(currentUserProvider);
     final isOnline = ref.watch(networkOnlineProvider).valueOrNull ?? true;
 
@@ -47,8 +49,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               heroTag: 'home_create_fab',
               onPressed: isOnline ? () => _showCreateMenu(context) : null,
               tooltip: isOnline
-                  ? 'Create post'
-                  : 'Offline mode: reconnect to create content',
+                  ? t.createPost
+                  : t.offlineReconnectToCreateContent,
               child: Icon(
                 isOnline ? Icons.add_rounded : Icons.wifi_off_rounded,
               ),
@@ -58,6 +60,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context, AppUser user) {
+    final t = context.t;
     const title = 'Liankhawpui';
 
     return AppBar(
@@ -83,12 +86,12 @@ class _HomePageState extends ConsumerState<HomePage> {
       actions: [
         if (user.role.isEditor)
           IconButton(
-            tooltip: 'Dashboard',
+            tooltip: t.dashboard,
             icon: const Icon(Icons.dashboard_rounded),
             onPressed: () => context.push('/dashboard'),
           ),
         IconButton(
-          tooltip: user.isGuest ? 'Sign in' : 'Profile',
+          tooltip: user.isGuest ? t.signIn : t.profile,
           icon: _buildProfileActionIcon(user),
           onPressed: () =>
               user.isGuest ? context.push('/login') : context.push('/profile'),
@@ -111,6 +114,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildHomeDashboard(BuildContext context, WidgetRef ref) {
+    final t = context.t;
     final newsAsync = ref.watch(newsStreamProvider);
     final announcementsAsync = ref.watch(announcementsProvider);
     final organizationsAsync = ref.watch(organizationTreeProvider);
@@ -143,10 +147,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                       _HeaderBanner(isOnline: isOnline),
                       const SizedBox(height: 18),
                       _SectionHeader(
-                        title: 'Recent News',
-                        subtitle: 'Latest stories from the village',
+                        title: t.recentNews,
+                        subtitle: t.latestStoriesFromVillage,
                         icon: Icons.newspaper_rounded,
-                        actionLabel: 'Open news',
+                        actionLabel: t.openNews,
                         onActionTap: () => context.push('/news'),
                       ),
                       const SizedBox(height: 10),
@@ -154,8 +158,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                         data: (items) {
                           final top = items.take(5).toList();
                           if (top.isEmpty) {
-                            return const AppEmptyState(
-                              message: 'No news published yet',
+                            return AppEmptyState(
+                              message: t.noNewsPublishedYet,
                               icon: Icons.article_outlined,
                             );
                           }
@@ -169,20 +173,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 _NewsListCard(news: top[index]),
                           );
                         },
-                        loading: () => const AppLoadingState(
-                          message: 'Loading recent news...',
-                        ),
-                        error: (_, __) => const AppEmptyState(
-                          message: 'Could not load recent news',
+                        loading: () =>
+                            AppLoadingState(message: t.loadingRecentNews),
+                        error: (_, __) => AppEmptyState(
+                          message: t.couldNotLoadRecentNews,
                           icon: Icons.error_outline_rounded,
                         ),
                       ),
                       const SizedBox(height: 20),
                       _SectionHeader(
-                        title: 'Announcements',
-                        subtitle: 'Village updates and notices',
+                        title: t.announcements,
+                        subtitle: t.villageUpdatesAndNotices,
                         icon: Icons.campaign_rounded,
-                        actionLabel: 'View all',
+                        actionLabel: t.viewAll,
                         onActionTap: () => context.push('/announcement'),
                       ),
                       const SizedBox(height: 10),
@@ -190,8 +193,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                         data: (items) {
                           final top = items.take(3).toList();
                           if (top.isEmpty) {
-                            return const AppEmptyState(
-                              message: 'No announcements yet',
+                            return AppEmptyState(
+                              message: t.noAnnouncementsYet,
                               icon: Icons.campaign_outlined,
                             );
                           }
@@ -205,20 +208,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 _AnnouncementListCard(announcement: top[index]),
                           );
                         },
-                        loading: () => const AppLoadingState(
-                          message: 'Loading announcements...',
-                        ),
-                        error: (_, __) => const AppEmptyState(
-                          message: 'Could not load announcements',
+                        loading: () =>
+                            AppLoadingState(message: t.loadingAnnouncements),
+                        error: (_, __) => AppEmptyState(
+                          message: t.couldNotLoadAnnouncements,
                           icon: Icons.error_outline_rounded,
                         ),
                       ),
                       const SizedBox(height: 20),
                       _SectionHeader(
-                        title: 'Organization List',
-                        subtitle: 'Village groups in grid view',
+                        title: t.organizationList,
+                        subtitle: t.villageGroupsInGridView,
                         icon: Icons.account_tree_rounded,
-                        actionLabel: 'Browse',
+                        actionLabel: t.browse,
                         onActionTap: () => context.push('/organization'),
                       ),
                       const SizedBox(height: 10),
@@ -228,8 +230,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                             roots,
                           ).take(8).toList();
                           if (organizations.isEmpty) {
-                            return const AppEmptyState(
-                              message: 'No organizations available',
+                            return AppEmptyState(
+                              message: t.noOrganizationsAvailable,
                               icon: Icons.business_rounded,
                             );
                           }
@@ -261,11 +263,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                             },
                           );
                         },
-                        loading: () => const AppLoadingState(
-                          message: 'Loading organizations...',
-                        ),
-                        error: (_, __) => const AppEmptyState(
-                          message: 'Could not load organizations',
+                        loading: () =>
+                            AppLoadingState(message: t.loadingOrganizations),
+                        error: (_, __) => AppEmptyState(
+                          message: t.couldNotLoadOrganizations,
                           icon: Icons.error_outline_rounded,
                         ),
                       ),
@@ -296,6 +297,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _showCreateMenu(BuildContext context) {
+    final t = context.t;
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -307,7 +309,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             children: [
               ListTile(
                 leading: const Icon(Icons.newspaper_rounded),
-                title: const Text('News Article'),
+                title: Text(t.newsArticle),
                 onTap: () {
                   Navigator.pop(context);
                   context.push('/dashboard/news/create');
@@ -315,7 +317,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
               ListTile(
                 leading: const Icon(Icons.campaign_rounded),
-                title: const Text('Announcement'),
+                title: Text(t.announcement),
                 onTap: () {
                   Navigator.pop(context);
                   context.push('/announcement/create');
@@ -336,6 +338,7 @@ class _HeaderBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     return GlassCard(
       padding: EdgeInsets.zero,
       child: ClipRRect(
@@ -372,7 +375,7 @@ class _HeaderBanner extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'Khawlian Village',
+                    t.khawlianVillage,
                     style: AppTextStyles.labelSmall.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -387,14 +390,14 @@ class _HeaderBanner extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Community Updates',
+                      t.communityUpdates,
                       style: AppTextStyles.titleSmall.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
-                      'News, announcements, and organizations',
+                      t.newsAnnouncementsOrganizations,
                       style: AppTextStyles.bodySmall.copyWith(
                         color: Colors.white.withValues(alpha: 0.9),
                       ),
@@ -416,7 +419,7 @@ class _HeaderBanner extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Offline cache',
+                      t.offlineCache,
                       style: AppTextStyles.labelSmall.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
@@ -492,6 +495,7 @@ class _AnnouncementListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     final preview = markdownExcerpt(announcement.content, maxLength: 120);
     return GlassCard(
       onTap: () => context.push('/announcement/${announcement.id}'),
@@ -530,7 +534,7 @@ class _AnnouncementListCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'Pinned',
+                    t.pinned,
                     style: AppTextStyles.labelSmall.copyWith(
                       color: AppColors.accentGold,
                       fontWeight: FontWeight.w700,
