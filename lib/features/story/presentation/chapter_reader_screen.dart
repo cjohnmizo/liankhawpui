@@ -185,9 +185,15 @@ class _ChapterReaderScreenState extends ConsumerState<ChapterReaderScreen> {
   void _recordLastRead(Chapter chapter) {
     if (_recordedChapterId == chapter.id) return;
     _recordedChapterId = chapter.id;
-    ref
-        .read(lastReadChapterProvider.notifier)
-        .setLastReadChapter(chapterId: chapter.id, chapterTitle: chapter.title);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref
+          .read(lastReadChapterProvider.notifier)
+          .setLastReadChapter(
+            chapterId: chapter.id,
+            chapterTitle: chapter.title,
+          );
+    });
   }
 }
 
