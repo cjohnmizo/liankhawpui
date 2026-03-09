@@ -64,8 +64,21 @@ Future<void> tapText(
   await tester.pump(const Duration(milliseconds: 600));
 }
 
-Future<void> openDrawerFromBottomMenu(WidgetTester tester) async {
-  await tapText(tester, 'Menu');
+Future<void> tapByKey(
+  WidgetTester tester,
+  Key key, {
+  Duration timeout = const Duration(seconds: 15),
+}) async {
+  final finder = find.byKey(key);
+  await waitFor(tester, finder, timeout: timeout);
+  await tester.ensureVisible(finder.first);
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.tap(finder.first);
+  await tester.pump(const Duration(milliseconds: 700));
+}
+
+Future<void> openDrawerFromHome(WidgetTester tester) async {
+  await tapByKey(tester, const ValueKey('home_menu_button'));
   await waitFor(tester, find.text('Settings'));
 }
 
@@ -135,34 +148,39 @@ Future<void> signInViaApi(
 
   // Give GoRouter + auth stream time to redirect to home.
   await waitForAny(tester, [
-    find.text('Menu'),
+    find.byKey(const ValueKey('home_menu_button')),
+    find.byKey(const ValueKey('home_section_recent_news')),
     find.text('Welcome Back'),
   ], timeout: const Duration(seconds: 45));
 
   final endTime = DateTime.now().add(const Duration(seconds: 30));
   while (DateTime.now().isBefore(endTime)) {
     await tester.pump(const Duration(milliseconds: 300));
-    if (find.text('Menu').evaluate().isNotEmpty) {
+    if (find.byKey(const ValueKey('home_menu_button')).evaluate().isNotEmpty ||
+        find
+            .byKey(const ValueKey('home_section_recent_news'))
+            .evaluate()
+            .isNotEmpty) {
       return;
     }
   }
 
-  fail('Timed out waiting for Menu after API sign-in');
+  fail('Timed out waiting for home shell after API sign-in');
 }
 
 Future<void> openAdminDashboard(WidgetTester tester) async {
   await waitFor(
     tester,
-    find.text('Menu'),
+    find.byKey(const ValueKey('home_menu_button')),
     timeout: const Duration(seconds: 30),
   );
-  await openDrawerFromBottomMenu(tester);
+  await openDrawerFromHome(tester);
   await waitFor(
     tester,
     find.text('Admin Dashboard'),
     timeout: const Duration(seconds: 20),
   );
-  await tapText(tester, 'Admin Dashboard');
+  await tapByKey(tester, const ValueKey('drawer_dashboard'));
   await waitFor(
     tester,
     find.text('Overview'),
@@ -171,21 +189,21 @@ Future<void> openAdminDashboard(WidgetTester tester) async {
 }
 
 Future<void> returnToHome(WidgetTester tester) async {
-  final menu = find.text('Menu');
-  if (menu.evaluate().isNotEmpty) return;
+  final homeShell = find.byKey(const ValueKey('home_menu_button'));
+  if (homeShell.evaluate().isNotEmpty) return;
 
   await tapBackButton(tester);
-  if (menu.evaluate().isNotEmpty) return;
+  if (homeShell.evaluate().isNotEmpty) return;
 
   await tapBackButton(tester);
-  await waitFor(tester, menu, timeout: const Duration(seconds: 20));
+  await waitFor(tester, homeShell, timeout: const Duration(seconds: 20));
 }
 
 Future<void> signOutFromHome(WidgetTester tester) async {
-  if (find.text('Menu').evaluate().isNotEmpty) {
-    await openDrawerFromBottomMenu(tester);
-    if (find.text('Sign Out').evaluate().isNotEmpty) {
-      await tapText(tester, 'Sign Out');
+  if (find.byKey(const ValueKey('home_menu_button')).evaluate().isNotEmpty) {
+    await openDrawerFromHome(tester);
+    if (find.byKey(const ValueKey('drawer_sign_out')).evaluate().isNotEmpty) {
+      await tapByKey(tester, const ValueKey('drawer_sign_out'));
     }
   }
 
@@ -200,11 +218,11 @@ Future<void> signOutFromHome(WidgetTester tester) async {
 
   await waitForAny(tester, [
     find.text('Welcome Back'),
-    find.text('Menu'),
+    find.byKey(const ValueKey('home_menu_button')),
   ], timeout: const Duration(seconds: 20));
 
-  if (find.text('Menu').evaluate().isNotEmpty) {
-    await openDrawerFromBottomMenu(tester);
+  if (find.byKey(const ValueKey('home_menu_button')).evaluate().isNotEmpty) {
+    await openDrawerFromHome(tester);
     await waitFor(
       tester,
       find.text('Sign In'),
@@ -453,7 +471,8 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
 
     await waitForAny(tester, [
-      find.text('Menu'),
+      find.byKey(const ValueKey('home_section_recent_news')),
+      find.byKey(const ValueKey('home_menu_button')),
       find.text('Welcome Back'),
     ], timeout: const Duration(seconds: 45));
 
@@ -486,7 +505,8 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
 
     await waitForAny(tester, [
-      find.text('Menu'),
+      find.byKey(const ValueKey('home_section_recent_news')),
+      find.byKey(const ValueKey('home_menu_button')),
       find.text('Welcome Back'),
     ], timeout: const Duration(seconds: 45));
 
@@ -513,7 +533,8 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
 
     await waitForAny(tester, [
-      find.text('Menu'),
+      find.byKey(const ValueKey('home_section_recent_news')),
+      find.byKey(const ValueKey('home_menu_button')),
       find.text('Welcome Back'),
     ], timeout: const Duration(seconds: 45));
 

@@ -59,6 +59,19 @@ Future<void> tapText(
   await tester.pump(const Duration(milliseconds: 700));
 }
 
+Future<void> tapByKey(
+  WidgetTester tester,
+  Key key, {
+  Duration timeout = const Duration(seconds: 15),
+}) async {
+  final finder = find.byKey(key);
+  await waitFor(tester, finder, timeout: timeout);
+  await tester.ensureVisible(finder.first);
+  await tester.pump(const Duration(milliseconds: 300));
+  await tester.tap(finder.first);
+  await tester.pump(const Duration(milliseconds: 700));
+}
+
 Future<void> scrollUntilTextVisible(
   WidgetTester tester,
   String text, {
@@ -87,9 +100,23 @@ Future<void> scrollUntilTextVisible(
   fail('Timed out scrolling to text: "$text"');
 }
 
-Future<void> openDrawerFromBottomMenu(WidgetTester tester) async {
-  await tapText(tester, 'Menu');
+Future<void> openDrawerFromHome(WidgetTester tester) async {
+  await tapByKey(tester, const ValueKey('home_menu_button'));
   await waitFor(tester, find.text('Settings'));
+}
+
+Future<void> waitForHomeShell(WidgetTester tester) async {
+  await waitForAny(tester, [
+    find.byKey(const ValueKey('home_menu_button')),
+    find.byKey(const ValueKey('home_section_recent_news')),
+    find.text('Welcome Back'),
+  ], timeout: const Duration(seconds: 45));
+
+  await waitFor(
+    tester,
+    find.byKey(const ValueKey('home_menu_button')),
+    timeout: const Duration(seconds: 30),
+  );
 }
 
 Future<void> signInViaApi(
@@ -123,16 +150,7 @@ Future<void> signInViaApi(
     );
   }
 
-  await waitForAny(tester, [
-    find.text('Menu'),
-    find.text('Welcome Back'),
-  ], timeout: const Duration(seconds: 45));
-
-  await waitFor(
-    tester,
-    find.text('Menu'),
-    timeout: const Duration(seconds: 30),
-  );
+  await waitForHomeShell(tester);
 }
 
 Future<void> signOutBestEffort(WidgetTester tester) async {
@@ -140,7 +158,7 @@ Future<void> signOutBestEffort(WidgetTester tester) async {
   final endTime = DateTime.now().add(const Duration(seconds: 8));
   while (DateTime.now().isBefore(endTime)) {
     await tester.pump(const Duration(milliseconds: 250));
-    if (find.text('Menu').evaluate().isNotEmpty ||
+    if (find.byKey(const ValueKey('home_menu_button')).evaluate().isNotEmpty ||
         find.text('Welcome Back').evaluate().isNotEmpty) {
       return;
     }
@@ -218,7 +236,8 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
 
       await waitForAny(tester, [
-        find.text('Menu'),
+        find.byKey(const ValueKey('home_section_recent_news')),
+        find.byKey(const ValueKey('home_menu_button')),
         find.text('Welcome Back'),
       ], timeout: const Duration(seconds: 45));
 
@@ -226,7 +245,7 @@ void main() {
         tester,
         candidates: [
           (_editorEmail, _editorPassword),
-          if (_hasAdminCreds) (_adminEmail, _adminPassword), // fallback
+          if (_hasAdminCreds) (_adminEmail, _adminPassword),
         ],
       );
 
@@ -244,9 +263,8 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 900));
 
-        await tapText(tester, 'Home');
-        await openDrawerFromBottomMenu(tester);
-        await tapText(tester, 'Announcements');
+        await openDrawerFromHome(tester);
+        await tapByKey(tester, const ValueKey('drawer_announcements'));
         await waitFor(
           tester,
           find.text('Announcements'),
@@ -272,7 +290,8 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
 
     await waitForAny(tester, [
-      find.text('Menu'),
+      find.byKey(const ValueKey('home_section_recent_news')),
+      find.byKey(const ValueKey('home_menu_button')),
       find.text('Welcome Back'),
     ], timeout: const Duration(seconds: 45));
 
@@ -290,9 +309,8 @@ void main() {
 
     final sample = await seedBookSample();
     try {
-      await tapText(tester, 'Home');
-      await openDrawerFromBottomMenu(tester);
-      await tapText(tester, 'Directory');
+      await openDrawerFromHome(tester);
+      await tapByKey(tester, const ValueKey('drawer_directory'));
 
       await waitFor(
         tester,
