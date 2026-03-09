@@ -47,13 +47,14 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
       await dotenv.load(fileName: '.env');
       EnvConfig.validateRequired();
 
+      final localDatabaseInit = PowerSyncService().ensureLocalDatabaseReady();
+
       await _runWithTimeout(
         'Supabase',
         SupabaseService.initialize(),
         timeout: const Duration(seconds: 12),
       );
 
-      final localDatabaseInit = PowerSyncService().ensureLocalDatabaseReady();
       try {
         await _runWithTimeout(
           'PowerSync local DB',
@@ -243,18 +244,10 @@ Future<T> _runWithTimeout<T>(
 }
 
 Future<void> _initializeDeferredServices() async {
+  await Future<void>.delayed(const Duration(milliseconds: 500));
   await _ensureGuestSessionForPublicSync();
-  await PowerSyncService().startAutoSyncLifecycle();
-
-  try {
-    await OneSignalService.initialize();
-    await OneSignalService.requestNotificationPermission();
-    await OneSignalService.syncExternalUserId(
-      SupabaseService.client.auth.currentUser?.id,
-    );
-  } catch (e) {
-    debugPrint('WARN: OneSignal initialization failed: $e');
-  }
+  unawaited(_startDeferredPowerSync());
+  unawaited(_startDeferredPushSetup());
 }
 
 Future<void> _ensureGuestSessionForPublicSync() async {
@@ -277,6 +270,29 @@ Future<void> _initializeLocalPowerSyncOnly() async {
     await PowerSyncService().initialize(enableRemoteSync: false);
   } catch (e) {
     debugPrint('WARN: local PowerSync initialization failed: $e');
+  }
+}
+
+Future<void> _startDeferredPowerSync() async {
+  await Future<void>.delayed(const Duration(milliseconds: 250));
+  await PowerSyncService().startAutoSyncLifecycle();
+}
+
+Future<void> _startDeferredPushSetup() async {
+  if (EnvConfig.oneSignalAppId.isEmpty) {
+    return;
+  }
+
+  await Future<void>.delayed(const Duration(milliseconds: 900));
+
+  try {
+    await OneSignalService.initialize();
+    await OneSignalService.requestNotificationPermission();
+    await OneSignalService.syncExternalUserId(
+      SupabaseService.client.auth.currentUser?.id,
+    );
+  } catch (e) {
+    debugPrint('WARN: OneSignal initialization failed: $e');
   }
 }
 
