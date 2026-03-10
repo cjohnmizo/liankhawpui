@@ -158,7 +158,14 @@ Data fetching smoke tests (posting + history + books/chapters):
 flutter drive --driver=test_driver/integration_test.dart --target=integration_test/data_fetching_smoke_test.dart -d emulator-5554 --profile --dart-define=TEST_MODE=true --dart-define=TEST_EDITOR_EMAIL=editor@example.com --dart-define=TEST_EDITOR_PASSWORD=... --dart-define=TEST_ADMIN_EMAIL=admin@example.com --dart-define=TEST_ADMIN_PASSWORD=...
 ```
 
+Signup smoke test (opt-in, creates a disposable auth user):
+
+```bash
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/signup_smoke_test.dart -d emulator-5554 --profile --dart-define=TEST_SIGNUP_FLOW=true
+```
+
 If role credentials are not provided, role tests are skipped.
+If `TEST_SIGNUP_FLOW` is not provided, the signup smoke test is skipped by default.
 
 ### GitHub Actions CI
 
