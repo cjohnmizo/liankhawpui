@@ -17,6 +17,7 @@ import 'package:liankhawpui/features/auth/presentation/auth_providers.dart';
 import 'package:liankhawpui/features/organization/domain/office_bearer.dart';
 import 'package:liankhawpui/features/organization/domain/organization.dart';
 import 'package:liankhawpui/features/organization/presentation/organization_providers.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class OrganizationDetailScreen extends ConsumerWidget {
   final String orgId;
@@ -344,6 +345,36 @@ class OrganizationDetailScreen extends ConsumerWidget {
                                                         .colorScheme
                                                         .onSurfaceVariant,
                                                   ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Wrap(
+                                              spacing: 8,
+                                              runSpacing: 8,
+                                              children: [
+                                                OutlinedButton.icon(
+                                                  onPressed: () => _callOfficeBearer(
+                                                    context,
+                                                    bearer.phone!,
+                                                  ),
+                                                  icon: const Icon(
+                                                    Icons.call_rounded,
+                                                    size: 16,
+                                                  ),
+                                                  label: const Text('Call'),
+                                                ),
+                                                OutlinedButton.icon(
+                                                  onPressed: () =>
+                                                      _openWhatsAppForOfficeBearer(
+                                                        context,
+                                                        bearer.phone!,
+                                                      ),
+                                                  icon: const Icon(
+                                                    Icons.chat_rounded,
+                                                    size: 16,
+                                                  ),
+                                                  label: const Text('WhatsApp'),
+                                                ),
+                                              ],
                                             ),
                                           ],
                                         ],
@@ -744,6 +775,93 @@ class OrganizationDetailScreen extends ConsumerWidget {
       return 'Institution';
     }
     return normalized;
+  }
+
+  Future<void> _callOfficeBearer(BuildContext context, String rawPhone) async {
+    final telPhone = _normalizePhoneForTel(rawPhone);
+    if (telPhone == null) {
+      _showContactLaunchError(context, 'Phone number is not valid for calling.');
+      return;
+    }
+
+    final uri = Uri(scheme: 'tel', path: telPhone);
+    await _launchContactUri(
+      context,
+      uri,
+      fallbackMessage: 'Could not start a phone call on this device.',
+    );
+  }
+
+  Future<void> _openWhatsAppForOfficeBearer(
+    BuildContext context,
+    String rawPhone,
+  ) async {
+    final whatsappPhone = _normalizePhoneForWhatsApp(rawPhone);
+    if (whatsappPhone == null) {
+      _showContactLaunchError(
+        context,
+        'Phone number is not valid for WhatsApp.',
+      );
+      return;
+    }
+
+    final uri = Uri.parse('https://wa.me/$whatsappPhone');
+    await _launchContactUri(
+      context,
+      uri,
+      fallbackMessage: 'Could not open WhatsApp on this device.',
+    );
+  }
+
+  Future<void> _launchContactUri(
+    BuildContext context,
+    Uri uri, {
+    required String fallbackMessage,
+  }) async {
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched && context.mounted) {
+        _showContactLaunchError(context, fallbackMessage);
+      }
+    } catch (_) {
+      if (context.mounted) {
+        _showContactLaunchError(context, fallbackMessage);
+      }
+    }
+  }
+
+  void _showContactLaunchError(BuildContext context, String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String? _normalizePhoneForTel(String rawPhone) {
+    final trimmed = rawPhone.trim();
+    if (trimmed.isEmpty) return null;
+
+    final cleaned = trimmed.replaceAll(RegExp(r'[^0-9+]'), '');
+    if (cleaned.isEmpty) return null;
+
+    final hasTooManyPlus =
+        '+'.allMatches(cleaned).length > 1 || cleaned.indexOf('+') > 0;
+    if (hasTooManyPlus) return null;
+
+    final digitsOnly = cleaned.replaceAll('+', '');
+    if (digitsOnly.length < 7) return null;
+    return cleaned;
+  }
+
+  String? _normalizePhoneForWhatsApp(String rawPhone) {
+    final telPhone = _normalizePhoneForTel(rawPhone);
+    if (telPhone == null) return null;
+
+    final digitsOnly = telPhone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digitsOnly.length < 7) return null;
+    return digitsOnly;
   }
 }
 
