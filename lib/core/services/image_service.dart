@@ -82,8 +82,13 @@ class ImageService {
   }) async {
     final spec = _specForPreset(preset);
     final sourceBytes = await input.readAsBytes();
+    final sourceMimeType = lookupMimeType(input.path)?.toLowerCase();
     final normalizedBytes = await _normalizeInputBytes(sourceBytes, spec);
-    return _compressWithPreferredFormat(normalizedBytes, spec);
+    return _compressWithPreferredFormat(
+      normalizedBytes,
+      spec,
+      sourceMimeType: sourceMimeType,
+    );
   }
 
   Future<Uint8List?> compressImageToTargetSize(
@@ -231,11 +236,11 @@ class ImageService {
   Future<ProcessedImage> _compressWithPreferredFormat(
     Uint8List sourceBytes,
     _PresetSpec spec, {
+    String? sourceMimeType,
     int maxIterations = 12,
   }) async {
-    final keepPng = spec.keepPngIfTransparent
-        ? await _hasTransparency(sourceBytes)
-        : false;
+    final keepPng =
+        spec.keepPngIfTransparent && sourceMimeType == 'image/png';
 
     try {
       final webp = await _compressToRange(
@@ -424,24 +429,6 @@ class ImageService {
       );
     } catch (_) {
       return null;
-    }
-  }
-
-  Future<bool> _hasTransparency(Uint8List bytes) async {
-    try {
-      final codec = await ui.instantiateImageCodec(bytes);
-      final frame = await codec.getNextFrame();
-      final rgba = await frame.image.toByteData(
-        format: ui.ImageByteFormat.rawRgba,
-      );
-      if (rgba == null) return false;
-      final list = rgba.buffer.asUint8List();
-      for (var i = 3; i < list.length; i += 4) {
-        if (list[i] < 255) return true;
-      }
-      return false;
-    } catch (_) {
-      return false;
     }
   }
 }
