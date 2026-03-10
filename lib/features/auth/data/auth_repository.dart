@@ -101,17 +101,8 @@ class AuthRepository {
 
     final user = response.user;
     if (user != null) {
-      await _client.from('profiles').upsert({
-        'id': user.id,
-        'email': email,
-        'full_name': data?['full_name'],
-        'phone_number': data?['phone_number'],
-        'dob': data?['dob']?.split('T')[0], // Extract YYYY-MM-DD
-        'address': data?['address'],
-        'role': 'guest',
-      });
-
       if (response.session != null) {
+        await _syncProfileAfterSignUp(userId: user.id, email: email, data: data);
         await OneSignalService.syncExternalUserId(user.id);
       }
     }
@@ -266,6 +257,39 @@ class AuthRepository {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<void> _syncProfileAfterSignUp({
+    required String userId,
+    required String email,
+    Map<String, dynamic>? data,
+  }) async {
+    final existing = await _fetchProfile(userId);
+    final profileFields = {
+      'email': email,
+      'full_name': data?['full_name'],
+      'phone_number': data?['phone_number'],
+      'dob': data?['dob']?.split('T')[0],
+      'address': data?['address'],
+    };
+
+    if (existing == null) {
+      try {
+        await _client.from('profiles').insert({
+          'id': userId,
+          ...profileFields,
+          'role': 'guest',
+        });
+      } on PostgrestException catch (error) {
+        if (error.code != '23505') {
+          rethrow;
+        }
+        await _client.from('profiles').update(profileFields).eq('id', userId);
+      }
+      return;
+    }
+
+    await _client.from('profiles').update(profileFields).eq('id', userId);
   }
 
   Future<void> _ensureProfileExists(
