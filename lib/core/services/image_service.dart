@@ -195,7 +195,6 @@ class ImageService {
           qualityStart: 80,
           minTargetBytes: 30 * 1024,
           maxTargetBytes: 80 * 1024,
-          cropAspectRatio: 1,
         );
       case MediaPreset.lowDataAvatar:
         return const _PresetSpec(
@@ -204,7 +203,6 @@ class ImageService {
           qualityStart: 70,
           minTargetBytes: 20 * 1024,
           maxTargetBytes: 50 * 1024,
-          cropAspectRatio: 1,
         );
       case MediaPreset.ngoLogo:
         return const _PresetSpec(
@@ -213,7 +211,6 @@ class ImageService {
           qualityStart: 76,
           minTargetBytes: 50 * 1024,
           maxTargetBytes: 120 * 1024,
-          cropAspectRatio: 1,
           keepPngIfTransparent: true,
         );
     }
